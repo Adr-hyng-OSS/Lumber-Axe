@@ -33,14 +33,11 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
 
 - Examine the code and works to learn more about the creation and development of add-ons.
 - Change the code or works to suit your needs.
-- Use the add-on packs as you see fit in-game.
-- Re-distribute the add-on packs or works elsewhere, with approval of the author.
-- Create showcases or videos of this addon, but provide this site's link.
+- Took some of the code to your project, as long as you give credits to the respective author.
 
 *You are NOT permitted to:*
 
 - Negate the accreditation of the original author.
-- Paste the direct download link, negating the MCPEDL page.
 - Take the author's code, works, and textures just to republish them as your own.
 
 **Lumber Jack** is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License by @adrhyng.
