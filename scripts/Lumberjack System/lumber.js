@@ -61,6 +61,7 @@ class LumberJack {
             }
         });
 
+        this.recursiveLimit = recursionLimit; // Limit of Blocks
         this.totalBlocksDestroyed = this.getTotalBlocks();
         this.itemDamage = axeDamage;
 
@@ -77,7 +78,7 @@ class LumberJack {
             return;
         }
         
-        this.recursiveLimit = recursionLimit; // Limit of Blocks
+        
     }
 
     /**
@@ -364,13 +365,14 @@ class LumberCount {
             }
         });
 
+        this.recursiveLimit = recursionLimit;
         this.totalBlocksDestroyed = 0;
         this.itemDamage = axeDamage;
 
         this.enchantmentEffect();
         this.durabilityChecker();
 
-        this.recursiveLimit = recursionLimit;
+        
     }
 
     isVisited(blockLoc, visited){
