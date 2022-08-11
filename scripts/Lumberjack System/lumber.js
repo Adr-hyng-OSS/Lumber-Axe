@@ -1,3 +1,9 @@
+/**
+ * @license MIT
+ * @author Adr-hyng
+ * @project https://github.com/Adr-hyng/Lumber-Axe
+ */
+
 import { world, MinecraftItemTypes, MinecraftEnchantmentTypes} from 'mojang-minecraft'
 import {replaceItem} from "./items.js"
 import {setTimeout} from "./timers.js"
