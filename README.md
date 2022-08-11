@@ -43,3 +43,10 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
 **Lumber Jack** is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License by @Adr-hyng.
 Permissions that extend beyond the scope of this license may be obtained from [Twitter](https://twitter.com/h_YanG_0A "My Twitter Account") or [Discord](Adriancc#0616 "Adriancc#0616").
 
+<br></br>
+
+[Contributing Guide](./contributing.md)
+
+[Licence](./licence.md)
+
+[Download](https://github.com/Hatchibombotar/graves-addon/releases/download/latest-build/release.addon)
