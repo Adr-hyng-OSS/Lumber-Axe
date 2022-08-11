@@ -40,9 +40,6 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
 - Negate the accreditation of the original author.
 - Take the author's code, works, and textures just to republish them as your own.
 
-**Lumber Jack** is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License by @Adr-hyng.
-Permissions that extend beyond the scope of this license may be obtained from [Twitter](https://twitter.com/h_YanG_0A "My Twitter Account") or [Discord](https://discord.com/users/531056443940536320/ "Adriancc#0616").
-
 # **More Info**
 [Contribute](./contributing.md)
 
