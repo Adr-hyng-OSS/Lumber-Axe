@@ -44,9 +44,9 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
 Permissions that extend beyond the scope of this license may be obtained from [Twitter](https://twitter.com/h_YanG_0A "My Twitter Account") or [Discord](Adriancc#0616 "Adriancc#0616").
 
 <br></br>
+[Contribute](./contributing.md)
 
-[Contributing Guide](./contributing.md)
+[License](./license.md)
 
-[Licence](./licence.md)
-
-[Download](https://github.com/Hatchibombotar/graves-addon/releases/download/latest-build/release.addon)
+[Download](https://mcpedl.com/lumber-axe-addon/)
+[Alternate Download](None)
