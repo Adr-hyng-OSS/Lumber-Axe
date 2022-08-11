@@ -49,4 +49,4 @@ Permissions that extend beyond the scope of this license may be obtained from [T
 [License](./license.md)
 
 [Download](https://mcpedl.com/lumber-axe-addon/)
-[Alternate Download](None)
+[Alternate Download](WIP)
