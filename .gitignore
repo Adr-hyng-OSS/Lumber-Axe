@@ -1,6 +1,6 @@
 node_modules/
 package-lock.json
-excludedFile.txt
 functions/
 items/
 recipes/
+changelog.md
