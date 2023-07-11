@@ -1,0 +1,16 @@
+{
+  "name": "lumber-axe-addon-bp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@minecraft/server": "^1.3.0-beta.1.20.0-stable",
+    "@minecraft/server-ui": "^1.1.0-beta.1.20.0-stable"
+  }
+}
