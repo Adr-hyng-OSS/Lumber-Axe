@@ -2,7 +2,7 @@
 
 ![Development](https://img.shields.io/badge/Development-finished-2ea44f?logo=visualstudiocode&logoColor=blue)
 ![Version](https://img.shields.io/badge/Version-v1.0.3-2ea44f?logo=git&logoColor=red)
-![Minecraft](https://img.shields.io/badge/Minecraft-v1.19.0--1.19--20-blue?logo=xbox&logoColor=green)
+![Minecraft](https://img.shields.io/badge/Minecraft-v1.19.0--1.19.20-blue?logo=xbox&logoColor=green)
 
 Lumber axe is an addon that chops a whole tree of connected blocks of logs down with just a single break at any side of the connected block of log. Don't use the lumber axe tool to your valuable structures that has any type of logs in it, especially if the block of logs are connected. This accurately chops the whole tree down with the power of gametest framework.
 
