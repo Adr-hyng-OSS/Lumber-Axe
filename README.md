@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # **Lumber-Axe** 
 
 <!-- img.shield's live badge not working consistently. -->
