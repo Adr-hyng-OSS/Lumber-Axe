@@ -2,7 +2,7 @@ import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, 
 import { FormCancelationReason, ActionFormData, ActionFormResponse} from "@minecraft/server-ui";
 import {config as Configuration} from "config";
 
-const axeEquipments: string[] = ["minecraft:wooden_axe", "minecraft:stone_axe", "minecraft:golden_axe", "minecraft:iron_axe", "minecraft:diamond_axe", "minecraft:netherite_axe"];
+const axeEquipments = [ "yn:wooden_lumber_axe", "yn:stone_lumber_axe", "yn:iron_lumber_axe", "yn:diamond_lumber_axe", "yn:golden_lumber_axe", "yn:netherite_lumber_axe" ];
 const logMap: Map<string, number> = new Map<string, number>();
 const validLogBlocks: RegExp = /(_log|crimson_stem|warped_stem)$/;
 var justInteracted: boolean = false;
@@ -55,12 +55,12 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
         const totalDamage: number = (treeInteracted.size) * unbreakingDamage;
         const totalDurabilityConsumed: number = itemDurability.damage + totalDamage;
         const canBeChopped: boolean = (totalDurabilityConsumed >= itemDurability.maxDurability) ? false : true;
-        const requiredDurability: number = (itemDurability.damage + totalDamage) - itemDurability.maxDurability;
+        const requiredDurability: number = -((itemDurability.damage + totalDamage) - itemDurability.maxDurability);
 
         const inspectionForm: ActionFormData = new ActionFormData()
             .title("Log Information")
             .button(`${treeInteracted.size} block/s`, "textures/InfoUI/blocks.png")
-            .button(`${requiredDurability}`, "textures/InfoUI/required_durability.png")
+            .button(`+${Math.abs(requiredDurability)} ${requiredDurability < 0 ? "required" : "sufficient" } durability`, "textures/InfoUI/required_durability.png")
             .button(`${itemDurability.damage} / ${itemDurability.maxDurability}`, "textures/InfoUI/axe_durability.png")
             .button(`${canBeChopped ? "Yes": "No"}`, "textures/InfoUI/canBeCut.png");
 
@@ -126,7 +126,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     
     const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId);
     
-    const totalDamage: number = (visited.size) * unbreakingDamage;
+    const totalDamage: number = visited.size * unbreakingDamage;
     const totalDurabilityConsumed: number = itemDurability.damage + totalDamage;
     const lastDurabilityConsumed: number = itemDurability.damage + durabilityDamagePerBlock;
     if (totalDurabilityConsumed >= lastDurabilityConsumed && lastDurabilityConsumed >= itemDurability.maxDurability) {

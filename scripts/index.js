@@ -1,7 +1,7 @@
 import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, WatchdogTerminateReason } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData } from "@minecraft/server-ui";
 import { config as Configuration } from "config";
-const axeEquipments = ["minecraft:wooden_axe", "minecraft:stone_axe", "minecraft:golden_axe", "minecraft:iron_axe", "minecraft:diamond_axe", "minecraft:netherite_axe"];
+const axeEquipments = ["yn:wooden_lumber_axe", "yn:stone_lumber_axe", "yn:iron_lumber_axe", "yn:diamond_lumber_axe", "yn:golden_lumber_axe", "yn:netherite_lumber_axe"];
 const logMap = new Map();
 const validLogBlocks = /(_log|crimson_stem|warped_stem)$/;
 var justInteracted = false;
@@ -48,11 +48,11 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
         const totalDamage = (treeInteracted.size) * unbreakingDamage;
         const totalDurabilityConsumed = itemDurability.damage + totalDamage;
         const canBeChopped = (totalDurabilityConsumed >= itemDurability.maxDurability) ? false : true;
-        const requiredDurability = (itemDurability.damage + totalDamage) - itemDurability.maxDurability;
+        const requiredDurability = -((itemDurability.damage + totalDamage) - itemDurability.maxDurability);
         const inspectionForm = new ActionFormData()
             .title("Log Information")
             .button(`${treeInteracted.size} block/s`, "textures/InfoUI/blocks.png")
-            .button(`${requiredDurability}`, "textures/InfoUI/required_durability.png")
+            .button(`+${Math.abs(requiredDurability)} ${requiredDurability < 0 ? "required" : "sufficient"} durability`, "textures/InfoUI/required_durability.png")
             .button(`${itemDurability.damage} / ${itemDurability.maxDurability}`, "textures/InfoUI/axe_durability.png")
             .button(`${canBeChopped ? "Yes" : "No"}`, "textures/InfoUI/canBeCut.png");
         forceShow(player, inspectionForm).then((response) => {
@@ -119,7 +119,7 @@ async function treeCut(player, dimension, location, blockTypeId) {
     let unbreakingMultiplier = (100 / (level + 1)) / 100;
     let unbreakingDamage = durabilityDamagePerBlock * unbreakingMultiplier;
     const visited = await getTreeLogs(dimension, location, blockTypeId);
-    const totalDamage = (visited.size) * unbreakingDamage;
+    const totalDamage = visited.size * unbreakingDamage;
     const totalDurabilityConsumed = itemDurability.damage + totalDamage;
     const lastDurabilityConsumed = itemDurability.damage + durabilityDamagePerBlock;
     if (totalDurabilityConsumed >= lastDurabilityConsumed && lastDurabilityConsumed >= itemDurability.maxDurability) {
