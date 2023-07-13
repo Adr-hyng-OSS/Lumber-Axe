@@ -26,9 +26,9 @@
   },
   "dependencies": [
     {
-      "description": "Resource Pack Attached",
+      "description": "Resource Pack Dependency",
       "uuid": "62b4cab4-fa42-405b-bff6-1f47b6958dd6",
-      "version": [1,0,0]
+      "version": [1,0,4]
     },
     {
       "module_name": "@minecraft/server",
