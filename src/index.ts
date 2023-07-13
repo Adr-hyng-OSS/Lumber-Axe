@@ -1,15 +1,14 @@
 import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, Dimension, Vector3, Block, BlockPermutation, Player, EntityInventoryComponent, ContainerSlot, ItemDurabilityComponent, ItemEnchantsComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason } from '@minecraft/server';
-import { MessageFormData, MessageFormResponse, FormCancelationReason} from "@minecraft/server-ui";
+import { FormCancelationReason, ActionFormData, ActionFormResponse} from "@minecraft/server-ui";
+import {config as Configuration} from "config";
+
 const axeEquipments: string[] = ["minecraft:wooden_axe", "minecraft:stone_axe", "minecraft:golden_axe", "minecraft:iron_axe", "minecraft:diamond_axe", "minecraft:netherite_axe"];
 const logMap: Map<string, number> = new Map<string, number>();
 const validLogBlocks: RegExp = /(_log|crimson_stem|warped_stem)$/;
 var justInteracted: boolean = false;
 
 // Config
-const durabilityDamagePerBlock: number = 5;
-const chopLimit: number = 2_000; // 1500 above is not recommended.
-const includedLog: string[] = [];
-const excludedLog: string[] = []; // Top Priority
+const {durabilityDamagePerBlock, chopLimit, excludedLog, includedLog} = Configuration
 
 /**
  * Version: 1.20.x
@@ -46,12 +45,26 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     }
 
     getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId).then((treeInteracted: Set<string>) => {
-        const messageForm: MessageFormData = new MessageFormData()
-        .title(`Log Inspected: ${treeInteracted.size}`)
-        .body("Do you want to exit?")
-        .button1("No")
-        .button2("Yes");
-        forceShow(player, messageForm).then((response: MessageFormResponse) => {
+        const currentSlotItem: ItemStack = (player.getComponent("inventory") as EntityInventoryComponent).container.getItem(player.selectedSlot);
+        const itemDurability: ItemDurabilityComponent = currentSlotItem.getComponent('minecraft:durability') as ItemDurabilityComponent;
+        const enchantments: ItemEnchantsComponent = currentSlotItem.getComponent('minecraft:enchantments') as ItemEnchantsComponent;
+        const level: number = enchantments.enchantments.hasEnchantment('unbreaking');
+        let unbreakingMultiplier: number = (100 / (level + 1)) / 100;
+        let unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
+
+        const totalDamage: number = (treeInteracted.size) * unbreakingDamage;
+        const totalDurabilityConsumed: number = itemDurability.damage + totalDamage;
+        const canBeChopped: boolean = (totalDurabilityConsumed >= itemDurability.maxDurability) ? false : true;
+        const requiredDurability: number = (itemDurability.damage + totalDamage) - itemDurability.maxDurability;
+
+        const inspectionForm: ActionFormData = new ActionFormData()
+            .title("Log Information")
+            .button(`${treeInteracted.size} block/s`, "textures/InfoUI/blocks.png")
+            .button(`${requiredDurability}`, "textures/InfoUI/required_durability.png")
+            .button(`${itemDurability.damage} / ${itemDurability.maxDurability}`, "textures/InfoUI/axe_durability.png")
+            .button(`${canBeChopped ? "Yes": "No"}`, "textures/InfoUI/canBeCut.png");
+
+        forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
             justInteracted = false;
             if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.userClosed) return;
         }).catch((error: Error) => {
@@ -181,14 +194,14 @@ function getBlockNear(dimension: Dimension, location: Vector3, radius: number = 
     }
     return positions;
 }
-async function forceShow(player: Player, form: MessageFormData, timeout: number = Infinity): Promise<MessageFormResponse> {
+async function forceShow(player: Player, form: ActionFormData, timeout: number = Infinity): Promise<ActionFormResponse> {
     // Script example for ScriptAPI
     // Author: Jayly#1397 <Jayly Discord>
     //         Worldwidebrine#9037 <Bedrock Add-Ons>
     // Project: https://github.com/JaylyDev/ScriptAPI
     const startTick: number = system.currentTick;
     while ((system.currentTick - startTick) < timeout) {
-        const response: MessageFormResponse = await (form.show(player)).catch(er=>console.error(er,er.stack)) as MessageFormResponse;
+        const response: ActionFormResponse = await (form.show(player)).catch(er=>console.error(er,er.stack)) as ActionFormResponse;
         if (response.cancelationReason !== FormCancelationReason.userBusy) {
             return response;
         }
