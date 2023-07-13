@@ -1,12 +1,29 @@
 import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, WatchdogTerminateReason } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData } from "@minecraft/server-ui";
 import { config as Configuration } from "config";
-const axeEquipments = ["minecraft:wooden_axe", "minecraft:stone_axe", "minecraft:golden_axe", "minecraft:iron_axe", "minecraft:diamond_axe", "minecraft:netherite_axe"];
+const axeEquipments = [
+    "yn:wooden_lumber_axe",
+    "yn:stone_lumber_axe",
+    "yn:iron_lumber_axe",
+    "yn:diamond_lumber_axe",
+    "yn:golden_lumber_axe",
+    "yn:netherite_lumber_axe"
+];
 const logMap = new Map();
 const validLogBlocks = /(_log|crimson_stem|warped_stem)$/;
 var justInteracted = false;
 // Config
 const { durabilityDamagePerBlock, chopLimit, excludedLog, includedLog } = Configuration;
+/**
+ * Version: 1.20.x
+ * To-Do:
+ * - Config: DurabilityDamagePerBlock, includedBlocks, excludedBlocks, chopLimit = 300 (1000 Max), includeWoodBlocks (block endswith _wood)
+ * - Modal (UI) for: Total Blocks Inspected, Required Durability, Current Durability / Max Durability, canBeChopped.
+ * - Play Testing with Texture Pack.
+ *
+ * Bugs:
+ *
+ */
 world.afterEvents.blockBreak.subscribe(async (e) => {
     const { dimension, player, block } = e;
     const currentBreakBlock = e.brokenBlockPermutation;
