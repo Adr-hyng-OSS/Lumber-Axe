@@ -49,11 +49,11 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
         const requiredDurability = -((itemDurability.damage + totalDamage) - itemDurability.maxDurability);
         const isInsufficient = requiredDurability < 0;
         const inspectionForm = new ActionFormData()
-            .title("Log Information")
-            .button(`Has ${treeInteracted.size} log/s`, "textures/InfoUI/blocks.png")
-            .button(`${isInsufficient ? "§c" : "§a+"}${requiredDurability}§r ${isInsufficient ? "required" : "sufficient"} durability`, "textures/InfoUI/required_durability.png")
-            .button(`${itemDurability.damage} / ${itemDurability.maxDurability}`, "textures/InfoUI/axe_durability.png")
-            .button(`§l${canBeChopped ? "Choppable" : "Cannot be chopped"}`, "textures/InfoUI/canBeCut.png");
+            .title("LOG INFORMATION")
+            .button(`HAS ${treeInteracted.size} LOG/S`, "textures/InfoUI/blocks.png")
+            .button(`DMG: ${itemDurability.damage}`, "textures/InfoUI/axe_durability.png")
+            .button(`MAX: ${itemDurability.maxDurability}`, "textures/InfoUI/required_durability.png")
+            .button(`§l${isInsufficient ? "§c" : "§a+"}${canBeChopped ? "Choppable" : "Cannot be chopped"}`, "textures/InfoUI/canBeCut.png");
         forceShow(player, inspectionForm).then((response) => {
             justInteracted = false;
             if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.userClosed)
