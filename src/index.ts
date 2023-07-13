@@ -60,7 +60,7 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
         const inspectionForm: ActionFormData = new ActionFormData()
             .title("Log Information")
             .button(`${treeInteracted.size} block/s`, "textures/InfoUI/blocks.png")
-            .button(`${requiredDurability}`, "textures/InfoUI/required_durability.png")
+            .button(`${-requiredDurability}`, "textures/InfoUI/required_durability.png")
             .button(`${itemDurability.damage} / ${itemDurability.maxDurability}`, "textures/InfoUI/axe_durability.png")
             .button(`${canBeChopped ? "Yes": "No"}`, "textures/InfoUI/canBeCut.png");
 
@@ -126,7 +126,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     
     const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId);
     
-    const totalDamage: number = (visited.size+1) * unbreakingDamage;
+    const totalDamage: number = (visited.size) * unbreakingDamage;
     const totalDurabilityConsumed: number = itemDurability.damage + totalDamage;
     const lastDurabilityConsumed: number = itemDurability.damage + durabilityDamagePerBlock;
     if (totalDurabilityConsumed >= lastDurabilityConsumed && lastDurabilityConsumed >= itemDurability.maxDurability) {
@@ -151,7 +151,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
             _block = dimension.getBlock(blockLocation);
             _block.setType(MinecraftBlockTypes.air);
         }
-        for(let group of stackDistribution(visited.size + 1)) {
+        for(let group of stackDistribution(visited.size)) {
             dimension.spawnItem(new ItemStack(blockTypeId, group), location);
         }
         system.clearRun(deforestingInterval);
