@@ -10,12 +10,7 @@ const { durabilityDamagePerBlock, chopLimit, excludedLog, includedLog } = Config
 /**
  * Version: 1.20.x
  * To-Do:
- * - Config: DurabilityDamagePerBlock, includedBlocks, excludedBlocks, chopLimit = 300 (1000 Max), includeWoodBlocks (block endswith _wood)
- * - Modal (UI) for: Total Blocks Inspected, Required Durability, Current Durability / Max Durability, canBeChopped.
  * - Play Testing with Texture Pack.
- *
- * Bugs:
- *
  */
 world.afterEvents.blockBreak.subscribe(async (e) => {
     const { dimension, player, block } = e;
@@ -46,14 +41,12 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
         const totalDamage = (treeInteracted.size) * unbreakingDamage;
         const totalDurabilityConsumed = itemDurability.damage + totalDamage;
         const canBeChopped = (totalDurabilityConsumed >= itemDurability.maxDurability) ? false : true;
-        const requiredDurability = -((itemDurability.damage + totalDamage) - itemDurability.maxDurability);
-        const isInsufficient = requiredDurability < 0;
         const inspectionForm = new ActionFormData()
             .title("LOG INFORMATION")
-            .button(`HAS ${treeInteracted.size} LOG/S`, "textures/InfoUI/blocks.png")
+            .button(`HAS ${treeInteracted.size}${canBeChopped ? "" : "+"} LOG/S`, "textures/InfoUI/blocks.png")
             .button(`DMG: ${itemDurability.damage}`, "textures/InfoUI/axe_durability.png")
             .button(`MAX: ${itemDurability.maxDurability}`, "textures/InfoUI/required_durability.png")
-            .button(`§l${isInsufficient ? "§c" : "§a+"}${canBeChopped ? "Choppable" : "Cannot be chopped"}`, "textures/InfoUI/canBeCut.png");
+            .button(`§l${canBeChopped ? "§aChoppable" : "§cCannot be chopped"}`, "textures/InfoUI/canBeCut.png");
         forceShow(player, inspectionForm).then((response) => {
             justInteracted = false;
             if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.userClosed)
@@ -77,13 +70,13 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
     // Author: Lete114 <https://github.com/Lete114>
     // Project: https://github.com/mcbe-mods/Cut-tree-one-click
     const visited = new Set();
-    let stack = getBlockNear(dimension, location);
-    while (stack.length > 0) {
+    let queue = getBlockNear(dimension, location);
+    while (queue.length > 0) {
         if (visited.size >= chopLimit)
             return visited;
         if ((-((visited.size * durabilityDamagePerBlock) - maxNeeded) <= 0))
             return visited;
-        const _block = stack.shift();
+        const _block = queue.shift();
         if (!_block || !isLogIncluded(_block?.typeId))
             continue;
         if (_block.typeId !== blockTypeId)
@@ -92,9 +85,9 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
         if (visited.has(pos))
             continue;
         visited.add(pos);
-        stack.push(...getBlockNear(dimension, _block.location));
+        queue.push(...getBlockNear(dimension, _block.location));
     }
-    stack = [];
+    queue = [];
     return visited;
 }
 async function treeCut(player, dimension, location, blockTypeId) {

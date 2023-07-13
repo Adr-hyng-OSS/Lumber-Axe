@@ -13,15 +13,8 @@ const {durabilityDamagePerBlock, chopLimit, excludedLog, includedLog} = Configur
 /**
  * Version: 1.20.x
  * To-Do:
- * - Config: DurabilityDamagePerBlock, includedBlocks, excludedBlocks, chopLimit = 300 (1000 Max), includeWoodBlocks (block endswith _wood)
- * - Modal (UI) for: Total Blocks Inspected, Required Durability, Current Durability / Max Durability, canBeChopped.
  * - Play Testing with Texture Pack.
- * 
- * Bugs:
- * 
  */
-
-
 
 world.afterEvents.blockBreak.subscribe(async (e) => {
     const { dimension, player, block } = e;
@@ -52,15 +45,13 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
         const totalDamage: number = (treeInteracted.size) * unbreakingDamage;
         const totalDurabilityConsumed: number = itemDurability.damage + totalDamage;
         const canBeChopped: boolean = (totalDurabilityConsumed >= itemDurability.maxDurability) ? false : true;
-        const requiredDurability: number = -((itemDurability.damage + totalDamage) - itemDurability.maxDurability);
-        const isInsufficient: boolean = requiredDurability < 0;
 
         const inspectionForm: ActionFormData = new ActionFormData()
             .title("LOG INFORMATION")
-            .button(`HAS ${treeInteracted.size} LOG/S`, "textures/InfoUI/blocks.png")
+            .button(`HAS ${treeInteracted.size}${canBeChopped ? "" : "+" } LOG/S`, "textures/InfoUI/blocks.png")
             .button(`DMG: ${itemDurability.damage}`, "textures/InfoUI/axe_durability.png")
             .button(`MAX: ${itemDurability.maxDurability}`, "textures/InfoUI/required_durability.png")
-            .button(`§l${isInsufficient ? "§c" : "§a+"}${canBeChopped ? "Choppable": "Cannot be chopped"}`, "textures/InfoUI/canBeCut.png");
+            .button(`§l${canBeChopped ? "§aChoppable": "§cCannot be chopped"}`, "textures/InfoUI/canBeCut.png");
 
         forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
             justInteracted = false;
@@ -88,19 +79,19 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
     // Author: Lete114 <https://github.com/Lete114>
     // Project: https://github.com/mcbe-mods/Cut-tree-one-click
     const visited: Set<string> = new Set();
-    let stack: Block[] = getBlockNear(dimension, location);
-    while (stack.length > 0) {
+    let queue: Block[] = getBlockNear(dimension, location);
+    while (queue.length > 0) {
         if(visited.size >= chopLimit) return visited;
         if((-((visited.size * durabilityDamagePerBlock) - maxNeeded) <= 0)) return visited;
-        const _block: Block = stack.shift();
+        const _block: Block = queue.shift();
         if (!_block || !isLogIncluded(_block?.typeId)) continue;
         if (_block.typeId !== blockTypeId) continue;
         const pos: string = JSON.stringify(_block.location);
         if (visited.has(pos)) continue;
         visited.add(pos);
-        stack.push(...getBlockNear(dimension, _block.location));
+        queue.push(...getBlockNear(dimension, _block.location));
     }
-    stack = [];
+    queue = [];
     return visited;
 }
 async function treeCut(player: Player, dimension: Dimension, location: Vector3, blockTypeId: string): Promise<void> {
