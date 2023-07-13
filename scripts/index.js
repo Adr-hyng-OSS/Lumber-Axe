@@ -31,16 +31,14 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
     logMap.set(player.name, Date.now());
     if ((oldLog + 1000) >= Date.now())
         return;
+    if (!axeEquipments.includes(currentItemHeld.typeId) || !isLogIncluded(blockInteracted.typeId))
+        return;
     if (justInteracted)
         return;
     justInteracted = true;
-    if (!axeEquipments.includes(currentItemHeld.typeId) || !isLogIncluded(blockInteracted.typeId)) {
-        justInteracted = false;
-        return;
-    }
-    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId).then((treeInteracted) => {
-        const currentSlotItem = player.getComponent("inventory").container.getItem(player.selectedSlot);
-        const itemDurability = currentSlotItem.getComponent('minecraft:durability');
+    const currentSlotItem = player.getComponent("inventory").container.getItem(player.selectedSlot);
+    const itemDurability = currentSlotItem.getComponent('minecraft:durability');
+    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, itemDurability.maxDurability).then((treeInteracted) => {
         const enchantments = currentSlotItem.getComponent('minecraft:enchantments');
         const level = enchantments.enchantments.hasEnchantment('unbreaking');
         let unbreakingMultiplier = (100 / (level + 1)) / 100;
@@ -74,7 +72,7 @@ function isLogIncluded(blockTypeId) {
         blockTypeId.includes('stripped_')) !=
         validLogBlocks.test(blockTypeId));
 }
-async function getTreeLogs(dimension, location, blockTypeId) {
+async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
     // Modified Version
     // Author: Lete114 <https://github.com/Lete114>
     // Project: https://github.com/mcbe-mods/Cut-tree-one-click
@@ -82,6 +80,8 @@ async function getTreeLogs(dimension, location, blockTypeId) {
     let stack = getBlockNear(dimension, location);
     while (stack.length > 0) {
         if (visited.size >= chopLimit)
+            return visited;
+        if ((-((visited.size * durabilityDamagePerBlock) - maxNeeded) <= 0))
             return visited;
         const _block = stack.shift();
         if (!_block || !isLogIncluded(_block?.typeId))
@@ -119,7 +119,7 @@ async function treeCut(player, dimension, location, blockTypeId) {
     const level = enchantments.enchantments.hasEnchantment('unbreaking');
     let unbreakingMultiplier = (100 / (level + 1)) / 100;
     let unbreakingDamage = durabilityDamagePerBlock * unbreakingMultiplier;
-    const visited = await getTreeLogs(dimension, location, blockTypeId);
+    const visited = await getTreeLogs(dimension, location, blockTypeId, itemDurability.maxDurability);
     const totalDamage = visited.size * unbreakingDamage;
     const totalDurabilityConsumed = itemDurability.damage + totalDamage;
     const lastDurabilityConsumed = itemDurability.damage + durabilityDamagePerBlock;

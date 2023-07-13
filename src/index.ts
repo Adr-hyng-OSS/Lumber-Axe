@@ -40,9 +40,10 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     if (!axeEquipments.includes(currentItemHeld.typeId) || !isLogIncluded(blockInteracted.typeId)) return;
     if(justInteracted) return;
     justInteracted = true;
-    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId).then((treeInteracted: Set<string>) => {
-        const currentSlotItem: ItemStack = (player.getComponent("inventory") as EntityInventoryComponent).container.getItem(player.selectedSlot);
-        const itemDurability: ItemDurabilityComponent = currentSlotItem.getComponent('minecraft:durability') as ItemDurabilityComponent;
+    const currentSlotItem: ItemStack = (player.getComponent("inventory") as EntityInventoryComponent).container.getItem(player.selectedSlot);
+    const itemDurability: ItemDurabilityComponent = currentSlotItem.getComponent('minecraft:durability') as ItemDurabilityComponent;
+
+    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, itemDurability.maxDurability).then((treeInteracted: Set<string>) => {
         const enchantments: ItemEnchantsComponent = currentSlotItem.getComponent('minecraft:enchantments') as ItemEnchantsComponent;
         const level: number = enchantments.enchantments.hasEnchantment('unbreaking');
         let unbreakingMultiplier: number = (100 / (level + 1)) / 100;
@@ -82,7 +83,7 @@ function isLogIncluded(blockTypeId: string): boolean {
     )
 }
 
-async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number = 0): Promise<Set<string>> {
+async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Promise<Set<string>> {
     // Modified Version
     // Author: Lete114 <https://github.com/Lete114>
     // Project: https://github.com/mcbe-mods/Cut-tree-one-click
@@ -90,7 +91,7 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
     let stack: Block[] = getBlockNear(dimension, location);
     while (stack.length > 0) {
         if(visited.size >= chopLimit) return visited;
-        if( (-((visited.size * durabilityDamagePerBlock) - maxNeeded) <= 0) && (maxNeeded !== 0)) return visited;
+        if((-((visited.size * durabilityDamagePerBlock) - maxNeeded) <= 0)) return visited;
         const _block: Block = stack.shift();
         if (!_block || !isLogIncluded(_block?.typeId)) continue;
         if (_block.typeId !== blockTypeId) continue;
