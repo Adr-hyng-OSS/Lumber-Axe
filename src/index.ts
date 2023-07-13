@@ -60,7 +60,7 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
         const inspectionForm: ActionFormData = new ActionFormData()
             .title("Log Information")
             .button(`${treeInteracted.size} block/s`, "textures/InfoUI/blocks.png")
-            .button(`${-requiredDurability}`, "textures/InfoUI/required_durability.png")
+            .button(`${requiredDurability}`, "textures/InfoUI/required_durability.png")
             .button(`${itemDurability.damage} / ${itemDurability.maxDurability}`, "textures/InfoUI/axe_durability.png")
             .button(`${canBeChopped ? "Yes": "No"}`, "textures/InfoUI/canBeCut.png");
 
