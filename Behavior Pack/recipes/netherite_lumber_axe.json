@@ -9,7 +9,7 @@
 		],
 		"pattern": [
 			"A",
-			"D",
+			"S",
 			"S"
 		],
 		"key": {
@@ -18,10 +18,6 @@
 			},
 			"S": {
 				"item": "minecraft:stick"
-			},
-			"D": {
-				"item": "minecraft:dye",
-				"data": 8
 			}
 		},
 		"result": [

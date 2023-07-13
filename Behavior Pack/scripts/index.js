@@ -1,14 +1,7 @@
 import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, WatchdogTerminateReason } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData } from "@minecraft/server-ui";
 import { config as Configuration } from "config";
-const axeEquipments = [
-    "yn:wooden_lumber_axe",
-    "yn:stone_lumber_axe",
-    "yn:iron_lumber_axe",
-    "yn:diamond_lumber_axe",
-    "yn:golden_lumber_axe",
-    "yn:netherite_lumber_axe"
-];
+const axeEquipments = ["yn:wooden_lumber_axe", "yn:stone_lumber_axe", "yn:iron_lumber_axe", "yn:diamond_lumber_axe", "yn:golden_lumber_axe", "yn:netherite_lumber_axe"];
 const logMap = new Map();
 const validLogBlocks = /(_log|crimson_stem|warped_stem)$/;
 var justInteracted = false;
@@ -17,12 +10,7 @@ const { durabilityDamagePerBlock, chopLimit, excludedLog, includedLog } = Config
 /**
  * Version: 1.20.x
  * To-Do:
- * - Config: DurabilityDamagePerBlock, includedBlocks, excludedBlocks, chopLimit = 300 (1000 Max), includeWoodBlocks (block endswith _wood)
- * - Modal (UI) for: Total Blocks Inspected, Required Durability, Current Durability / Max Durability, canBeChopped.
  * - Play Testing with Texture Pack.
- *
- * Bugs:
- *
  */
 world.afterEvents.blockBreak.subscribe(async (e) => {
     const { dimension, player, block } = e;
@@ -38,16 +26,14 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
     logMap.set(player.name, Date.now());
     if ((oldLog + 1000) >= Date.now())
         return;
+    if (!axeEquipments.includes(currentItemHeld.typeId) || !isLogIncluded(blockInteracted.typeId))
+        return;
     if (justInteracted)
         return;
     justInteracted = true;
-    if (!axeEquipments.includes(currentItemHeld.typeId) || !isLogIncluded(blockInteracted.typeId)) {
-        justInteracted = false;
-        return;
-    }
-    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId).then((treeInteracted) => {
-        const currentSlotItem = player.getComponent("inventory").container.getItem(player.selectedSlot);
-        const itemDurability = currentSlotItem.getComponent('minecraft:durability');
+    const currentSlotItem = player.getComponent("inventory").container.getItem(player.selectedSlot);
+    const itemDurability = currentSlotItem.getComponent('minecraft:durability');
+    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, itemDurability.maxDurability).then((treeInteracted) => {
         const enchantments = currentSlotItem.getComponent('minecraft:enchantments');
         const level = enchantments.enchantments.hasEnchantment('unbreaking');
         let unbreakingMultiplier = (100 / (level + 1)) / 100;
@@ -55,13 +41,12 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
         const totalDamage = (treeInteracted.size) * unbreakingDamage;
         const totalDurabilityConsumed = itemDurability.damage + totalDamage;
         const canBeChopped = (totalDurabilityConsumed >= itemDurability.maxDurability) ? false : true;
-        const requiredDurability = (itemDurability.damage + totalDamage) - itemDurability.maxDurability;
         const inspectionForm = new ActionFormData()
-            .title("Log Information")
-            .button(`${treeInteracted.size} block/s`, "textures/InfoUI/blocks.png")
-            .button(`${requiredDurability}`, "textures/InfoUI/required_durability.png")
-            .button(`${itemDurability.damage} / ${itemDurability.maxDurability}`, "textures/InfoUI/axe_durability.png")
-            .button(`${canBeChopped ? "Yes" : "No"}`, "textures/InfoUI/canBeCut.png");
+            .title("LOG INFORMATION")
+            .button(`HAS ${treeInteracted.size}${canBeChopped ? "" : "+"} LOG/S`, "textures/InfoUI/blocks.png")
+            .button(`DMG: ${itemDurability.damage}`, "textures/InfoUI/axe_durability.png")
+            .button(`MAX: ${itemDurability.maxDurability}`, "textures/InfoUI/required_durability.png")
+            .button(`§l${canBeChopped ? "§aChoppable" : "§cCannot be chopped"}`, "textures/InfoUI/canBeCut.png");
         forceShow(player, inspectionForm).then((response) => {
             justInteracted = false;
             if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.userClosed)
@@ -80,16 +65,18 @@ function isLogIncluded(blockTypeId) {
         blockTypeId.includes('stripped_')) !=
         validLogBlocks.test(blockTypeId));
 }
-async function getTreeLogs(dimension, location, blockTypeId) {
+async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
     // Modified Version
     // Author: Lete114 <https://github.com/Lete114>
     // Project: https://github.com/mcbe-mods/Cut-tree-one-click
     const visited = new Set();
-    let stack = getBlockNear(dimension, location);
-    while (stack.length > 0) {
+    let queue = getBlockNear(dimension, location);
+    while (queue.length > 0) {
         if (visited.size >= chopLimit)
             return visited;
-        const _block = stack.shift();
+        if ((-((visited.size * durabilityDamagePerBlock) - maxNeeded) <= 0))
+            return visited;
+        const _block = queue.shift();
         if (!_block || !isLogIncluded(_block?.typeId))
             continue;
         if (_block.typeId !== blockTypeId)
@@ -98,9 +85,9 @@ async function getTreeLogs(dimension, location, blockTypeId) {
         if (visited.has(pos))
             continue;
         visited.add(pos);
-        stack.push(...getBlockNear(dimension, _block.location));
+        queue.push(...getBlockNear(dimension, _block.location));
     }
-    stack = [];
+    queue = [];
     return visited;
 }
 async function treeCut(player, dimension, location, blockTypeId) {
@@ -125,19 +112,17 @@ async function treeCut(player, dimension, location, blockTypeId) {
     const level = enchantments.enchantments.hasEnchantment('unbreaking');
     let unbreakingMultiplier = (100 / (level + 1)) / 100;
     let unbreakingDamage = durabilityDamagePerBlock * unbreakingMultiplier;
-    const visited = await getTreeLogs(dimension, location, blockTypeId);
-    const totalDamage = (visited.size + 1) * unbreakingDamage;
+    const visited = await getTreeLogs(dimension, location, blockTypeId, itemDurability.maxDurability);
+    const totalDamage = visited.size * unbreakingDamage;
     const totalDurabilityConsumed = itemDurability.damage + totalDamage;
     const lastDurabilityConsumed = itemDurability.damage + durabilityDamagePerBlock;
     if (totalDurabilityConsumed >= lastDurabilityConsumed && lastDurabilityConsumed >= itemDurability.maxDurability) {
         axeSlot.lockMode = ItemLockMode.none;
         player.runCommand(`replaceitem entity @s slot.weapon.mainhand ${currentSlot} air`);
-        player.sendMessage(`My ${currentSlotItem?.typeId} is broken`);
         return;
     }
     else if (totalDurabilityConsumed >= itemDurability.maxDurability) {
         axeSlot.lockMode = ItemLockMode.none;
-        player.sendMessage(`I cannot chop this. Need ${(itemDurability.damage + totalDamage) - itemDurability.maxDurability} more durability.`);
         return;
     }
     itemDurability.damage = itemDurability.damage + totalDamage;
@@ -151,7 +136,7 @@ async function treeCut(player, dimension, location, blockTypeId) {
             _block = dimension.getBlock(blockLocation);
             _block.setType(MinecraftBlockTypes.air);
         }
-        for (let group of stackDistribution(visited.size + 1)) {
+        for (let group of stackDistribution(visited.size)) {
             dimension.spawnItem(new ItemStack(blockTypeId, group), location);
         }
         system.clearRun(deforestingInterval);

@@ -2,7 +2,7 @@ export const config = {
     /**
      * Lumber Axe durability damage per log destroyed.
      */
-    durabilityDamagePerBlock: 5,
+    durabilityDamagePerBlock: 3,
     /**
      * 1500 above is not recommended.
      */
