@@ -56,13 +56,14 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
         const totalDurabilityConsumed: number = itemDurability.damage + totalDamage;
         const canBeChopped: boolean = (totalDurabilityConsumed >= itemDurability.maxDurability) ? false : true;
         const requiredDurability: number = -((itemDurability.damage + totalDamage) - itemDurability.maxDurability);
+        const isInsufficient: boolean = requiredDurability < 0;
 
         const inspectionForm: ActionFormData = new ActionFormData()
             .title("Log Information")
-            .button(`${treeInteracted.size} block/s`, "textures/InfoUI/blocks.png")
-            .button(`+${Math.abs(requiredDurability)} ${requiredDurability < 0 ? "required" : "sufficient" } durability`, "textures/InfoUI/required_durability.png")
+            .button(`Has ${treeInteracted.size} log/s`, "textures/InfoUI/blocks.png")
+            .button(`${isInsufficient ? "§c" : "§a+"}${requiredDurability}§r ${isInsufficient ? "required" : "sufficient" } durability`, "textures/InfoUI/required_durability.png")
             .button(`${itemDurability.damage} / ${itemDurability.maxDurability}`, "textures/InfoUI/axe_durability.png")
-            .button(`${canBeChopped ? "Yes": "No"}`, "textures/InfoUI/canBeCut.png");
+            .button(`§l${canBeChopped ? "Choppable": "Cannot be chopped"}`, "textures/InfoUI/canBeCut.png");
 
         forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
             justInteracted = false;
@@ -132,11 +133,9 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     if (totalDurabilityConsumed >= lastDurabilityConsumed && lastDurabilityConsumed >= itemDurability.maxDurability) {
         axeSlot.lockMode = ItemLockMode.none;
         player.runCommand(`replaceitem entity @s slot.weapon.mainhand ${currentSlot} air`);
-        player.sendMessage(`My ${currentSlotItem?.typeId} is broken`);
         return;
     } else if (totalDurabilityConsumed >= itemDurability.maxDurability) {
         axeSlot.lockMode = ItemLockMode.none;
-        player.sendMessage(`I cannot chop this. Need ${(itemDurability.damage + totalDamage) - itemDurability.maxDurability} more durability.`);
         return;
     }
     itemDurability.damage = itemDurability.damage +  totalDamage;
