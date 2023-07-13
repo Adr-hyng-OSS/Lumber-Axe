@@ -1,0 +1,23 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "yn:netherite_lumber_axe"
+    },
+
+    "tags": [ "smithing_table" ],
+    "priority": 2,
+    "ingredients": [
+      {
+        "item": "yn:diamond_lumber_axe"
+      },
+      {
+        "item": "minecraft:netherite_ingot"
+      }
+    ],
+    "result": {
+      "item": "yn:netherite_lumber_axe",
+      "count": 1
+    }
+  }
+}
