@@ -37,13 +37,9 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const oldLog: number = logMap.get(player.name);
     logMap.set(player.name, Date.now());
     if ((oldLog + 1_000) >= Date.now()) return;
+    if (!axeEquipments.includes(currentItemHeld.typeId) || !isLogIncluded(blockInteracted.typeId)) return;
     if(justInteracted) return;
     justInteracted = true;
-    if (!axeEquipments.includes(currentItemHeld.typeId) || !isLogIncluded(blockInteracted.typeId)) {
-        justInteracted = false;
-        return;
-    }
-
     getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId).then((treeInteracted: Set<string>) => {
         const currentSlotItem: ItemStack = (player.getComponent("inventory") as EntityInventoryComponent).container.getItem(player.selectedSlot);
         const itemDurability: ItemDurabilityComponent = currentSlotItem.getComponent('minecraft:durability') as ItemDurabilityComponent;
