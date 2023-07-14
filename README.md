@@ -5,11 +5,13 @@
 
 <!-- ![version](https://img.shields.io/endpoint?url=https%3A%2F%2Fdynamic-badge-formatter-ynrxn78r2oye.runkit.sh%2Fjson%3Furl%3Dhttps%253A%252F%252Flumber-axe-development-status-35us2vizz6yl.runkit.sh%252F%26query%3DVersion%26formatter%3Dmetric%26label%3DVersion%26labelColor%3Dgrey%26color%3Dblue%26logo%3Dgit%26logoColor%3Dred%26logoWidth%3D16%26style%3Dflat) -->
 
+<div align="center">
 
-![Development - is_in_progress](https://img.shields.io/badge/Development-is__in__progress-2ea44f?logo=visualstudiocode&logoColor=blue)
-![Version - v1.0.4](https://img.shields.io/badge/Version-v1.0.4-2ea44f?logo=git&logoColor=red)
-[![Twitter - h_YanG_0A](https://img.shields.io/badge/Twitter-Follow_@h__YanG__0A-2ea44f?logo=twitter&logoColor=blue)](https://twitter.com/h_YanG_0A)
-![Minecraft - v1.20.0](https://img.shields.io/badge/Minecraft-v1.20.0-blue?logo=xbox&logoColor=green)
+  ![Development - is_in_progress](https://img.shields.io/badge/Development-is__in__progress-2ea44f?logo=visualstudiocode&logoColor=blue)
+  ![Version - v1.0.4](https://img.shields.io/badge/Version-v1.0.4-2ea44f?logo=git&logoColor=red)
+  [![Twitter - h_YanG_0A](https://img.shields.io/badge/Twitter-Follow_@h__YanG__0A-2ea44f?logo=twitter&logoColor=blue)](https://twitter.com/h_YanG_0A)
+  ![Minecraft - v1.20.0](https://img.shields.io/badge/Minecraft-v1.20.0-blue?logo=xbox&logoColor=green)
+</div>
 
 
 -----
