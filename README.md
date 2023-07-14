@@ -16,7 +16,7 @@
 
 -----
 
-<p align="center"><img src="guidelines\readme\thumbnail.jpg" alt="UPLOAD HD AS LOGO (WIP)"></p>
+<p align="center"><img src="guidelines/readme/thumbnail.jpg" alt="UPLOAD HD AS LOGO (WIP)"></p>
 
 
 🪓 Lumber axe is an addon that chops a whole tree of connected blocks of logs down with just a single break at any side of the connected block of log. This accurately chops the whole tree down with the power of Minecraft Bedrock's Experimental Features.
@@ -31,14 +31,14 @@
 ## 📱 *Pocket Edition:*
 
 - After downloading the `Behavior Pack` and `Resource Pack` in `.mcpack` or `.mcaddon` form, open it in the file system or **File** app. Follow this step-by-step guide through your phone: `Open as -> App (Others if Minecraft is not there) -> Minecraft`. <br><br>
-![Android-Installing](guidelines/readme/pocket-install.png)
+![Android-Installing](./guidelines/readme/pocket-install.png)
 - After opening it in the Minecraft app, it will automatically install the addon in your minecraft folder. 
 
 ## 💻 *Windows Edition:*
 
 - After downloading the `Behavior Pack` and `Resource Pack` in `.mcpack` or `.mcaddon` form, open it by selecting *Minecraft: Windows Edition* as the application: 
 <br>
-![Windows-Installing](guidelines/readme/windows-install.png)
+![Windows-Installing](./guidelines/readme/windows-install.png)
 <br> > It will automatically install the `Behavior Pack & Resource Pack` if you opened the `.mcaddon` file. <br> > It will automatically install `Behavior Pack` if you installed the **v1.20.0-Lumber_Axe_BP.mcpack**, and **v1.20.0-Lumber_Axe_BP.mcpack** for `Resource Pack`.
 - After installing both packs, you can add it to your own world with few setup to work with In-game.
 
@@ -50,7 +50,7 @@
 
 Make sure you **TURN ON** the following features or capabilities in the game:
 
-![Pocket Edition Experimental Toggle](guidelines/readme/experimental.png)
+![Pocket Edition Experimental Toggle](./guidelines/readme/experimental.png)
 
 To fully activate the addon. Make sure to activate the Behavior Pack and Resource Pack to your selected world.
 
