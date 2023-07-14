@@ -10,12 +10,6 @@ var justInteracted: boolean = false;
 // Config
 const {durabilityDamagePerBlock, chopLimit, excludedLog, includedLog} = Configuration
 
-/**
- * Version: 1.20.x
- * To-Do:
- * - Play Testing with Texture Pack.
- */
-
 world.afterEvents.blockBreak.subscribe(async (e) => {
     const { dimension, player, block } = e;
     const currentBreakBlock: BlockPermutation = e.brokenBlockPermutation;
