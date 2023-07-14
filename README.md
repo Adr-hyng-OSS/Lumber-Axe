@@ -68,25 +68,17 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
 
 <h1 align="center"> <strong> ✨ More Info ✨ </strong> <h1>
 
-<div align="center" style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px; max-width: 800px; margin: 0 auto;">
-<div style="flex: 1 1 0;">
+<div align="center">
   <a href="./contributing.md">
-    <img src="https://img.shields.io/static/v1?label=&message=Contribute&color=dark+green&style=for-the-badge" alt="Contribute badge" style="width: 50%; height: 50%; object-fit: content;">
+    <img src="https://img.shields.io/static/v1?label=&message=Contribute&color=dark+green&style=for-the-badge" alt="Contribute badge">
   </a>
-</div>
-<div style="flex: 1 1 0;">
   <a href="./LICENSE">
-    <img src="https://img.shields.io/static/v1?label=&message=LICENSE&color=dark+green&style=for-the-badge" alt="License badge" style="width: 50%; height: 50%; object-fit: content;">
+    <img src="https://img.shields.io/static/v1?label=&message=LICENSE&color=dark+green&style=for-the-badge" alt="License badge">
   </a>
-</div>
-<div style="flex: 1 1 0;">
   <a href="https://mcpedl.com/lumber-axe-addon/">
-    <img src="https://img.shields.io/static/v1?label=&message=DOWNLOAD&color=dark+green&style=for-the-badge&logo=download&logoColor=black" alt="Download badge" style="width: 50%; height: 50%; object-fit: content;">
+    <img src="https://img.shields.io/static/v1?label=&message=DOWNLOAD&color=dark+green&style=for-the-badge&logo=download&logoColor=black" alt="Download badge">
   </a>
-</div>
-<div style="flex: 1 1 0;">
   <a href="https://github.com/Adr-hyng/Lumber-Axe/releases/download/V1.0.3/Lumber.Axe.Addon.Updated.mcaddon">
-    <img src="https://img.shields.io/static/v1?label=&message=RELEASE&color=dark+green&style=for-the-badge" alt="Release badge" style="width: 50%; height: 50%; object-fit: content;">
+    <img src="https://img.shields.io/static/v1?label=&message=RELEASE&color=dark+green&style=for-the-badge" alt="Release badge">
   </a>
-</div>
 </div>
