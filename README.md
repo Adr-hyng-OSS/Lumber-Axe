@@ -68,7 +68,7 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
 
 <h1 align="center"> <strong> ✨ More Info ✨ </strong> <h1>
 
-<div align="center">
+<div align="center" style="display: flex; justify-content: center; flex-wrap: wrap; gap: 15px">
   <a href="./contributing.md">
     <img src="https://img.shields.io/static/v1?label=&message=Contribute&color=dark+green&style=for-the-badge" alt="Contribute badge">
   </a>
@@ -82,8 +82,3 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
     <img src="https://img.shields.io/static/v1?label=&message=RELEASE&color=dark+green&style=for-the-badge" alt="Release badge">
   </a>
 </div>
-
-[![CONTRIBUTE](https://img.shields.io/static/v1?label=&message=Contribute&color=dark+green&style=for-the-badge)](./contributing.md)
-[![LICENSE](https://img.shields.io/static/v1?label=&message=LICENSE&color=dark+green&style=for-the-badge)](./LICENSE)
-[![DOWNLOAD](https://img.shields.io/static/v1?label=&message=DOWNLOAD&color=dark+green&style=for-the-badge&logo=download&logoColor=black)](https://mcpedl.com/lumber-axe-addon/)
-[![RELEASE](https://img.shields.io/static/v1?label=&message=RELEASE&color=dark+green&style=for-the-badge)](https://github.com/Adr-hyng/Lumber-Axe/releases/download/V1.0.3/Lumber.Axe.Addon.Updated.mcaddon)
