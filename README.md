@@ -68,7 +68,7 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
 
 <h1 align="center"> <strong> ✨ More Info ✨ </strong> <h1>
 
-<div align="center" style="display: flex; justify-content: center; flex-wrap: wrap; gap: 15px">
+<div align="center" style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px; max-width: 800px; margin: 0 auto;">
   <a href="./contributing.md">
     <img src="https://img.shields.io/static/v1?label=&message=Contribute&color=dark+green&style=for-the-badge" alt="Contribute badge">
   </a>
