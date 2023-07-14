@@ -16,7 +16,7 @@
 
 -----
 
-<p align="center"><img src="Behavior Pack/pack_icon.png" alt="UPLOAD HD AS LOGO (WIP)"></p>
+<p align="center"><img src="guidelines\thumbnail.jpg" alt="UPLOAD HD AS LOGO (WIP)"></p>
 
 
 🪓 Lumber axe is an addon that chops a whole tree of connected blocks of logs down with just a single break at any side of the connected block of log. This accurately chops the whole tree down with the power of Minecraft Bedrock's Experimental Features.
@@ -28,23 +28,29 @@
 <h1 align="center" > <strong> 🎮 Installation 🎮 </strong> </h1>
 <h3 align="center">Here are the ways to install the addon on your device. Make sure to download the addon packs first.</h3>
 
-## 📱 *Pocket Edition: (WIP: imgs)*
+## 📱 *Pocket Edition:*
 
-- You can directly install or import the addon through importing or installing it as mcaddon format to the Minecraft Pocket / Bedrock Edition.
+- After downloading the `Behavior Pack` and `Resource Pack` in `.mcpack` or `.mcaddon` form, open it in the file system or **File** app. Follow this step-by-step guide through your phone: `Open as -> App (Others if Minecraft is not there) -> Minecraft`. <br><br>
+![Android-Installing](guidelines\pocket-install.png)
+- After opening it in the Minecraft app, it will automatically install the addon in your minecraft folder. 
 
-- You can rename the .mcaddon to ".zip" and extract it as folder, then copy the folder into the Minecraft -> Behavior Packs (directory). There you can restart your minecraft, and see your behavior pack in game.
+## 💻 *Windows Edition:*
 
-## 💻 *Windows Edition: (WIP: imgs)*
-
-- After downloading the `Behavior Pack` and `Resource Pack` in `.mcpack` or `.mcaddon` form, open it by selecting *Minecraft: Windows Edition* as the application: <br> > It will automatically install the `Behavior Pack & Resource Pack` if you opened the `.mcaddon` file. <br> > It will automatically install `Behavior Pack` if you installed the **v1.20.0-Lumber_Axe_BP.mcpack**, and **v1.20.0-Lumber_Axe_BP.mcpack** for `Resource Pack`.
+- After downloading the `Behavior Pack` and `Resource Pack` in `.mcpack` or `.mcaddon` form, open it by selecting *Minecraft: Windows Edition* as the application: 
+<br>
+![Windows-Installing](guidelines\windows-install.png)
+<br> > It will automatically install the `Behavior Pack & Resource Pack` if you opened the `.mcaddon` file. <br> > It will automatically install `Behavior Pack` if you installed the **v1.20.0-Lumber_Axe_BP.mcpack**, and **v1.20.0-Lumber_Axe_BP.mcpack** for `Resource Pack`.
 - After installing both packs, you can add it to your own world with few setup to work with In-game.
 
-## *In-Game: (WIP : imgs)*
+<h3 align="center">
+  Here's a <a href="WIP-Youtube">video</a> for installing the addon in <strong> Pocket & Bedrock Edition </strong> (Android).
+</h3>
+
+## *In-Game:*
 
 Make sure you **TURN ON** the following features or capabilities in the game:
 
-- Holiday Creator Features
-- GameTest Framework
+![Pocket Edition Experimental Toggle](guidelines\pocket-experimental.png)
 
 To fully activate the addon. Make sure to activate the Behavior Pack and Resource Pack to your selected world.
 
@@ -71,16 +77,16 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
 <h1 align="center"> <strong> ✨ More Info ✨ </strong> <h1>
 
 <div align="center">
-  <a href="./contributing.md">
+  <a href="./contribute.md">
     <img src="https://img.shields.io/static/v1?label=&message=Contribute&color=dark+green&style=for-the-badge" alt="Contribute badge">
   </a>
   <a href="./LICENSE">
     <img src="https://img.shields.io/static/v1?label=&message=LICENSE&color=dark+green&style=for-the-badge" alt="License badge">
   </a>
-  <a href="https://mcpedl.com/lumber-axe-addon/">
+  <a href="WORKING IN PROGRESS">
     <img src="https://img.shields.io/static/v1?label=&message=DOWNLOAD&color=dark+green&style=for-the-badge&logo=download&logoColor=black" alt="Download badge">
   </a>
-  <a href="https://github.com/Adr-hyng/Lumber-Axe/releases/download/V1.0.3/Lumber.Axe.Addon.Updated.mcaddon">
+  <a href="WORKING IN PROGRESS">
     <img src="https://img.shields.io/static/v1?label=&message=RELEASE&color=dark+green&style=for-the-badge" alt="Release badge">
   </a>
 </div>
