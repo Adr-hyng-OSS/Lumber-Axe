@@ -9,13 +9,9 @@
 <div style="display: flex; justify-content: center; flex-wrap: wrap;">
 
   ![Development - is_in_progress](https://img.shields.io/badge/Development-is__in__progress-2ea44f?logo=visualstudiocode&logoColor=blue)
-
   ![Version - v1.0.4](https://img.shields.io/badge/Version-v1.0.4-2ea44f?logo=git&logoColor=red)
-
   [![Twitter - h_YanG_0A](https://img.shields.io/badge/Twitter-Follow_@h__YanG__0A-2ea44f?logo=twitter&logoColor=blue)](https://twitter.com/h_YanG_0A)
-
   ![Minecraft - v1.20.0](https://img.shields.io/badge/Minecraft-v1.20.0-blue?logo=xbox&logoColor=green)
-
 </div>
 
 
@@ -75,27 +71,11 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
 
 <h1 align="center"> <strong> ✨ More Info ✨ </strong> <h1>
 
-<style>
-  .container {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 15px;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-  .container > div {
-    flex: 1 1 0; /* All divs should be of equal width */
-  }
-  .container img {
-    width: 100%;    /* Full width */
-    height: 100%;   /* Full height */
-    object-fit: fill; /* Fill the content box, possibly distorting the image */
-  }
-</style>
 
 
-<div class="container">
+
+
+<div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 15px">
   <div>
     <a href="./contributing.md">
       <img src="https://img.shields.io/static/v1?label=&message=Contribute&color=dark+green&style=for-the-badge" alt="Contribute badge">
