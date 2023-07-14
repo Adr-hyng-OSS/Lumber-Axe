@@ -26,15 +26,15 @@
 <br>
 
 <h1 align="center" > <strong> 🎮 Installation 🎮 </strong> </h1>
-There are 2 ways you can install this addon to your device.
+<h3 align="center">Here are the ways to install the addon on your device. Make sure to download the addon packs first.</h3>
 
-## *Pocket Edition: (WIP: imgs)*
+## 📱 *Pocket Edition: (WIP: imgs)*
 
 - You can directly install or import the addon through importing or installing it as mcaddon format to the Minecraft Pocket / Bedrock Edition.
 
 - You can rename the .mcaddon to ".zip" and extract it as folder, then copy the folder into the Minecraft -> Behavior Packs (directory). There you can restart your minecraft, and see your behavior pack in game.
 
-## *Windows Edition: (WIP: imgs)*
+## 💻 *Windows Edition: (WIP: imgs)*
 
 - After downloading the `Behavior Pack` and `Resource Pack` in `.mcpack` or `.mcaddon` form, open it by selecting *Minecraft: Windows Edition* as the application: <br> > It will automatically install the `Behavior Pack & Resource Pack` if you opened the `.mcaddon` file. <br> > It will automatically install `Behavior Pack` if you installed the **v1.20.0-Lumber_Axe_BP.mcpack**, and **v1.20.0-Lumber_Axe_BP.mcpack** for `Resource Pack`.
 - After installing both packs, you can add it to your own world with few setup to work with In-game.
