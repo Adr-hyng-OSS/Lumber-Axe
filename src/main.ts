@@ -36,7 +36,7 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const currentSlotItem: ItemStack = (player.getComponent("inventory") as EntityInventoryComponent).container.getItem(player.selectedSlot);
     const itemDurability: ItemDurabilityComponent = currentSlotItem.getComponent('minecraft:durability') as ItemDurabilityComponent;
 
-    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, itemDurability.maxDurability).then((treeInteracted: Set<string>) => {
+    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, (itemDurability.maxDurability - itemDurability.damage) / durabilityDamagePerBlock).then((treeInteracted: Set<string>) => {
         const enchantments: ItemEnchantsComponent = currentSlotItem.getComponent('minecraft:enchantments') as ItemEnchantsComponent;
         const level: number = enchantments.enchantments.hasEnchantment('unbreaking');
         let unbreakingMultiplier: number = (100 / (level + 1)) / 100;
@@ -82,7 +82,7 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
     let queue: Block[] = getBlockNear(dimension, location);
     while (queue.length > 0) {
         if(visited.size >= chopLimit) return visited;
-        if((-((visited.size * durabilityDamagePerBlock) - maxNeeded) <= 0)) return visited;
+        if(visited.size >= maxNeeded) return visited;
         const _block: Block = queue.shift();
         if (!_block || !isLogIncluded(_block?.typeId)) continue;
         if (_block.typeId !== blockTypeId) continue;
@@ -114,7 +114,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     let unbreakingMultiplier: number = (100 / (level + 1)) / 100;
     let unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
     
-    const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, itemDurability.maxDurability);
+    const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / durabilityDamagePerBlock);
     
     const totalDamage: number = visited.size * unbreakingDamage;
     const totalDurabilityConsumed: number = itemDurability.damage + totalDamage;

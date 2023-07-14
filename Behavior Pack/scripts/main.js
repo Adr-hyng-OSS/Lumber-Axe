@@ -33,7 +33,7 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
     justInteracted = true;
     const currentSlotItem = player.getComponent("inventory").container.getItem(player.selectedSlot);
     const itemDurability = currentSlotItem.getComponent('minecraft:durability');
-    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, itemDurability.maxDurability).then((treeInteracted) => {
+    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, (itemDurability.maxDurability - itemDurability.damage) / durabilityDamagePerBlock).then((treeInteracted) => {
         const enchantments = currentSlotItem.getComponent('minecraft:enchantments');
         const level = enchantments.enchantments.hasEnchantment('unbreaking');
         let unbreakingMultiplier = (100 / (level + 1)) / 100;
@@ -74,7 +74,7 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
     while (queue.length > 0) {
         if (visited.size >= chopLimit)
             return visited;
-        if ((-((visited.size * durabilityDamagePerBlock) - maxNeeded) <= 0))
+        if (visited.size >= maxNeeded)
             return visited;
         const _block = queue.shift();
         if (!_block || !isLogIncluded(_block?.typeId))
@@ -112,7 +112,7 @@ async function treeCut(player, dimension, location, blockTypeId) {
     const level = enchantments.enchantments.hasEnchantment('unbreaking');
     let unbreakingMultiplier = (100 / (level + 1)) / 100;
     let unbreakingDamage = durabilityDamagePerBlock * unbreakingMultiplier;
-    const visited = await getTreeLogs(dimension, location, blockTypeId, itemDurability.maxDurability);
+    const visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / durabilityDamagePerBlock);
     const totalDamage = visited.size * unbreakingDamage;
     const totalDurabilityConsumed = itemDurability.damage + totalDamage;
     const lastDurabilityConsumed = itemDurability.damage + durabilityDamagePerBlock;
