@@ -2,19 +2,13 @@ import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, 
 import { FormCancelationReason, ActionFormData, ActionFormResponse} from "@minecraft/server-ui";
 import {config as Configuration} from "config";
 
-const axeEquipments = [ "yn:wooden_lumber_axe", "yn:stone_lumber_axe", "yn:iron_lumber_axe", "yn:diamond_lumber_axe", "yn:golden_lumber_axe", "yn:netherite_lumber_axe" ];
+const axeEquipments: string[] = [ "yn:wooden_lumber_axe", "yn:stone_lumber_axe", "yn:iron_lumber_axe", "yn:diamond_lumber_axe", "yn:golden_lumber_axe", "yn:netherite_lumber_axe" ];
 const logMap: Map<string, number> = new Map<string, number>();
 const validLogBlocks: RegExp = /(_log|crimson_stem|warped_stem)$/;
 var justInteracted: boolean = false;
 
 // Config
 const {durabilityDamagePerBlock, chopLimit, excludedLog, includedLog} = Configuration
-
-/**
- * Version: 1.20.x
- * To-Do:
- * - Play Testing with Texture Pack.
- */
 
 world.afterEvents.blockBreak.subscribe(async (e) => {
     const { dimension, player, block } = e;
