@@ -6,13 +6,10 @@
 <!-- ![version](https://img.shields.io/endpoint?url=https%3A%2F%2Fdynamic-badge-formatter-ynrxn78r2oye.runkit.sh%2Fjson%3Furl%3Dhttps%253A%252F%252Flumber-axe-development-status-35us2vizz6yl.runkit.sh%252F%26query%3DVersion%26formatter%3Dmetric%26label%3DVersion%26labelColor%3Dgrey%26color%3Dblue%26logo%3Dgit%26logoColor%3Dred%26logoWidth%3D16%26style%3Dflat) -->
 
 
-<div style="display: flex; justify-content: center; flex-wrap: wrap;">
-
-  ![Development - is_in_progress](https://img.shields.io/badge/Development-is__in__progress-2ea44f?logo=visualstudiocode&logoColor=blue)
-  ![Version - v1.0.4](https://img.shields.io/badge/Version-v1.0.4-2ea44f?logo=git&logoColor=red)
-  [![Twitter - h_YanG_0A](https://img.shields.io/badge/Twitter-Follow_@h__YanG__0A-2ea44f?logo=twitter&logoColor=blue)](https://twitter.com/h_YanG_0A)
-  ![Minecraft - v1.20.0](https://img.shields.io/badge/Minecraft-v1.20.0-blue?logo=xbox&logoColor=green)
-</div>
+![Development - is_in_progress](https://img.shields.io/badge/Development-is__in__progress-2ea44f?logo=visualstudiocode&logoColor=blue)
+![Version - v1.0.4](https://img.shields.io/badge/Version-v1.0.4-2ea44f?logo=git&logoColor=red)
+[![Twitter - h_YanG_0A](https://img.shields.io/badge/Twitter-Follow_@h__YanG__0A-2ea44f?logo=twitter&logoColor=blue)](https://twitter.com/h_YanG_0A)
+![Minecraft - v1.20.0](https://img.shields.io/badge/Minecraft-v1.20.0-blue?logo=xbox&logoColor=green)
 
 
 -----
@@ -72,28 +69,7 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
 <h1 align="center"> <strong> ✨ More Info ✨ </strong> <h1>
 
 
-
-
-
-<div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 15px">
-  <div>
-    <a href="./contributing.md">
-      <img src="https://img.shields.io/static/v1?label=&message=Contribute&color=dark+green&style=for-the-badge" alt="Contribute badge">
-    </a>
-  </div>
-  <div>
-    <a href="./LICENSE">
-      <img src="https://img.shields.io/static/v1?label=&message=LICENSE&color=dark+green&style=for-the-badge" alt="License badge">
-    </a>
-  </div>
-  <div>
-    <a href="https://mcpedl.com/lumber-axe-addon/">
-      <img src="https://img.shields.io/static/v1?label=&message=DOWNLOAD&color=dark+green&style=for-the-badge&logo=download&logoColor=black" alt="Download badge">
-    </a>
-  </div>
-  <div>
-    <a href="https://github.com/Adr-hyng/Lumber-Axe/releases/download/V1.0.3/Lumber.Axe.Addon.Updated.mcaddon">
-      <img src="https://img.shields.io/static/v1?label=&message=RELEASE&color=dark+green&style=for-the-badge" alt="Release badge">
-    </a>
-  </div>
-</div>
+[![CONTRIBUTE](https://img.shields.io/static/v1?label=&message=Contribute&color=dark+green&style=for-the-badge)](./contributing.md)
+[![LICENSE](https://img.shields.io/static/v1?label=&message=LICENSE&color=dark+green&style=for-the-badge)](./LICENSE)
+[![DOWNLOAD](https://img.shields.io/static/v1?label=&message=DOWNLOAD&color=dark+green&style=for-the-badge&logo=download&logoColor=black)](https://mcpedl.com/lumber-axe-addon/)
+[![RELEASE](https://img.shields.io/static/v1?label=&message=RELEASE&color=dark+green&style=for-the-badge)](https://github.com/Adr-hyng/Lumber-Axe/releases/download/V1.0.3/Lumber.Axe.Addon.Updated.mcaddon)
