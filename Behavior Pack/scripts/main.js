@@ -1,6 +1,6 @@
 import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantsComponent, WatchdogTerminateReason } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData } from "@minecraft/server-ui";
-import { config as Configuration } from "config";
+import { config as Configuration } from "./config";
 const axeEquipments = ["yn:wooden_lumber_axe", "yn:stone_lumber_axe", "yn:iron_lumber_axe", "yn:diamond_lumber_axe", "yn:golden_lumber_axe", "yn:netherite_lumber_axe"];
 const logMap = new Map();
 const playerInteractionMap = new Map();
@@ -61,10 +61,11 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
     });
 });
 function isLogIncluded(blockTypeId) {
-    return (((excludedLog.includes(blockTypeId) &&
-        !includedLog.includes(blockTypeId)) ||
-        blockTypeId.includes('stripped_')) !=
-        validLogBlocks.test(blockTypeId));
+    if (excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_'))
+        return false;
+    if (includedLog.includes(blockTypeId) || validLogBlocks.test(blockTypeId))
+        return true;
+    return false;
 }
 async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
     // Modified Version
