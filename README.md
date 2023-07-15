@@ -56,7 +56,7 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
 
 <br>
 
-<h1 align="center" > <strong> 📃 License Usage 📃 </strong> </h1>
+<h1 align="center" > <strong> 📃 License 📃 </strong> </h1>
 
 *You are permitted to:*
 
