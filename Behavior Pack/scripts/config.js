@@ -4,9 +4,9 @@ export const config = {
      */
     durabilityDamagePerBlock: 3,
     /**
-     * 1500 above is not recommended.
+     * 1500 above is not recommended. It Does work but it's not recommended.
      */
-    chopLimit: 1500,
+    chopLimit: 300,
     /**
      * included blocks for custom logs, but any custom or vanilla
      * logs also works as long as the block identifier ends with "*_log"
