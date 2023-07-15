@@ -65,12 +65,9 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
 });
 
 function isLogIncluded(blockTypeId: string): boolean {
-    return (
-        ((excludedLog.includes(blockTypeId) && 
-        !includedLog.includes(blockTypeId)) ||
-        blockTypeId.includes('stripped_'))  != 
-        validLogBlocks.test(blockTypeId)
-    )
+    if(excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
+    if(includedLog.includes(blockTypeId) || validLogBlocks.test(blockTypeId)) return true;
+    return false;
 }
 
 async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Promise<Set<string>> {

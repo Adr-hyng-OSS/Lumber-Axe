@@ -7,7 +7,7 @@ export const config = {
     /**
      * 1500 above is not recommended.
      */
-    chopLimit: 1500,
+    chopLimit: 300,
 
     /**
      * included blocks for custom logs, but any custom or vanilla 
@@ -22,7 +22,7 @@ export const config = {
 
     /**
      * Tip: 
-     * - If you include and exclude the same log block it will not be excluded.
+     * - excludedLog is prioritized over includedLog.
      * - It's unnecessary to include log blocks that has "*_log" in its block id.
      */
     excludedLog: []
