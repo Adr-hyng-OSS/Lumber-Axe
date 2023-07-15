@@ -22,7 +22,7 @@ export const config = {
 
     /**
      * Tip: 
-     * - If you include and exclude the same log block it will not be excluded.
+     * - excludedLog is prioritized over includedLog.
      * - It's unnecessary to include log blocks that has "*_log" in its block id.
      */
     excludedLog: []

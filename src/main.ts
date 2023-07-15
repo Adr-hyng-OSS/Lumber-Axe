@@ -1,6 +1,6 @@
 import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, Dimension, Vector3, Block, BlockPermutation, Player, EntityInventoryComponent, ContainerSlot, ItemDurabilityComponent, ItemEnchantsComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, EnchantmentList, PlayerLeaveAfterEventSignal, PlayerLeaveAfterEvent } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData, ActionFormResponse} from "@minecraft/server-ui";
-import {config as Configuration} from "config";
+import {config as Configuration} from "./config";
 
 const axeEquipments: string[] = [ "yn:wooden_lumber_axe", "yn:stone_lumber_axe", "yn:iron_lumber_axe", "yn:diamond_lumber_axe", "yn:golden_lumber_axe", "yn:netherite_lumber_axe" ];
 const logMap: Map<string, number> = new Map<string, number>();
@@ -65,12 +65,9 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
 });
 
 function isLogIncluded(blockTypeId: string): boolean {
-    return (
-        ((excludedLog.includes(blockTypeId) && 
-        !includedLog.includes(blockTypeId)) ||
-        blockTypeId.includes('stripped_'))  != 
-        validLogBlocks.test(blockTypeId)
-    )
+    if(excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
+    if(includedLog.includes(blockTypeId) || validLogBlocks.test(blockTypeId)) return true;
+    return false;
 }
 
 async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Promise<Set<string>> {
