@@ -1,14 +1,18 @@
-import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, Dimension, Vector3, Block, BlockPermutation, Player, EntityInventoryComponent, ContainerSlot, ItemDurabilityComponent, ItemEnchantsComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason } from '@minecraft/server';
+import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, Dimension, Vector3, Block, BlockPermutation, Player, EntityInventoryComponent, ContainerSlot, ItemDurabilityComponent, ItemEnchantsComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, EnchantmentList, PlayerLeaveAfterEventSignal, PlayerLeaveAfterEvent } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData, ActionFormResponse} from "@minecraft/server-ui";
 import {config as Configuration} from "config";
 
-const axeEquipments = [ "yn:wooden_lumber_axe", "yn:stone_lumber_axe", "yn:iron_lumber_axe", "yn:diamond_lumber_axe", "yn:golden_lumber_axe", "yn:netherite_lumber_axe" ];
+const axeEquipments: string[] = [ "yn:wooden_lumber_axe", "yn:stone_lumber_axe", "yn:iron_lumber_axe", "yn:diamond_lumber_axe", "yn:golden_lumber_axe", "yn:netherite_lumber_axe" ];
 const logMap: Map<string, number> = new Map<string, number>();
+const playerInteractionMap: Map<string, boolean> = new Map<string, boolean>();
 const validLogBlocks: RegExp = /(_log|crimson_stem|warped_stem)$/;
-var justInteracted: boolean = false;
 
 // Config
 const {durabilityDamagePerBlock, chopLimit, excludedLog, includedLog} = Configuration
+
+world.afterEvents.playerLeave.subscribe((e: PlayerLeaveAfterEvent) => {
+    playerInteractionMap.set(e.playerId, false);
+});
 
 world.afterEvents.blockBreak.subscribe(async (e) => {
     const { dimension, player, block } = e;
@@ -25,37 +29,38 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     logMap.set(player.name, Date.now());
     if ((oldLog + 1_000) >= Date.now()) return;
     if (!axeEquipments.includes(currentItemHeld.typeId) || !isLogIncluded(blockInteracted.typeId)) return;
-    if(justInteracted) return;
-    justInteracted = true;
-    const currentSlotItem: ItemStack = (player.getComponent("inventory") as EntityInventoryComponent).container.getItem(player.selectedSlot);
-    const itemDurability: ItemDurabilityComponent = currentSlotItem.getComponent('minecraft:durability') as ItemDurabilityComponent;
-
-    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, itemDurability.maxDurability).then((treeInteracted: Set<string>) => {
-        const enchantments: ItemEnchantsComponent = currentSlotItem.getComponent('minecraft:enchantments') as ItemEnchantsComponent;
-        const level: number = enchantments.enchantments.hasEnchantment('unbreaking');
-        let unbreakingMultiplier: number = (100 / (level + 1)) / 100;
-        let unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
-
+    if(playerInteractionMap.get(player.id)) return;
+    playerInteractionMap.set(player.id, true);
+    const currentSlotItem: ItemStack = (player.getComponent(EntityInventoryComponent.componentId) as EntityInventoryComponent).container.getItem(player.selectedSlot);
+    const itemDurability: ItemDurabilityComponent = currentSlotItem.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
+    const enchantments: EnchantmentList = (currentSlotItem?.getComponent(ItemEnchantsComponent.componentId) as ItemEnchantsComponent)?.enchantments;
+    const level: number = enchantments.hasEnchantment('unbreaking');
+    const currentDurability = itemDurability.damage;
+    const maxDurability = itemDurability.maxDurability;
+    const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
+    const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
+    const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
+    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs).then((treeInteracted: Set<string>) => {
         const totalDamage: number = (treeInteracted.size) * unbreakingDamage;
-        const totalDurabilityConsumed: number = itemDurability.damage + totalDamage;
-        const canBeChopped: boolean = (totalDurabilityConsumed >= itemDurability.maxDurability) ? false : true;
+        const totalDurabilityConsumed: number = currentDurability + totalDamage;
+        const canBeChopped: boolean = (totalDurabilityConsumed >= maxDurability) ? false : true;
 
         const inspectionForm: ActionFormData = new ActionFormData()
             .title("LOG INFORMATION")
             .button(`HAS ${treeInteracted.size}${canBeChopped ? "" : "+" } LOG/S`, "textures/InfoUI/blocks.png")
-            .button(`DMG: ${itemDurability.damage}`, "textures/InfoUI/axe_durability.png")
-            .button(`MAX: ${itemDurability.maxDurability}`, "textures/InfoUI/required_durability.png")
+            .button(`DMG: ${currentDurability}`, "textures/InfoUI/axe_durability.png")
+            .button(`MAX: ${maxDurability}`, "textures/InfoUI/required_durability.png")
             .button(`§l${canBeChopped ? "§aChoppable": "§cCannot be chopped"}`, "textures/InfoUI/canBeCut.png");
 
         forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
-            justInteracted = false;
+            playerInteractionMap.set(player.id, false);
             if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.userClosed) return;
         }).catch((error: Error) => {
             console.warn("Form Error: ", error, error.stack);
         });
     }).catch((error: Error) => {
         console.warn("Tree Error: ", error, error.stack);
-        justInteracted = false;
+        playerInteractionMap.set(player.id, false);
     });
 });
 
@@ -76,7 +81,7 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
     let queue: Block[] = getBlockNear(dimension, location);
     while (queue.length > 0) {
         if(visited.size >= chopLimit) return visited;
-        if((-((visited.size * durabilityDamagePerBlock) - maxNeeded) <= 0)) return visited;
+        if(visited.size >= maxNeeded) return visited;
         const _block: Block = queue.shift();
         if (!_block || !isLogIncluded(_block?.typeId)) continue;
         if (_block.typeId !== blockTypeId) continue;
@@ -108,7 +113,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     let unbreakingMultiplier: number = (100 / (level + 1)) / 100;
     let unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
     
-    const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, itemDurability.maxDurability);
+    const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / durabilityDamagePerBlock);
     
     const totalDamage: number = visited.size * unbreakingDamage;
     const totalDurabilityConsumed: number = itemDurability.damage + totalDamage;
@@ -194,8 +199,10 @@ async function forceShow(player: Player, form: ActionFormData, timeout: number =
 system.events.beforeWatchdogTerminate.subscribe((e: WatchdogTerminateBeforeEvent) => {
     e.cancel = true;
     if(e.terminateReason === WatchdogTerminateReason.hang){
+        for(const key of playerInteractionMap.keys()) {
+            playerInteractionMap.set(key, false);
+        }
         world.sendMessage(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
-        justInteracted = false;
     }
     console.warn(`Watchdog Error: ${(e.terminateReason as WatchdogTerminateReason)}`)
 });
