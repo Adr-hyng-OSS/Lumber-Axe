@@ -10,7 +10,7 @@
   ![Development - is_in_progress](https://img.shields.io/badge/Development-is__in__progress-2ea44f?logo=visualstudiocode&logoColor=blue)
   ![Version - v1.0.4](https://img.shields.io/badge/Version-v1.0.4-2ea44f?logo=git&logoColor=red)
   [![Twitter - h_YanG_0A](https://img.shields.io/badge/Twitter-Follow_@h__YanG__0A-2ea44f?logo=twitter&logoColor=blue)](https://twitter.com/h_YanG_0A)
-  ![Minecraft - v1.20.0](https://img.shields.io/badge/Minecraft-v1.20.0-blue?logo=xbox&logoColor=green)
+  ![Minecraft - v1.20.0](https://img.shields.io/badge/Minecraft-v1.20.0_--_1.20.1-blue?logo=xbox&logoColor=green)
 </div>
 
 
@@ -25,7 +25,7 @@
 
 <br>
 
-<h1 align="center" >🎮 <a href="WIP-Youtube"><strong>Installation</strong> </a> 🎮</h1>
+<h1 align="center" >🎮 <a href="https://www.youtube.com/watch?v=m95KutIwvp8"><strong>Installation</strong> </a> 🎮</h1>
 <h3 align="center">Here are the ways to install the addon on your device. Make sure to download the addon packs first.</h3>
 
 ## 📱 *Pocket Edition:*
