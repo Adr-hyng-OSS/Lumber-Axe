@@ -25,7 +25,7 @@
 
 <br>
 
-<h1 align="center" > <strong> 🎮 Installation 🎮 </strong> </h1>
+<h1 align="center" >🎮 <a href="WIP-Youtube"><strong>Installation</strong> </a> 🎮</h1>
 <h3 align="center">Here are the ways to install the addon on your device. Make sure to download the addon packs first.</h3>
 
 ## 📱 *Pocket Edition:*
@@ -56,7 +56,7 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
 
 <br>
 
-<h1 align="center" > <strong> 📃 License 📃 </strong> </h1>
+<h1 align="center" >📃 <a href="./LICENSE"><strong>License</strong></a> 📃</h1>
 
 *You are permitted to:*
 
@@ -80,12 +80,12 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
     <img src="https://img.shields.io/static/v1?label=&message=Contribute&color=dark+green&style=for-the-badge" alt="Contribute badge">
   </a>
   <a href="./LICENSE">
-    <img src="https://img.shields.io/static/v1?label=&message=LICENSE&color=dark+green&style=for-the-badge" alt="License badge">
+    <img src="https://img.shields.io/static/v1?label=&message=CHANGELOGS&color=dark+green&style=for-the-badge" alt="License badge">
   </a>
   <a href="WORKING IN PROGRESS">
     <img src="https://img.shields.io/static/v1?label=&message=DOWNLOAD&color=dark+green&style=for-the-badge&logo=download&logoColor=black" alt="Download badge">
   </a>
   <a href="WORKING IN PROGRESS">
-    <img src="https://img.shields.io/static/v1?label=&message=RELEASE&color=dark+green&style=for-the-badge" alt="Release badge">
+    <img src="https://img.shields.io/static/v1?label=&message=LATEST RELEASE&color=dark+green&style=for-the-badge" alt="Release badge">
   </a>
 </div>
