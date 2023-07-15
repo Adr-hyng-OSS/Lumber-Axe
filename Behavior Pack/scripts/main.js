@@ -1,17 +1,15 @@
-import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, WatchdogTerminateReason } from '@minecraft/server';
+import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantsComponent, WatchdogTerminateReason } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData } from "@minecraft/server-ui";
 import { config as Configuration } from "config";
 const axeEquipments = ["yn:wooden_lumber_axe", "yn:stone_lumber_axe", "yn:iron_lumber_axe", "yn:diamond_lumber_axe", "yn:golden_lumber_axe", "yn:netherite_lumber_axe"];
 const logMap = new Map();
+const playerInteractionMap = new Map();
 const validLogBlocks = /(_log|crimson_stem|warped_stem)$/;
-var justInteracted = false;
 // Config
 const { durabilityDamagePerBlock, chopLimit, excludedLog, includedLog } = Configuration;
-/**
- * Version: 1.20.x
- * To-Do:
- * - Play Testing with Texture Pack.
- */
+world.afterEvents.playerLeave.subscribe((e) => {
+    playerInteractionMap.set(e.playerId, false);
+});
 world.afterEvents.blockBreak.subscribe(async (e) => {
     const { dimension, player, block } = e;
     const currentBreakBlock = e.brokenBlockPermutation;
@@ -28,27 +26,30 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
         return;
     if (!axeEquipments.includes(currentItemHeld.typeId) || !isLogIncluded(blockInteracted.typeId))
         return;
-    if (justInteracted)
+    if (playerInteractionMap.get(player.id))
         return;
-    justInteracted = true;
-    const currentSlotItem = player.getComponent("inventory").container.getItem(player.selectedSlot);
-    const itemDurability = currentSlotItem.getComponent('minecraft:durability');
-    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, (itemDurability.maxDurability - itemDurability.damage) / durabilityDamagePerBlock).then((treeInteracted) => {
-        const enchantments = currentSlotItem.getComponent('minecraft:enchantments');
-        const level = enchantments.enchantments.hasEnchantment('unbreaking');
-        let unbreakingMultiplier = (100 / (level + 1)) / 100;
-        let unbreakingDamage = durabilityDamagePerBlock * unbreakingMultiplier;
+    playerInteractionMap.set(player.id, true);
+    const currentSlotItem = player.getComponent(EntityInventoryComponent.componentId).container.getItem(player.selectedSlot);
+    const itemDurability = currentSlotItem.getComponent(ItemDurabilityComponent.componentId);
+    const enchantments = currentSlotItem?.getComponent(ItemEnchantsComponent.componentId)?.enchantments;
+    const level = enchantments.hasEnchantment('unbreaking');
+    const currentDurability = itemDurability.damage;
+    const maxDurability = itemDurability.maxDurability;
+    const unbreakingMultiplier = (100 / (level + 1)) / 100;
+    const unbreakingDamage = durabilityDamagePerBlock * unbreakingMultiplier;
+    const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
+    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs).then((treeInteracted) => {
         const totalDamage = (treeInteracted.size) * unbreakingDamage;
-        const totalDurabilityConsumed = itemDurability.damage + totalDamage;
-        const canBeChopped = (totalDurabilityConsumed >= itemDurability.maxDurability) ? false : true;
+        const totalDurabilityConsumed = currentDurability + totalDamage;
+        const canBeChopped = (totalDurabilityConsumed >= maxDurability) ? false : true;
         const inspectionForm = new ActionFormData()
             .title("LOG INFORMATION")
             .button(`HAS ${treeInteracted.size}${canBeChopped ? "" : "+"} LOG/S`, "textures/InfoUI/blocks.png")
-            .button(`DMG: ${itemDurability.damage}`, "textures/InfoUI/axe_durability.png")
-            .button(`MAX: ${itemDurability.maxDurability}`, "textures/InfoUI/required_durability.png")
+            .button(`DMG: ${currentDurability}`, "textures/InfoUI/axe_durability.png")
+            .button(`MAX: ${maxDurability}`, "textures/InfoUI/required_durability.png")
             .button(`§l${canBeChopped ? "§aChoppable" : "§cCannot be chopped"}`, "textures/InfoUI/canBeCut.png");
         forceShow(player, inspectionForm).then((response) => {
-            justInteracted = false;
+            playerInteractionMap.set(player.id, false);
             if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.userClosed)
                 return;
         }).catch((error) => {
@@ -56,7 +57,7 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
         });
     }).catch((error) => {
         console.warn("Tree Error: ", error, error.stack);
-        justInteracted = false;
+        playerInteractionMap.set(player.id, false);
     });
 });
 function isLogIncluded(blockTypeId) {
@@ -199,8 +200,10 @@ async function forceShow(player, form, timeout = Infinity) {
 system.events.beforeWatchdogTerminate.subscribe((e) => {
     e.cancel = true;
     if (e.terminateReason === WatchdogTerminateReason.hang) {
+        for (const key of playerInteractionMap.keys()) {
+            playerInteractionMap.set(key, false);
+        }
         world.sendMessage(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
-        justInteracted = false;
     }
     console.warn(`Watchdog Error: ${e.terminateReason}`);
 });
