@@ -41,11 +41,7 @@
 <br> > It will automatically install the `Behavior Pack & Resource Pack` if you opened the `.mcaddon` file. <br> > It will automatically install `Behavior Pack` if you installed the **v1.20.0-Lumber_Axe_BP.mcpack**, and **v1.20.0-Lumber_Axe_BP.mcpack** for `Resource Pack`.
 - After installing both packs, you can add it to your own world with few setup to work with In-game.
 
-<h3 align="center">
-  Here's a <a href="WIP-Youtube">video</a> for installing the addon in <strong> Pocket & Bedrock Edition </strong> (Android).
-</h3>
-
-## *In-Game:*
+## 🕹️ *In-Game:*
 
 Make sure you **TURN ON** the following features or capabilities in the game:
 
@@ -58,14 +54,14 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
 
 <h1 align="center" >📃 <a href="./LICENSE"><strong>License</strong></a> 📃</h1>
 
-*You are permitted to:*
+✅ *You are permitted to:*
 
 - Examine the code / work to learn more about the creation and development of add-ons.
 - Change the code / work to suit your needs.
 - Took some of the code / work to your project, as long as you give credits to the respective author.
 - Distribute the code / work.
 
-*You are NOT permitted to:*
+⛔ *You are NOT permitted to:*
 
 - Negate the accreditation of the original author.
 - Change the license of the code / work you've modified.
