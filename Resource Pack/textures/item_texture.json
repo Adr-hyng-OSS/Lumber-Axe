@@ -1,0 +1,24 @@
+{
+   "resource_pack_name" : "vanilla",
+   "texture_data" : {
+      "yn:wooden_lumber_axe" : {
+         "textures" : "textures/items/Lumber Axes/wooden_lumber_axe"
+      },
+      "yn:stone_lumber_axe" : {
+         "textures" : "textures/items/Lumber Axes/stone_lumber_axe"
+      },
+      "yn:golden_lumber_axe" : {
+         "textures" : "textures/items/Lumber Axes/golden_lumber_axe"
+      },
+      "yn:iron_lumber_axe" : {
+         "textures" : "textures/items/Lumber Axes/iron_lumber_axe"
+      },
+      "yn:diamond_lumber_axe" : {
+         "textures" : "textures/items/Lumber Axes/diamond_lumber_axe"
+      },
+      "yn:netherite_lumber_axe" : {
+         "textures" : "textures/items/Lumber Axes/netherite_lumber_axe"
+      }
+   },
+   "texture_name" : "atlas.items"
+}

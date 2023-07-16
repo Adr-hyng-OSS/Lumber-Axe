@@ -6,9 +6,7 @@
       "allowSyntheticDefaultImports": true,
       "baseUrl": "./src",
       "rootDir": "./src",
-      // "outDir": "./scripts/"
-      "outDir": "C:\\Users\\Adrian\\AppData\\Local\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang\\development_behavior_packs\\LumberAxeA\\scripts\\"
-      
+      "outDir": "./Behavior Pack/scripts/"
     },
     "exclude": [ "node_modules" ],
     "include": [ "src" ]
