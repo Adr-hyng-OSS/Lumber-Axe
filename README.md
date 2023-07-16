@@ -78,14 +78,14 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
   <a href="./contribute.md">
     <img src="https://img.shields.io/static/v1?label=&message=Contribute&color=dark+green&style=for-the-badge" alt="Contribute badge">
   </a>
-  <a href="./LICENSE">
-    <img src="https://img.shields.io/static/v1?label=&message=CHANGELOGS&color=dark+green&style=for-the-badge" alt="License badge">
+  <a href="https://github.com/Adr-hyng-OSS/Lumber-Axe/releases">
+    <img src="https://img.shields.io/static/v1?label=&message=CHANGELOGS&color=dark+green&style=for-the-badge" alt="Changelogs badge">
   </a>
   <a href="">
     <img src="https://img.shields.io/static/v1?label=&message=DOWNLOAD&color=dark+green&style=for-the-badge&logo=download&logoColor=black" alt="Download badge">
   </a>
   <a href="https://github.com/Adr-hyng-OSS/Lumber-Axe/releases/latest">
-    <img src="https://img.shields.io/static/v1?label=&message=LATEST%20RELEASE&color=dark+green&style=for-the-badge" alt="Release badge">
+    <img src="https://img.shields.io/static/v1?label=&message=LATEST%20RELEASE&color=dark+green&style=for-the-badge" alt="Release badges">
   </a>
 
 </div>
