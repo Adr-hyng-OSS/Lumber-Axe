@@ -83,6 +83,16 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
     <img src="https://img.shields.io/static/v1?label=&message=DOWNLOAD&color=dark+green&style=for-the-badge&logo=download&logoColor=black" alt="Download badge">
   </a>
   <a href="https://github.com/Adr-hyng-OSS/Lumber-Axe/releases/latest">
-    <img src="https://img.shields.io/static/v1?label=&message=LATEST RELEASE&color=dark+green&style=for-the-badge" alt="Release badge">
+    <img src="https://img.shields.io/github/v/release/Adr-hyng-OSS/Lumber-Axe?color=dark%20green&style=for-the-badge" alt="Release badge">
   </a>
+
+  <a href="https://github.com/Adr-hyng-OSS/Lumber-Axe/releases/latest">
+    <img src="https://img.shields.io/static/v1?label=&message=LATEST%20RELEASE&color=dark+green&style=for-the-badge" alt="Release badge">
+  </a>
+
 </div>
+
+
+
+
+
