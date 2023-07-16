@@ -105,10 +105,10 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     if (!isSurvivalMode) return;
     if (isSurvivalMode) axeSlot.lockMode = ItemLockMode.slot;
     const itemDurability: ItemDurabilityComponent = currentSlotItem.getComponent('minecraft:durability') as ItemDurabilityComponent;
-    const enchantments: ItemEnchantsComponent = currentSlotItem.getComponent('minecraft:enchantments') as ItemEnchantsComponent;
-    const level: number = enchantments.enchantments.hasEnchantment('unbreaking');
-    let unbreakingMultiplier: number = (100 / (level + 1)) / 100;
-    let unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
+    const enchantments: EnchantmentList = (currentSlotItem.getComponent('minecraft:enchantments') as ItemEnchantsComponent).enchantments;
+    const level: number = enchantments.hasEnchantment('unbreaking');
+    const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
+    const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
     
     const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
     
