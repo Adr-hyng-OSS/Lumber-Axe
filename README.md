@@ -11,8 +11,9 @@
   ![Version - v1.0.4](https://img.shields.io/badge/Version-v1.0.4-2ea44f?logo=git&logoColor=red)
   [![Twitter - h_YanG_0A](https://img.shields.io/badge/Twitter-Follow_@h__YanG__0A-2ea44f?logo=twitter&logoColor=blue)](https://twitter.com/h_YanG_0A)
   [![Support - Donate](https://img.shields.io/badge/Support-Donate-2ea44f?logo=paypal)](https://www.paypal.com/paypalme/DennisAbaigar?country.x=PH&locale.x=en_US)
-  [![Minecraft BE Addon Latest Release](https://img.shields.io/github/v/release/Adr-hyng-OSS/Lumber-Axe?logo=xbox&logoColor=green&label=Minecraft)](https://github.com/Adr-hyng-OSS/Lumber-Axe/releases/latest)
-
+  ![Minecraft BE Addon Latest Release](https://img.shields.io/github/v/release/Adr-hyng-OSS/Lumber-Axe?logo=xbox&logoColor=green&label=Minecraft)
+  [![Release Downloads](https://img.shields.io/badge/dynamic/json?label=Downloads&query=%24%5B0%5D.assets%5B0%5D.download_count&url=https%3A%2F%2Fapi.github.com%2Frepos%2FAdr-hyng-OSS%2FLumber-Axe%2Freleases)](https://github.com/Adr-hyng-OSS/Lumber-Axe/releases/latest)
+  
 </div>
 
 
