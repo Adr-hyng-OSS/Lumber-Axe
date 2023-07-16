@@ -110,7 +110,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     let unbreakingMultiplier: number = (100 / (level + 1)) / 100;
     let unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
     
-    const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / durabilityDamagePerBlock);
+    const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
     
     const totalDamage: number = visited.size * unbreakingDamage;
     const totalDurabilityConsumed: number = itemDurability.damage + totalDamage;
