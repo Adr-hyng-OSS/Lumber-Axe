@@ -10,6 +10,7 @@
   ![Development - is_in_progress](https://img.shields.io/badge/Development-is__in__progress-2ea44f?logo=visualstudiocode&logoColor=blue)
   ![Version - v1.0.4](https://img.shields.io/badge/Version-v1.0.4-2ea44f?logo=git&logoColor=red)
   [![Twitter - h_YanG_0A](https://img.shields.io/badge/Twitter-Follow_@h__YanG__0A-2ea44f?logo=twitter&logoColor=blue)](https://twitter.com/h_YanG_0A)
+  [![Support - Donate](https://img.shields.io/badge/Support-Donate-2ea44f?logo=paypal)](https://www.paypal.com/paypalme/DennisAbaigar?country.x=PH&locale.x=en_US)
   ![Minecraft - v1.20.0](https://img.shields.io/badge/Minecraft-v1.20.0_--_1.20.1-blue?logo=xbox&logoColor=green)
 </div>
 
@@ -81,7 +82,7 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
   <a href="WORKING IN PROGRESS">
     <img src="https://img.shields.io/static/v1?label=&message=DOWNLOAD&color=dark+green&style=for-the-badge&logo=download&logoColor=black" alt="Download badge">
   </a>
-  <a href="WORKING IN PROGRESS">
+  <a href="https://github.com/Adr-hyng-OSS/Lumber-Axe/releases/latest">
     <img src="https://img.shields.io/static/v1?label=&message=LATEST RELEASE&color=dark+green&style=for-the-badge" alt="Release badge">
   </a>
 </div>
