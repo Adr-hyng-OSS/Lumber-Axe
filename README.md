@@ -7,7 +7,7 @@
 
 <div align="center">
 
-  ![Development - is_in_progress](https://img.shields.io/badge/Development-is__in__progress-2ea44f?logo=visualstudiocode&logoColor=blue)
+  ![Development - is_in_progress](https://img.shields.io/badge/Development-finished-2ea44f?logo=visualstudiocode&logoColor=blue)
   ![Version - v1.0.4](https://img.shields.io/badge/Version-v1.0.4-2ea44f?logo=git&logoColor=red)
   [![Twitter - h_YanG_0A](https://img.shields.io/badge/Twitter-Follow_@h__YanG__0A-2ea44f?logo=twitter&logoColor=blue)](https://twitter.com/h_YanG_0A)
   [![Support - Donate](https://img.shields.io/badge/Support-Donate-2ea44f?logo=paypal)](https://www.paypal.com/paypalme/DennisAbaigar?country.x=PH&locale.x=en_US)
