@@ -81,7 +81,7 @@ To fully activate the addon. Make sure to activate the Behavior Pack and Resourc
   <a href="https://github.com/Adr-hyng-OSS/Lumber-Axe/releases">
     <img src="https://img.shields.io/static/v1?label=&message=CHANGELOGS&color=dark+green&style=for-the-badge" alt="Changelogs badge">
   </a>
-  <a href="">
+  <a href="https://bstlar.com/195/Lumber-Axe-Bedrock-v1.20.1">
     <img src="https://img.shields.io/static/v1?label=&message=DOWNLOAD&color=dark+green&style=for-the-badge&logo=download&logoColor=black" alt="Download badge">
   </a>
   <a href="https://github.com/Adr-hyng-OSS/Lumber-Axe/releases/latest">
