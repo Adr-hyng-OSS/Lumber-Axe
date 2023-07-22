@@ -22,6 +22,7 @@ world.afterEvents.blockBreak.subscribe(async (e) => {
     treeCut(player, dimension, block.location, blockTypeId);
 });
 
+
 world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const currentItemHeld: ItemStack = e.itemStack;
     const blockInteracted: Block = e.block;
@@ -41,11 +42,11 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
     const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
-    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1).then((treeCollected: Set<string>) => {
+    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1).then(async(treeCollected: Set<string>) => {
         const totalDamage: number = (treeCollected.size) * unbreakingDamage;
         const totalDurabilityConsumed: number = currentDurability + totalDamage;
         const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
-
+        
         const inspectionForm: ActionFormData = new ActionFormData()
             .title("LOG INFORMATION")
             .button(`HAS ${treeCollected.size}${canBeChopped ? "" : "+" } LOG/S`, "textures/InfoUI/blocks.png")
@@ -116,6 +117,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     
     const totalDamage: number = visited.size * unbreakingDamage;
     const totalDurabilityConsumed: number = itemDurability.damage + totalDamage;
+
     // Check if durabiliy is exact that can chop the tree but broke the axe, then broke it.
     if (totalDurabilityConsumed + 1 === itemDurability.maxDurability) {
         equipment.setEquipment(EquipmentSlot.mainhand, undefined);
@@ -130,11 +132,17 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
         equipment.setEquipment(EquipmentSlot.mainhand, currentHeldAxe.clone());
     }
     
-    let _block: Block;
-    for await (const pos of visited) {
-        _block = dimension.getBlock(JSON.parse(pos));
-        _block.setType(MinecraftBlockTypes.air);
+    for await (const group of groupAdjacentBlocks(visited)) {
+        const firstElement = JSON.parse(group[0]);
+        const lastElement = JSON.parse(group[group.length - 1]);
+        if (firstElement === lastElement) {
+            dimension.getBlock(firstElement).setType(MinecraftBlockTypes.air);
+            continue;
+        } else {
+            dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.air);
+        }
     }
+    
     for await (const group of stackDistribution(visited.size)) {
         dimension.spawnItem(new ItemStack(blockTypeId, group), location);
     }
@@ -145,17 +153,56 @@ function isGameModeSurvival(player: Player): boolean {
     // Project: https://github.com/mcbe-mods/Cut-tree-one-click
     return player.dimension.getPlayers({ gameMode: GameMode.survival, name: player.name, location: player.location, maxDistance: 1, closest: 1 }).length > 0;
 }
-function stackDistribution(number: number, groupSize: number = 64): number[] {
-    // Author: Lete114 <https://github.com/Lete114>
-    // Project: https://github.com/mcbe-mods/Cut-tree-one-click
-    const groups: number[] = [];
-    while (number > 0) {
-        const group: number = Math.min(number, groupSize);
-        groups.push(group);
-        number -= group;
+
+// Gets all the visited blocks and groups them together. O(1) | O(log n) | O(n)
+function groupAdjacentBlocks(visited: Set<string>): string[][] {
+    // Author: Adr-hyng <https://github.com/Adr-hyng>
+    // Project: https://github.com/Adr-hyng-OSS/Lumber-Axe
+    // Convert Set to Array and parse each string to JSON object
+    const array = Array.from(visited).map(item => JSON.parse(item));
+
+    // Sort the array based on "x", "z", and "y"
+    array.sort((a, b) => a.x - b.x || a.z - b.z || a.y - b.y);
+
+    const groups: string[][] = [];
+    let currentGroup: string[] = [];
+
+    for (let i = 0; i < array.length; i++) {
+        // If it's the first element or "x" and "z" didn't change and "y" difference is less or equal to 2, add it to the current group
+        if (i === 0 || (array[i].x === array[i - 1].x && array[i].z === array[i - 1].z && Math.abs(array[i].y - JSON.parse(currentGroup[currentGroup.length - 1]).y) <= 2)) {
+            currentGroup.push(JSON.stringify(array[i]));
+        } else {
+            // Otherwise, add the current group to the groups array and start a new group
+            groups.push(currentGroup);
+            currentGroup = [JSON.stringify(array[i])];
+        }
+    }
+    // Add the last group to the groups array
+    if (currentGroup.length > 0) {
+        groups.push(currentGroup);
     }
     return groups;
 }
+
+// Calculates the amount of items to be dropped in each stack. O(1)
+function stackDistribution(number: number, groupSize: number = 64): number[] {
+    // Author: Adr-hyng <https://github.com/Adr-hyng>
+    // Project: https://github.com/Adr-hyng-OSS/Lumber-Axe
+
+    const fullGroupsCount = Math.floor(number / groupSize);
+    const remainder = number % groupSize;
+
+    // Create an array with the size of each full group
+    const groups = new Array(fullGroupsCount).fill(groupSize);
+
+    // If there's a remainder, add it as the last group
+    if (remainder > 0) {
+        groups.push(remainder);
+    }
+
+    return groups;
+}
+
 function getBlockNear(dimension: Dimension, location: Vector3, radius: number = 1): Block[] {
     // Modified Version
     // Author: Lete114 <https://github.com/Lete114>
