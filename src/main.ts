@@ -11,6 +11,19 @@ const validLogBlocks: RegExp = /(_log|crimson_stem|warped_stem)$/;
 // Config
 const {durabilityDamagePerBlock, chopLimit, excludedLog, includedLog, disableWatchDogTerminateLog} = Configuration
 
+system.beforeEvents.watchdogTerminate.subscribe((e: WatchdogTerminateBeforeEvent) => {
+    e.cancel = true;
+    if(e.terminateReason === WatchdogTerminateReason.Hang){
+        for(const key of playerInteractionMap.keys()) {
+            playerInteractionMap.set(key, false);
+        }
+        if(!disableWatchDogTerminateLog) world.sendMessage(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
+        if(disableWatchDogTerminateLog) console.warn(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
+    }
+    console.warn(`Watchdog Error: ${(e.terminateReason as WatchdogTerminateReason)}`)
+});
+
+
 world.afterEvents.playerLeave.subscribe((e: PlayerLeaveAfterEvent) => {
     playerInteractionMap.set(e.playerId, false);
 });
@@ -66,35 +79,6 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     });
 });
 
-function isLogIncluded(blockTypeId: string): boolean {
-    if(excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
-    if(includedLog.includes(blockTypeId) || validLogBlocks.test(blockTypeId)) return true;
-    return false;
-}
-
-async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Promise<Set<string>> {
-    // Modified Version
-    // Author: Lete114 <https://github.com/Lete114>
-    // Project: https://github.com/mcbe-mods/Cut-tree-one-click
-    const visited: Set<string> = new Set<string>();
-    let queue: Block[] = getBlockNear(dimension, location);
-    while (queue.length > 0) {
-        if(visited.size >= chopLimit) {
-            console.warn(`Limit: ${visited.size}`);
-            return visited;
-        }
-        if(visited.size >= maxNeeded) return visited;
-        const _block: Block = queue.shift();
-        if (!_block || !isLogIncluded(_block?.typeId)) continue;
-        if (_block.typeId !== blockTypeId) continue;
-        const pos: string = JSON.stringify(_block.location);
-        if (visited.has(pos)) continue;
-        visited.add(pos);
-        queue.push(...getBlockNear(dimension, _block.location));
-    }
-    queue = [];
-    return visited;
-}
 async function treeCut(player: Player, dimension: Dimension, location: Vector3, blockTypeId: string): Promise<void> {
     // Modified Version
     // Author: Lete114 <https://github.com/Lete114>
@@ -147,11 +131,35 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
         dimension.spawnItem(new ItemStack(blockTypeId, group), location);
     }
 }
-function isGameModeSurvival(player: Player): boolean {
+
+function isLogIncluded(blockTypeId: string): boolean {
+    if(excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
+    if(includedLog.includes(blockTypeId) || validLogBlocks.test(blockTypeId)) return true;
+    return false;
+}
+
+async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Promise<Set<string>> {
     // Modified Version
     // Author: Lete114 <https://github.com/Lete114>
     // Project: https://github.com/mcbe-mods/Cut-tree-one-click
-    return player.dimension.getPlayers({ gameMode: GameMode.survival, name: player.name, location: player.location, maxDistance: 1, closest: 1 }).length > 0;
+    const visited: Set<string> = new Set<string>();
+    let queue: Block[] = getBlockNear(dimension, location);
+    while (queue.length > 0) {
+        if(visited.size >= chopLimit) {
+            console.warn(`Limit: ${visited.size}`);
+            return visited;
+        }
+        if(visited.size >= maxNeeded) return visited;
+        const _block: Block = queue.shift();
+        if (!_block || !isLogIncluded(_block?.typeId)) continue;
+        if (_block.typeId !== blockTypeId) continue;
+        const pos: string = JSON.stringify(_block.location);
+        if (visited.has(pos)) continue;
+        visited.add(pos);
+        queue.push(...getBlockNear(dimension, _block.location));
+    }
+    queue = [];
+    return visited;
 }
 
 // Gets all the visited blocks and groups them together. O(1) | O(log n) | O(n)
@@ -188,19 +196,23 @@ function groupAdjacentBlocks(visited: Set<string>): string[][] {
 function stackDistribution(number: number, groupSize: number = 64): number[] {
     // Author: Adr-hyng <https://github.com/Adr-hyng>
     // Project: https://github.com/Adr-hyng-OSS/Lumber-Axe
-
     const fullGroupsCount = Math.floor(number / groupSize);
     const remainder = number % groupSize;
-
     // Create an array with the size of each full group
     const groups = new Array(fullGroupsCount).fill(groupSize);
-
     // If there's a remainder, add it as the last group
     if (remainder > 0) {
         groups.push(remainder);
     }
 
     return groups;
+}
+
+function isGameModeSurvival(player: Player): boolean {
+    // Modified Version
+    // Author: Lete114 <https://github.com/Lete114>
+    // Project: https://github.com/mcbe-mods/Cut-tree-one-click
+    return player.dimension.getPlayers({ gameMode: GameMode.survival, name: player.name, location: player.location, maxDistance: 1, closest: 1 }).length > 0;
 }
 
 function getBlockNear(dimension: Dimension, location: Vector3, radius: number = 1): Block[] {
@@ -237,16 +249,3 @@ async function forceShow(player: Player, form: ActionFormData, timeout: number =
     };
     throw new Error(`Timed out after ${timeout} ticks`);
 };
-
-
-system.beforeEvents.watchdogTerminate.subscribe((e: WatchdogTerminateBeforeEvent) => {
-    e.cancel = true;
-    if(e.terminateReason === WatchdogTerminateReason.Hang){
-        for(const key of playerInteractionMap.keys()) {
-            playerInteractionMap.set(key, false);
-        }
-        if(!disableWatchDogTerminateLog) world.sendMessage(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
-        if(disableWatchDogTerminateLog) console.warn(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
-    }
-    console.warn(`Watchdog Error: ${(e.terminateReason as WatchdogTerminateReason)}`)
-});
