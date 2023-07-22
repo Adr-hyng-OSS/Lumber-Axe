@@ -153,7 +153,6 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
     let queue: Block[] = getBlockNear(dimension, location);
     while (queue.length > 0) {
         if(visited.size >= chopLimit) {
-            console.warn(`Limit: ${visited.size}`);
             return visited;
         }
         if(visited.size >= maxNeeded) return visited;
