@@ -23,7 +23,6 @@ system.beforeEvents.watchdogTerminate.subscribe((e: WatchdogTerminateBeforeEvent
     console.warn(`Watchdog Error: ${(e.terminateReason as WatchdogTerminateReason)}`)
 });
 
-
 world.afterEvents.playerLeave.subscribe((e: PlayerLeaveAfterEvent) => {
     playerInteractionMap.set(e.playerId, false);
 });
@@ -35,26 +34,28 @@ world.afterEvents.blockBreak.subscribe(async (e) => {
     treeCut(player, dimension, block.location, blockTypeId);
 });
 
-
 world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
-    const currentItemHeld: ItemStack = e.itemStack;
-    const blockInteracted: Block = e.block;
-    const player: Player = e.source as Player;
+    const currentHeldAxe: ItemStack = e.itemStack;
+    const blockInteracted: Block = e.block; //! NEEDED
+    const player: Player = e.source as Player; //! NEEDED
+
     const oldLog: number = logMap.get(player.name);
     logMap.set(player.name, Date.now());
     if ((oldLog + 1_000) >= Date.now()) return;
-    if (!axeEquipments.includes(currentItemHeld.typeId) || !isLogIncluded(blockInteracted.typeId)) return;
+    if (!axeEquipments.includes(currentHeldAxe.typeId) || !isLogIncluded(blockInteracted.typeId)) return;
     if(playerInteractionMap.get(player.id)) return;
     playerInteractionMap.set(player.id, true);
-    const currentSlotItem: ItemStack = (player.getComponent(EntityInventoryComponent.componentId) as EntityInventoryComponent).container.getItem(player.selectedSlot);
-    const itemDurability: ItemDurabilityComponent = currentSlotItem.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
-    const enchantments: EnchantmentList = (currentSlotItem?.getComponent(ItemEnchantsComponent.componentId) as ItemEnchantsComponent)?.enchantments;
+
+    //! MAKE THIS D-R-Y
+    const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
+    const enchantments: EnchantmentList = (currentHeldAxe?.getComponent(ItemEnchantsComponent.componentId) as ItemEnchantsComponent)?.enchantments;
     const level: number = enchantments.hasEnchantment('unbreaking');
     const currentDurability = itemDurability.damage;
     const maxDurability = itemDurability.maxDurability;
     const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
     const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
+
     getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1).then(async(treeCollected: Set<string>) => {
         const totalDamage: number = (treeCollected.size) * unbreakingDamage;
         const totalDurabilityConsumed: number = currentDurability + totalDamage;
@@ -83,6 +84,8 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     // Modified Version
     // Author: Lete114 <https://github.com/Lete114>
     // Project: https://github.com/mcbe-mods/Cut-tree-one-click
+
+    //! Make Lumberjack (extends Player) Interface / class for this.
     const equipment = player.getComponent(EntityEquipmentInventoryComponent.componentId) as EntityEquipmentInventoryComponent;
     const currentHeldAxe = equipment.getEquipment(EquipmentSlot.mainhand);
     if (!axeEquipments.includes(currentHeldAxe?.typeId)) return;
@@ -91,6 +94,8 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     const isSurvivalMode: boolean = isGameModeSurvival(player);
     if (!isSurvivalMode) return;
     if (isSurvivalMode) currentHeldAxe.lockMode = ItemLockMode.slot;
+
+    //! MAKE THIS D-R-Y
     const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent('minecraft:durability') as ItemDurabilityComponent;
     const enchantments: EnchantmentList = (currentHeldAxe.getComponent('minecraft:enchantments') as ItemEnchantsComponent).enchantments;
     const level: number = enchantments.hasEnchantment('unbreaking');
@@ -102,6 +107,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     const totalDamage: number = visited.size * unbreakingDamage;
     const totalDurabilityConsumed: number = itemDurability.damage + totalDamage;
 
+    //! USE Lumberjack Axe Interface / Class for this
     // Check if durabiliy is exact that can chop the tree but broke the axe, then broke it.
     if (totalDurabilityConsumed + 1 === itemDurability.maxDurability) {
         equipment.setEquipment(EquipmentSlot.mainhand, undefined);
@@ -116,6 +122,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
         equipment.setEquipment(EquipmentSlot.mainhand, currentHeldAxe.clone());
     }
     
+    //! Lumberjack Axe Interface / Class
     for await (const group of groupAdjacentBlocks(visited)) {
         const firstElement = JSON.parse(group[0]);
         const lastElement = JSON.parse(group[group.length - 1]);
@@ -248,4 +255,4 @@ async function forceShow(player: Player, form: ActionFormData, timeout: number =
         }
     };
     throw new Error(`Timed out after ${timeout} ticks`);
-};
+}
