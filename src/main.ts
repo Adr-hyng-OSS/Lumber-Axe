@@ -1,6 +1,7 @@
-import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, Dimension, Vector3, Block, BlockPermutation, Player, EntityInventoryComponent, ContainerSlot, ItemDurabilityComponent, ItemEnchantsComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, EnchantmentList, PlayerLeaveAfterEventSignal, PlayerLeaveAfterEvent } from '@minecraft/server';
+import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, Dimension, Vector3, Block, BlockPermutation, Player, EntityInventoryComponent, ContainerSlot, ItemDurabilityComponent, ItemEnchantsComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, EnchantmentList, PlayerLeaveAfterEvent, EntityEquipmentInventoryComponent, MinecraftItemTypes, EquipmentSlot } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData, ActionFormResponse} from "@minecraft/server-ui";
 import {config as Configuration} from "./config";
+
 
 const axeEquipments: string[] = [ "yn:wooden_lumber_axe", "yn:stone_lumber_axe", "yn:iron_lumber_axe", "yn:diamond_lumber_axe", "yn:golden_lumber_axe", "yn:netherite_lumber_axe" ];
 const logMap: Map<string, number> = new Map<string, number>();
@@ -8,7 +9,7 @@ const playerInteractionMap: Map<string, boolean> = new Map<string, boolean>();
 const validLogBlocks: RegExp = /(_log|crimson_stem|warped_stem)$/;
 
 // Config
-const {durabilityDamagePerBlock, chopLimit, excludedLog, includedLog} = Configuration
+const {durabilityDamagePerBlock, chopLimit, excludedLog, includedLog, disableWatchDogTerminateLog} = Configuration
 
 world.afterEvents.playerLeave.subscribe((e: PlayerLeaveAfterEvent) => {
     playerInteractionMap.set(e.playerId, false);
@@ -40,21 +41,21 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
     const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
-    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs).then((treeInteracted: Set<string>) => {
-        const totalDamage: number = (treeInteracted.size) * unbreakingDamage;
+    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1).then((treeCollected: Set<string>) => {
+        const totalDamage: number = (treeCollected.size) * unbreakingDamage;
         const totalDurabilityConsumed: number = currentDurability + totalDamage;
-        const canBeChopped: boolean = (totalDurabilityConsumed >= maxDurability) ? false : true;
+        const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
 
         const inspectionForm: ActionFormData = new ActionFormData()
             .title("LOG INFORMATION")
-            .button(`HAS ${treeInteracted.size}${canBeChopped ? "" : "+" } LOG/S`, "textures/InfoUI/blocks.png")
+            .button(`HAS ${treeCollected.size}${canBeChopped ? "" : "+" } LOG/S`, "textures/InfoUI/blocks.png")
             .button(`DMG: ${currentDurability}`, "textures/InfoUI/axe_durability.png")
             .button(`MAX: ${maxDurability}`, "textures/InfoUI/required_durability.png")
             .button(`§l${canBeChopped ? "§aChoppable": "§cCannot be chopped"}`, "textures/InfoUI/canBeCut.png");
 
         forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
             playerInteractionMap.set(player.id, false);
-            if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.userClosed) return;
+            if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) return;
         }).catch((error: Error) => {
             console.warn("Form Error: ", error, error.stack);
         });
@@ -74,10 +75,13 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
     // Modified Version
     // Author: Lete114 <https://github.com/Lete114>
     // Project: https://github.com/mcbe-mods/Cut-tree-one-click
-    const visited: Set<string> = new Set();
+    const visited: Set<string> = new Set<string>();
     let queue: Block[] = getBlockNear(dimension, location);
     while (queue.length > 0) {
-        if(visited.size >= chopLimit) return visited;
+        if(visited.size >= chopLimit) {
+            console.warn(`Limit: ${visited.size}`);
+            return visited;
+        }
         if(visited.size >= maxNeeded) return visited;
         const _block: Block = queue.shift();
         if (!_block || !isLogIncluded(_block?.typeId)) continue;
@@ -94,18 +98,16 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     // Modified Version
     // Author: Lete114 <https://github.com/Lete114>
     // Project: https://github.com/mcbe-mods/Cut-tree-one-click
-    const currentSlot: number = player.selectedSlot;
-    const inventory: EntityInventoryComponent = player.getComponent('inventory') as EntityInventoryComponent;
-    const currentSlotItem: ItemStack = inventory.container.getItem(currentSlot);
-    const axeSlot: ContainerSlot = inventory.container.getSlot(currentSlot);
-    if (!axeEquipments.includes(currentSlotItem?.typeId)) return;
+    const equipment = player.getComponent(EntityEquipmentInventoryComponent.componentId) as EntityEquipmentInventoryComponent;
+    const currentHeldAxe = equipment.getEquipment(EquipmentSlot.mainhand);
+    if (!axeEquipments.includes(currentHeldAxe?.typeId)) return;
     if (!isLogIncluded(blockTypeId)) return;
 
     const isSurvivalMode: boolean = isGameModeSurvival(player);
     if (!isSurvivalMode) return;
-    if (isSurvivalMode) axeSlot.lockMode = ItemLockMode.slot;
-    const itemDurability: ItemDurabilityComponent = currentSlotItem.getComponent('minecraft:durability') as ItemDurabilityComponent;
-    const enchantments: EnchantmentList = (currentSlotItem.getComponent('minecraft:enchantments') as ItemEnchantsComponent).enchantments;
+    if (isSurvivalMode) currentHeldAxe.lockMode = ItemLockMode.slot;
+    const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent('minecraft:durability') as ItemDurabilityComponent;
+    const enchantments: EnchantmentList = (currentHeldAxe.getComponent('minecraft:enchantments') as ItemEnchantsComponent).enchantments;
     const level: number = enchantments.hasEnchantment('unbreaking');
     const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
     const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
@@ -114,32 +116,28 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     
     const totalDamage: number = visited.size * unbreakingDamage;
     const totalDurabilityConsumed: number = itemDurability.damage + totalDamage;
-    const lastDurabilityConsumed: number = itemDurability.damage + durabilityDamagePerBlock;
-    if (totalDurabilityConsumed >= lastDurabilityConsumed && lastDurabilityConsumed >= itemDurability.maxDurability) {
-        axeSlot.lockMode = ItemLockMode.none;
-        player.runCommand(`replaceitem entity @s slot.weapon.mainhand ${currentSlot} air`);
+    // Check if durabiliy is exact that can chop the tree but broke the axe, then broke it.
+    if (totalDurabilityConsumed + 1 === itemDurability.maxDurability) {
+        equipment.setEquipment(EquipmentSlot.mainhand, undefined);
+    // Check if the durability is not enough to chop the tree. Then don't apply the 3 damage.
+    } else if (totalDurabilityConsumed > itemDurability.maxDurability) {
+        currentHeldAxe.lockMode = ItemLockMode.none;
         return;
-    } else if (totalDurabilityConsumed >= itemDurability.maxDurability) {
-        axeSlot.lockMode = ItemLockMode.none;
-        return;
+    // Check if total durability will consume is still enough and not near the max durability
+    } else if (totalDurabilityConsumed < itemDurability.maxDurability){
+        itemDurability.damage = itemDurability.damage +  totalDamage;
+        currentHeldAxe.lockMode = ItemLockMode.none;
+        equipment.setEquipment(EquipmentSlot.mainhand, currentHeldAxe.clone());
     }
-    itemDurability.damage = itemDurability.damage +  totalDamage;
-    (inventory.container).setItem(currentSlot, currentSlotItem);
-    axeSlot.lockMode = ItemLockMode.none;
     
-    let blockLocation: Vector3 = null;
-    let _block: Block = null;
-    let deforestingInterval: number = system.runTimeout( async () => {
-        for (let visit of visited) {
-            blockLocation = JSON.parse(visit);
-            _block = dimension.getBlock(blockLocation);
-            _block.setType(MinecraftBlockTypes.air);
-        }
-        for(let group of stackDistribution(visited.size)) {
-            dimension.spawnItem(new ItemStack(blockTypeId, group), location);
-        }
-        system.clearRun(deforestingInterval);
-    }, 1);
+    let _block: Block;
+    for await (const pos of visited) {
+        _block = dimension.getBlock(JSON.parse(pos));
+        _block.setType(MinecraftBlockTypes.air);
+    }
+    for await (const group of stackDistribution(visited.size)) {
+        dimension.spawnItem(new ItemStack(blockTypeId, group), location);
+    }
 }
 function isGameModeSurvival(player: Player): boolean {
     // Modified Version
@@ -186,20 +184,22 @@ async function forceShow(player: Player, form: ActionFormData, timeout: number =
     const startTick: number = system.currentTick;
     while ((system.currentTick - startTick) < timeout) {
         const response: ActionFormResponse = await (form.show(player)).catch(er=>console.error(er,er.stack)) as ActionFormResponse;
-        if (response.cancelationReason !== FormCancelationReason.userBusy) {
+        if (response.cancelationReason !== FormCancelationReason.UserBusy) {
             return response;
         }
     };
     throw new Error(`Timed out after ${timeout} ticks`);
 };
 
-system.events.beforeWatchdogTerminate.subscribe((e: WatchdogTerminateBeforeEvent) => {
+
+system.beforeEvents.watchdogTerminate.subscribe((e: WatchdogTerminateBeforeEvent) => {
     e.cancel = true;
-    if(e.terminateReason === WatchdogTerminateReason.hang){
+    if(e.terminateReason === WatchdogTerminateReason.Hang){
         for(const key of playerInteractionMap.keys()) {
             playerInteractionMap.set(key, false);
         }
-        world.sendMessage(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
+        if(!disableWatchDogTerminateLog) world.sendMessage(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
+        if(disableWatchDogTerminateLog) console.warn(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
     }
     console.warn(`Watchdog Error: ${(e.terminateReason as WatchdogTerminateReason)}`)
 });
