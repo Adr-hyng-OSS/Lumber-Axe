@@ -6,7 +6,8 @@
       "allowSyntheticDefaultImports": true,
       "baseUrl": "./src",
       "rootDir": "./src",
-      "outDir": "./Behavior Pack/scripts/"
+      "removeComments": true,
+      "outDir": "./Lumber Axe BP/scripts/"
     },
     "exclude": [ "node_modules" ],
     "include": [ "src" ]
