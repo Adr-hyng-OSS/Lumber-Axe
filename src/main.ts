@@ -1,4 +1,4 @@
-import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, Dimension, Vector3, Block, BlockPermutation, Player, EntityInventoryComponent, ContainerSlot, ItemDurabilityComponent, ItemEnchantsComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, EnchantmentList, PlayerLeaveAfterEvent, EntityEquipmentInventoryComponent, MinecraftItemTypes, EquipmentSlot } from '@minecraft/server';
+import { world, ItemStack, MinecraftBlockTypes, GameMode, ItemLockMode, system, Dimension, Vector3, Block, BlockPermutation, Player, ItemDurabilityComponent, ItemEnchantsComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, EnchantmentList, PlayerLeaveAfterEvent, EntityEquipmentInventoryComponent, EquipmentSlot } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData, ActionFormResponse} from "@minecraft/server-ui";
 import {config as Configuration} from "./config";
 
@@ -17,7 +17,12 @@ system.beforeEvents.watchdogTerminate.subscribe((e: WatchdogTerminateBeforeEvent
         for(const key of playerInteractionMap.keys()) {
             playerInteractionMap.set(key, false);
         }
-        if(!disableWatchDogTerminateLog) world.sendMessage(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
+        if(!disableWatchDogTerminateLog) world.sendMessage({
+            rawtext: [
+            {
+                translate: "LumberAxe.watchdogError.hang.text"
+            }
+        ]});
         if(disableWatchDogTerminateLog) console.warn(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
     }
     console.warn(`Watchdog Error: ${(e.terminateReason as WatchdogTerminateReason)}`)
@@ -62,12 +67,55 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
         const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
         
         const inspectionForm: ActionFormData = new ActionFormData()
-            .title("LOG INFORMATION")
-            .button(`HAS ${treeCollected.size}${canBeChopped ? "" : "+" } LOG/S`, "textures/InfoUI/blocks.png")
-            .button(`DMG: ${currentDurability}`, "textures/InfoUI/axe_durability.png")
-            .button(`MAX: ${maxDurability}`, "textures/InfoUI/required_durability.png")
-            .button(`§l${canBeChopped ? "§aChoppable": "§cCannot be chopped"}`, "textures/InfoUI/canBeCut.png");
-
+            .title({
+                rawtext: [
+                {
+                    translate: "LumberAxe.form.title.text"
+                }
+                ]})
+            .button(
+                {
+                    rawtext: [
+                    {
+                        translate: `LumberAxe.form.treeSizeAbrev.text`
+                    },
+                    {
+                        text: ` ${treeCollected.size}${canBeChopped ? "" : "+" } `
+                    },
+                    {
+                        translate: `LumberAxe.form.treeSizeAbrevLogs.text`
+                    }
+                ]}, "textures/InfoUI/blocks.png")
+            .button(
+                {
+                    rawtext: [
+                    {
+                        translate: `LumberAxe.form.durabilityAbrev.text`
+                    },
+                    {
+                        text: ` ${currentDurability}`
+                    }
+                ]}, "textures/InfoUI/axe_durability.png")
+            .button(
+                {
+                    rawtext: [
+                    {
+                        translate: `LumberAxe.form.maxDurabilityAbrev.text`
+                    },
+                    {
+                        text: ` ${maxDurability}`
+                    }
+                ]}, "textures/InfoUI/required_durability.png")
+            .button(
+                {
+                    rawtext: [
+                    {
+                        text: "§l"
+                    },
+                    {
+                        translate: `${canBeChopped ? "LumberAxe.form.canBeChopped.text": "LumberAxe.form.cannotBeChopped.text"}`
+                    }
+                ]}, "textures/InfoUI/canBeCut.png");
         forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
             playerInteractionMap.set(player.id, false);
             if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) return;
