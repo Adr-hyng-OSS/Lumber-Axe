@@ -1,0 +1,3 @@
+These python scripts (tools) was made by @SIsilicon <https://github.com/SIsilicon> 
+creator of WorldEdit <https://github.com/SIsilicon/WorldEdit-BE>. 
+Just modified for my personal-use case.

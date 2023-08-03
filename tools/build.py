@@ -10,7 +10,8 @@ parser.add_argument('--clean', '-c', action='store_true', help='Clean "BP/script
 parser.add_argument('--package-only', '-p', action='store_true', help='Only package what\'s already there.')
 args = parser.parse_args()
 
-build_pack_name = 'Lumber Axe: Bedrock Edition'
+build_pack_name = 'Lumber Axe'.strip()
+version_tag = 'v1.20.10_rev1'
 
 def handleError(err):
     if err: exit(err)
@@ -97,13 +98,13 @@ if not args.package_only:
 if not os.path.isdir('builds'):
     os.makedirs('builds')
 
-if os.path.exists(f'builds/{build_pack_name}BP'):
-    shutil.rmtree(f'builds/{build_pack_name}BP')
-if os.path.exists(f'builds/{build_pack_name}RP'):
-    shutil.rmtree(f'builds/{build_pack_name}RP')
-try: shutil.copytree('BP', f'builds/{build_pack_name}BP')
+if os.path.exists(f'builds/{build_pack_name} BP'):
+    shutil.rmtree(f'builds/{build_pack_name} BP')
+if os.path.exists(f'builds/{build_pack_name} RP'):
+    shutil.rmtree(f'builds/{build_pack_name} RP')
+try: shutil.copytree('BP', f'builds/{build_pack_name} BP')
 except: pass
-try: shutil.copytree('RP', f'builds/{build_pack_name}RP')
+try: shutil.copytree('RP', f'builds/{build_pack_name} RP')
 except: pass
 
 if args.target != 'debug':
@@ -116,14 +117,15 @@ if args.target != 'debug':
                 zip.write(filePath, arcname / Path(filePath).relative_to(dirname))
     
     if args.target == 'release':
-        with ZipFile(f'builds/{build_pack_name}.mcaddon', 'w') as zip:
-            zipWriteDir(zip, f'builds/{build_pack_name}BP', f'{build_pack_name}BP')
-            zipWriteDir(zip, f'builds/{build_pack_name}RP', f'{build_pack_name}RP')
+        formatted_build_pack_name = re.sub(r"[-\s]", "_", build_pack_name)
+        with ZipFile(f'builds/{version_tag}-{formatted_build_pack_name}_Addon.mcaddon', 'w') as zip:
+            zipWriteDir(zip, f'builds/{build_pack_name} BP', f'{build_pack_name} BP')
+            zipWriteDir(zip, f'builds/{build_pack_name} RP', f'{build_pack_name} RP')
     elif args.target == 'server':
         with ZipFile(f'builds/{build_pack_name}.server.zip', 'w') as zip:
             zip.write('builds/variables.json', 'variables.json')
-            zipWriteDir(zip, f'builds/{build_pack_name}BP', f'{build_pack_name}BP')
-            zipWriteDir(zip, f'builds/{build_pack_name}RP', f'{build_pack_name}RP')
+            zipWriteDir(zip, f'builds/{build_pack_name} BP', f'{build_pack_name} BP')
+            zipWriteDir(zip, f'builds/{build_pack_name} RP', f'{build_pack_name} RP')
             
             
             

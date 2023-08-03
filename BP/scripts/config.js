@@ -2,7 +2,7 @@ export default {
   /**
    * Enables debug messages to content logs.
    */
-  debug: true,
+  debug: false,
   /**
    * Lumber Axe durability damage per log destroyed.
    */
