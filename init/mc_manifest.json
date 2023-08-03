@@ -1,0 +1,62 @@
+{
+	"format_version": 2,
+	"header": {
+		"bp_name": "Lumber Axe Addon BP: Chopping made easy!",
+		"rp_name": "Lumber Axe Addon RP: Chopping made easy!",
+		
+        "description": "Cut the whole tree with easy as a lumberjack's pie! We create addons/datapack that will ease your survival plays. \n @Created By: @h_YanG_0A & @Brilliant",
+		
+        "bp_uuid": "4538bab6-a78b-4710-89e5-a2e103e97a6a",
+		"rp_uuid": "62b4cab4-fa42-405b-bff6-1f47b6958dd6",
+        "version": [1, 0, 5],
+		"min_engine_version": [ 1, 20, 10 ]
+	},
+	"bp_modules": [
+		{
+			"description": "item and entity definitions",
+			"type": "data",
+			"uuid": "f0bc63f7-f2b2-4de2-a27c-6a3d5ac7cee4",
+			"version": [ 1, 0, 0 ]
+		},
+		{
+			"description": "scripts",
+			"type": "script",
+			"language": "javascript",
+			"uuid": "9717780a-c69f-4679-bbe6-dbf6dfcdd7de",
+			"version": [ 1, 0, 5 ],
+			"entry": "scripts/main.js"
+		}
+	],
+	"bp_capabilities": [ "script_eval" ],
+    "rp_modules": [
+		{
+			"type": "resources",
+			"uuid": "24aa7cd4-3f7d-4022-97b6-415561bf34c4",
+			"version": [ 1, 0, 4 ]
+		}
+	],
+	"bp_dependencies": [
+		{
+			"module_name": "@minecraft/server",
+			"version": "1.4.0-beta"
+		},
+		{
+			"module_name": "@minecraft/server-ui",
+			"version": "1.2.0-beta"
+		}
+	],
+	"bp_server_dependencies": [
+		{
+			"module_name": "@minecraft/server-admin",
+			"version": "1.0.0-beta"
+		}
+	],
+	"metadata": {
+		"authors": [
+			"@h_YanG_0A",
+      		"@Brilliant"
+		],
+		"license": "GPL-3.0-or-later",
+		"url": "https://twitter.com/h_YanG_0A"
+	}
+}

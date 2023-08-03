@@ -1,0 +1,37 @@
+{
+    "format_version": 2,
+    "header": {
+        "name": "Lumber Axe Addon RP: Chopping made easy! 1.0.5",
+        "description": "Cut the whole tree with easy as a lumberjack's pie! We create addons/datapack that will ease your survival plays. \n @Created By: @h_YanG_0A & @Brilliant",
+        "uuid": "62b4cab4-fa42-405b-bff6-1f47b6958dd6",
+        "version": [
+            1,
+            0,
+            5
+        ],
+        "min_engine_version": [
+            1,
+            20,
+            10
+        ]
+    },
+    "modules": [
+        {
+            "type": "resources",
+            "uuid": "24aa7cd4-3f7d-4022-97b6-415561bf34c4",
+            "version": [
+                1,
+                0,
+                4
+            ]
+        }
+    ],
+    "metadata": {
+        "authors": [
+            "@h_YanG_0A",
+            "@Brilliant"
+        ],
+        "license": "GPL-3.0-or-later",
+        "url": "https://twitter.com/h_YanG_0A"
+    }
+}

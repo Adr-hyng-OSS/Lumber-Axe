@@ -1,0 +1,27 @@
+{
+    "durabilityDamagePerBlock": {
+      "description": "Lumber Axe durability damage per log destroyed.",
+      "default": 3
+    },
+  
+    "chopLimit": {
+      "description": "1500 above is not recommended. It Does work but it's not recommended.",
+      "default": 300
+    },
+  
+    "includedLog": {
+      "description": "Included blocks for custom logs, but any custom or vanilla logs also work as long as the block identifier ends with \"*_log\".\nCheck: https://github.com/mcbe-mods/Cut-tree-one-click by Lete114.",
+      "default": []
+    },
+  
+    "excludedLog": {
+      "description": "Excluded blocks for block logs you don't want to be included in being chopped.\n\nTip:\n- excludedLog is prioritized over includedLog.\n- It's unnecessary to include log blocks that have \"*_log\" in their block id.",
+      "default": []
+    },
+  
+    "disableWatchDogTerminateLog": {
+      "description": "Disables the watchDogTerminate Log message. If true, it will only show a warning message when you enable content-ui log in the Minecraft settings.",
+      "default": true
+    }
+  }
+  
