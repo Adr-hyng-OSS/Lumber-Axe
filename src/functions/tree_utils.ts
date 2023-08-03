@@ -108,11 +108,12 @@ function getBlockNear(dimension: Dimension, location: Vector3, radius: number = 
     const centerY: number = location.y;
     const centerZ: number = location.z;
     const positions: Block[] = [];
+    let _block: Block;
     for (let x = centerX - radius; x <= centerX + radius; x++) {
         for (let y = centerY - radius; y <= centerY + radius; y++) {
             for (let z = centerZ - radius; z <= centerZ + radius; z++) {
-                const _location: Vector3 = { x, y, z };
-                const _block: Block = dimension.getBlock(_location);
+                if(centerX === x && centerY === y && centerZ === z) continue;
+                _block = dimension.getBlock({ x, y, z });
                 if(_block.isAir()) continue;
                 positions.push(_block);
             }
