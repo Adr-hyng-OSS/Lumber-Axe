@@ -7,7 +7,7 @@
       "baseUrl": "./src",
       "rootDir": "./src",
       "removeComments": true,
-      "outDir": "./Lumber Axe BP/scripts/"
+      "outDir": "./BP/scripts/"
     },
     "exclude": [ "node_modules" ],
     "include": [ "src" ]
