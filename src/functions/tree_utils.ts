@@ -84,10 +84,9 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
     const visited: Set<string> = new Set<string>();
     let queue: Block[] = getBlockNear(dimension, location);
     while (queue.length > 0) {
-        if(visited.size >= chopLimit) {
+        if(visited.size >= chopLimit || visited.size >= maxNeeded) {
             return visited;
         }
-        if(visited.size >= maxNeeded) return visited;
         const _block: Block = queue.shift();
         if (!_block || !isLogIncluded(_block?.typeId)) continue;
         if (_block.typeId !== blockTypeId) continue;
