@@ -1,6 +1,6 @@
 from pathlib import Path
 import subprocess, sys, os, shutil
-import argparse, re
+import argparse, re, json
 
 parser = argparse.ArgumentParser(description='Build and package the addon.')
 parser.add_argument('--init', '-i', action='store_true', help='Initialize "BP/scripts" folder if it does not exist.')
@@ -10,8 +10,9 @@ parser.add_argument('--clean', '-c', action='store_true', help='Clean "BP/script
 parser.add_argument('--package-only', '-p', action='store_true', help='Only package what\'s already there.')
 args = parser.parse_args()
 
-build_pack_name = 'Lumber Axe'.strip()
-version_tag = 'v1.20.10_rev1'
+addon_name = json.loads(open('setup/mc_manifest.json', 'r').read()).get("header").get("bp_name")
+build_pack_name = addon_name[:addon_name.rfind(" BP")]
+version_tag = 'v1.20.1x-dev'
 
 def handleError(err):
     if err: exit(err)
@@ -94,7 +95,6 @@ if not args.package_only:
     if args.target == 'server':
         handleError(subprocess.call([sys.executable, 'tools/process_config.py', '--generateConfigJSON']))
 
-
 if not os.path.isdir('builds'):
     os.makedirs('builds')
 
@@ -132,11 +132,11 @@ if args.target != 'debug':
             
 """
 Add:
-- Check if target release's name has a version tag.
-- config.ts, should be connected to configuration.json.
-- build_pack_name = 'Test Addon', make this auto-generated from mc_manifest, and get the version tag also.
+- [--init | -i] make it have choices of ["beh", "res", "all"] to select what to init
+- version should be auto-generated from scripts module.
 - [--module | -m] to select what module of script to use for BP-stable. choices: ["v1.20.0", "v1.20.1", "v1.20.10"]
 
-Bug:
-- When I change the configuration.json, it doesn't update the config.ts, and config.js.
+Bugs:
+- Make it update the mc_manifest.json file, after init.
+
 """

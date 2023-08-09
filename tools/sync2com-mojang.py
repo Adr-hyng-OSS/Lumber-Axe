@@ -1,6 +1,9 @@
 from pathlib import Path
 import glob, os, shutil
-import argparse
+import argparse, json
+
+bp_name = json.loads(open('setup/mc_manifest.json', 'r').read()).get("header").get("bp_name")
+pack_folder = "".join(bp_name[:bp_name.rfind(" BP")].split(" "))
 
 SERVER_LOCATION = '%appdata%\\.minecraft_bedrock\\servers\\1.20.10.24'
 
@@ -17,7 +20,6 @@ elif args.dest == 'preview':
 elif args.dest == 'server':
     com_mojang = os.path.expandvars(SERVER_LOCATION)
 
-pack_folder = 'LumberAxe'
 
 behaviour_pack = com_mojang + f'\\development_behavior_packs\\{pack_folder} BP'
 resource_pack = com_mojang + f'\\development_resource_packs\\{pack_folder} RP'

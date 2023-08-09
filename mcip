@@ -19,7 +19,7 @@ while true ; do
             echo "Options:"
             echo "[--init | -i] -> Initialize 'BP/scripts' folder if it does not exist."
             echo "[--watch | -w] <opt: stable, preview, server> -> Whether to continually build and where to sync the project while editing it."
-            echo "[--target] <opt: release, debug, server> -> Whether to build the addon in debug or release mode. Default is 'debug'."
+            echo -e "[--target] <opt: release, debug, server> -> Whether to build the addon in debug or release mode. Default is 'debug'. \nCan Generate Config out of settings.json"
             echo "[--clean | -c] -> Clean 'BP/scripts' folder before building."
             echo "[--package-only | -p] -> Only package what's already there."
             exit 0 ;;
@@ -28,7 +28,10 @@ while true ; do
         -w|--watch)
             watch=$2 ; shift 2 ;;
         --target)
-            target=$2 ; shift 2 ;;
+            if ! $init ; then
+                target=$2
+            fi
+            shift 2 ;;
         -c|--clean)
             clean=true ; shift ;;
         -p|--package-only)
@@ -40,6 +43,7 @@ done
 
 # Build the command
 command="python tools/build.py"
+command2="python tools/process_config.py --generateConfigTS"
 
 if $init; then
     command+=" --init"
@@ -49,7 +53,9 @@ if [[ ! -z "$watch" ]]; then
     command+=" --watch $watch"
 fi
 
-command+=" --target $target"
+if ! $init; then
+    command+=" --target $target"
+fi
 
 if $clean; then
     command+=" --clean"
@@ -60,4 +66,11 @@ if $package_only; then
 fi
 
 # Execute the command
+
 eval $command
+
+# Execute command2 if --init was called
+if $init; then
+    command="python tools/process_manifest.py --init"
+    eval $command2
+fi

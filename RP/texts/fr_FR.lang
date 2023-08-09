@@ -1,0 +1,20 @@
+## Items
+item.yn:wooden_lumber_axe.name=Hache de bûcheron en bois
+item.yn:stone_lumber_axe.name=Hache de bûcheron en pierre
+item.yn:golden_lumber_axe.name=Hache de bûcheron dorée
+item.yn:iron_lumber_axe.name=Hache de bûcheron en fer
+item.yn:diamond_lumber_axe.name=Hache de bûcheron en diamant
+item.yn:netherite_lumber_axe.name=Hache de Netherite de bûcheron
+
+
+## Form-UI
+LumberAxe.form.title.text=Informations sur l'arbre
+LumberAxe.form.treeSizeAbrev.text=l'arbre a
+LumberAxe.form.treeSizeAbrevLogs.text=bûches d'arbre
+LumberAxe.form.durabilityAbrev.text=DMG
+LumberAxe.form.maxDurabilityAbrev.text=MAX
+LumberAxe.form.canBeChopped.text=§aL'arbre peut être coupé
+LumberAxe.form.cannotBeChopped.text=§cL'arbre ne peut pas être coupé
+
+## Error Message
+LumberAxe.watchdogError.hang.text=Erreur de script: essayez de couper ou d'inspecter des arbres plus petits ou sous un angle différent.

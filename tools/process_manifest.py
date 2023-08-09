@@ -1,9 +1,8 @@
-import json, argparse
+import json
+import argparse
 import uuid
 import shutil
 import os
-
-
 
 parser = argparse.ArgumentParser(description='Build manifest files from \'mc_manifest.json\'.')
 parser.add_argument('--init', '-i', action='store_true', help='Initialize UUID and versions.')
@@ -13,16 +12,16 @@ args = parser.parse_args()
 bp_manifest = {}
 rp_manifest = {}
 
-def processJsonElement(element, bp_element, rp_element):
+def processJsonElement(element, bp_element, rp_element, init, current_key=None):
     def process(key, value):
         if isinstance(value, dict):
             bp_element[key] = {}
             rp_element[key] = {}
-            processJsonElement(value, bp_element[key], rp_element[key])
+            processJsonElement(value, bp_element[key], rp_element[key], init, key)
         elif isinstance(value, list):
             bp_element[key] = []
             rp_element[key] = []
-            processJsonElement(value, bp_element[key], rp_element[key])
+            processJsonElement(value, bp_element[key], rp_element[key], init, key)
         else:
             if isinstance(bp_element, list):
                 bp_element.append(value)
@@ -31,9 +30,8 @@ def processJsonElement(element, bp_element, rp_element):
                 bp_element[key] = value
                 rp_element[key] = value
 
-    
     if isinstance(element, dict):
-        for [key, value] in element.items():
+        for key, value in element.items():
             if key.startswith('bp_'):
                 if key.startswith('bp_server_'):
                     sub = bp_element[key[10:]]
@@ -43,8 +41,14 @@ def processJsonElement(element, bp_element, rp_element):
                         bp_element[key[10:]] = { **sub, **value }
                 else:
                     bp_element[key[3:]] = value
+                    if init and key == 'bp_modules':
+                        for module in value:
+                            module['uuid'] = str(uuid.uuid4())
             elif key.startswith('rp_'):
                 rp_element[key[3:]] = value
+                if init and key == 'rp_modules':
+                    for module in value:
+                        module['uuid'] = str(uuid.uuid4())
             else:
                 process(key, value)
     elif isinstance(element, list):
@@ -54,9 +58,10 @@ def processJsonElement(element, bp_element, rp_element):
             i = i + 1
 
 # load base manifest
-with open('init/mc_manifest.json', 'r') as file:
+with open('setup/mc_manifest.json', 'r') as file:
     manifest = json.load(file)
-    processJsonElement(manifest, bp_manifest, rp_manifest)
+    processJsonElement(manifest, bp_manifest, rp_manifest, args.init)
+
 
 # Generate UUIDv4 for bp_uuid and rp_uuid and set default versions
 if args.init:
@@ -76,19 +81,19 @@ if args.init:
     os.makedirs('RP', exist_ok=True)
 
     # Copy pack_icon.png to BP and RP folders
-    shutil.copy('init/pack_icon.png', 'BP/')
-    shutil.copy('init/pack_icon.png', 'RP/')
+    shutil.copy('setup/pack_icon.png', 'BP/')
+    shutil.copy('setup/pack_icon.png', 'RP/')
 
 version = manifest['header']['version']
 bp_manifest['header']['name'] += ' ' + '.'.join(map(str, version))
 rp_manifest['header']['name'] += ' ' + '.'.join(map(str, version))
 
-if not type(version) is str:
+if not isinstance(version, str):
     version = version[:3]
 bp_manifest['header']['version'] = version
 rp_manifest['header']['version'] = version
 
-if not 'dependencies' in bp_manifest:
+if 'dependencies' not in bp_manifest:
     bp_manifest['dependencies'] = []
 bp_manifest['dependencies'].append({
     'uuid': rp_manifest['header']['uuid'],

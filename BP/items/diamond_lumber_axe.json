@@ -20,7 +20,7 @@
         "texture": "yn:diamond_lumber_axe"
       },
       "minecraft:display_name": {
-        "value": "Diamond Lumber Axe"
+        "value": "item.yn:diamond_lumber_axe.name"
       },
       "minecraft:repairable": {
         "repair_items": [

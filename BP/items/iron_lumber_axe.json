@@ -19,7 +19,7 @@
 				"texture": "yn:iron_lumber_axe"
 			},
 			"minecraft:display_name": {
-				"value": "Iron Lumber Axe"
+				"value": "item.yn:iron_lumber_axe.name"
 			},
 			"minecraft:repairable": {
 				"repair_items": [
