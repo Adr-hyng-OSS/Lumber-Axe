@@ -1,2 +1,4 @@
 diagnostic.disable.minecraft.manifest.module.missing=true
 diagnostic.disable.molang.context.missing=true
+diagnostic.disable.resourcepack.texture.missing=true
+diagnostic.disable.=true

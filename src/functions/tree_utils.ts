@@ -121,7 +121,7 @@ function getBlockNear(dimension: Dimension, location: Vector3, radius: number = 
     return positions;
 }
 
-// Gets all the visited blocks and groups them together. O(1) | O(log n) | O(n)
+// Gets all the visited blocks and groups them together.
 function groupAdjacentBlocks(visited: Set<string>): string[][] {
     // Author: Adr-hyng <https://github.com/Adr-hyng>
     // Project: https://github.com/Adr-hyng-OSS/Lumber-Axe

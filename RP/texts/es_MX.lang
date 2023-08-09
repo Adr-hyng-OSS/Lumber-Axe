@@ -1,0 +1,20 @@
+## Items
+item.yn:wooden_lumber_axe.name=Hacha de madera de madera
+item.yn:stone_lumber_axe.name=Hacha de madera de piedra
+item.yn:golden_lumber_axe.name=Hacha de madera oro
+item.yn:iron_lumber_axe.name=Hacha de madera de hierro
+item.yn:diamond_lumber_axe.name=Hacha de madera de diamante
+item.yn:netherite_lumber_axe.name=Hacha de madera inframundita
+
+
+## Form-UI
+LumberAxe.form.title.text=Información del árbol
+LumberAxe.form.treeSizeAbrev.text=TIENE
+LumberAxe.form.treeSizeAbrevLogs.text=roncos de árboles
+LumberAxe.form.durabilityAbrev.text=DMG
+LumberAxe.form.maxDurabilityAbrev.text=MAX
+LumberAxe.form.canBeChopped.text=§ael árbol se puede cortar
+LumberAxe.form.cannotBeChopped.text=§cel árbol no se puede cortar
+
+## Error Message
+LumberAxe.watchdogError.hang.text=Error de secuencias de comandos: intente cortar o inspeccionar árboles más pequeños o en un ángulo diferente.
