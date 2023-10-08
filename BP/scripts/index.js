@@ -1,5 +1,6 @@
 export * from './functions/utils';
 export * from './functions/tree_utils';
+export * from './classes/player';
 import Configuration from "./config";
 const { durabilityDamagePerBlock, chopLimit, includedLog, excludedLog, disableWatchDogTerminateLog } = Configuration;
 export { durabilityDamagePerBlock, chopLimit, includedLog, excludedLog, disableWatchDogTerminateLog };

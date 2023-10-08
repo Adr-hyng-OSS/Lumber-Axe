@@ -1,4 +1,4 @@
-import { world, ItemStack, system, Block, BlockPermutation, Player, ItemDurabilityComponent, ItemEnchantsComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, EnchantmentList, PlayerLeaveAfterEvent } from '@minecraft/server';
+import { world, ItemStack, system, Block, BlockPermutation, Player, ItemDurabilityComponent, ItemEnchantsComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, EnchantmentList, PlayerLeaveAfterEvent, PlayerBreakBlockAfterEvent } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData, ActionFormResponse} from "@minecraft/server-ui";
 import { disableWatchDogTerminateLog, durabilityDamagePerBlock ,axeEquipments, forceShow, getTreeLogs, isLogIncluded, treeCut} from "./index"
 
@@ -26,7 +26,7 @@ world.afterEvents.playerLeave.subscribe((e: PlayerLeaveAfterEvent) => {
     playerInteractionMap.set(e.playerId, false);
 });
 
-world.afterEvents.blockBreak.subscribe(async (e) => {
+world.afterEvents.playerBreakBlock.subscribe(async (e: PlayerBreakBlockAfterEvent) => {
     const { dimension, player, block } = e;
     const currentBreakBlock: BlockPermutation = e.brokenBlockPermutation;
     const blockTypeId: string = currentBreakBlock.type.id;
