@@ -1,16 +1,16 @@
-import { EntityEquipmentInventoryComponent, EquipmentSlot, ItemLockMode, ItemStack, MinecraftBlockTypes } from "@minecraft/server";
-import { validLogBlocks, axeEquipments, isGameModeSurvival, stackDistribution, durabilityDamagePerBlock, excludedLog, includedLog, chopLimit } from "../index";
+import { EntityEquippableComponent, EquipmentSlot, ItemLockMode, ItemStack } from "@minecraft/server";
+import { MinecraftBlockTypes } from "../modules/vanilla-types/index";
+import { validLogBlocks, axeEquipments, stackDistribution, durabilityDamagePerBlock, excludedLog, includedLog, chopLimit } from "../index";
 async function treeCut(player, dimension, location, blockTypeId) {
-    const equipment = player.getComponent(EntityEquipmentInventoryComponent.componentId);
-    const currentHeldAxe = equipment.getEquipment(EquipmentSlot.mainhand);
+    const equipment = player.getComponent(EntityEquippableComponent.componentId);
+    const currentHeldAxe = equipment.getEquipment(EquipmentSlot.Mainhand);
     if (!axeEquipments.includes(currentHeldAxe?.typeId))
         return;
     if (!isLogIncluded(blockTypeId))
         return;
-    const isSurvivalMode = isGameModeSurvival(player);
-    if (!isSurvivalMode)
+    if (!player.isSurvival())
         return;
-    if (isSurvivalMode)
+    if (player.isSurvival())
         currentHeldAxe.lockMode = ItemLockMode.slot;
     const itemDurability = currentHeldAxe.getComponent('minecraft:durability');
     const enchantments = currentHeldAxe.getComponent('minecraft:enchantments').enchantments;
@@ -21,7 +21,7 @@ async function treeCut(player, dimension, location, blockTypeId) {
     const totalDamage = visited.size * unbreakingDamage;
     const postDamagedDurability = itemDurability.damage + totalDamage;
     if (postDamagedDurability + 1 === itemDurability.maxDurability) {
-        equipment.setEquipment(EquipmentSlot.mainhand, undefined);
+        equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
     }
     else if (postDamagedDurability > itemDurability.maxDurability) {
         currentHeldAxe.lockMode = ItemLockMode.none;
@@ -30,21 +30,21 @@ async function treeCut(player, dimension, location, blockTypeId) {
     else if (postDamagedDurability < itemDurability.maxDurability) {
         itemDurability.damage = itemDurability.damage + totalDamage;
         currentHeldAxe.lockMode = ItemLockMode.none;
-        equipment.setEquipment(EquipmentSlot.mainhand, currentHeldAxe.clone());
+        equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
     }
     for (const group of groupAdjacentBlocks(visited)) {
         const firstElement = JSON.parse(group[0]);
         const lastElement = JSON.parse(group[group.length - 1]);
         if (firstElement === lastElement) {
             await new Promise((resolve) => {
-                dimension.getBlock(firstElement).setType(MinecraftBlockTypes.air);
+                dimension.getBlock(firstElement).setType(MinecraftBlockTypes.Air);
                 resolve();
             });
             continue;
         }
         else {
             await new Promise((resolve) => {
-                dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.air);
+                dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.Air);
                 resolve();
             });
         }
@@ -96,7 +96,7 @@ function getBlockNear(dimension, location, radius = 1) {
                 if (centerX === x && centerY === y && centerZ === z)
                     continue;
                 _block = dimension.getBlock({ x, y, z });
-                if (_block.isAir())
+                if (_block.isAir)
                     continue;
                 positions.push(_block);
             }

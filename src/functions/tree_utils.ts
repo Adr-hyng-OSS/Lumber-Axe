@@ -1,6 +1,7 @@
-import { Block, Dimension, EnchantmentList, EntityEquipmentInventoryComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantsComponent, ItemLockMode, ItemStack, MinecraftBlockTypes, Player, Vector3, system } from "@minecraft/server";
+import { Block, Dimension, EnchantmentList, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantsComponent, ItemLockMode, ItemStack, Player, Vector3 } from "@minecraft/server";
+import { MinecraftBlockTypes} from "../modules/vanilla-types/index";
 
-import { validLogBlocks, axeEquipments, isGameModeSurvival, stackDistribution, durabilityDamagePerBlock, excludedLog, includedLog, chopLimit } from "../index";
+import { validLogBlocks, axeEquipments, stackDistribution, durabilityDamagePerBlock, excludedLog, includedLog, chopLimit } from "../index";
 
 
 async function treeCut(player: Player, dimension: Dimension, location: Vector3, blockTypeId: string): Promise<void> {
@@ -9,14 +10,13 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     // Project: https://github.com/mcbe-mods/Cut-tree-one-click
 
     //! Make Lumberjack (extends Player) Interface / class for this.
-    const equipment = player.getComponent(EntityEquipmentInventoryComponent.componentId) as EntityEquipmentInventoryComponent;
-    const currentHeldAxe = equipment.getEquipment(EquipmentSlot.mainhand);
+    const equipment = player.getComponent(EntityEquippableComponent.componentId) as EntityEquippableComponent;
+    const currentHeldAxe = equipment.getEquipment(EquipmentSlot.Mainhand);
     if (!axeEquipments.includes(currentHeldAxe?.typeId)) return;
     if (!isLogIncluded(blockTypeId)) return;
 
-    const isSurvivalMode: boolean = isGameModeSurvival(player);
-    if (!isSurvivalMode) return;
-    if (isSurvivalMode) currentHeldAxe.lockMode = ItemLockMode.slot;
+    if (!player.isSurvival()) return;
+    if (player.isSurvival()) currentHeldAxe.lockMode = ItemLockMode.slot;
 
     //! MAKE THIS D-R-Y
     const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent('minecraft:durability') as ItemDurabilityComponent;
@@ -33,7 +33,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     //! USE Lumberjack Axe Interface / Class for this
     // Check if durabiliy is exact that can chop the tree but broke the axe, then broke it.
     if (postDamagedDurability + 1 === itemDurability.maxDurability) {
-        equipment.setEquipment(EquipmentSlot.mainhand, undefined);
+        equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
     // Check if the durability is not enough to chop the tree. Then don't apply the 3 damage.
     } else if (postDamagedDurability > itemDurability.maxDurability) {
         currentHeldAxe.lockMode = ItemLockMode.none;
@@ -42,7 +42,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     } else if (postDamagedDurability < itemDurability.maxDurability){
         itemDurability.damage = itemDurability.damage +  totalDamage;
         currentHeldAxe.lockMode = ItemLockMode.none;
-        equipment.setEquipment(EquipmentSlot.mainhand, currentHeldAxe.clone());
+        equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
     }
     
     //! Lumberjack Axe Interface / Class
@@ -51,13 +51,13 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
         const lastElement = JSON.parse(group[group.length - 1]);
         if (firstElement === lastElement) {
             await new Promise<void>((resolve) => {
-                dimension.getBlock(firstElement).setType(MinecraftBlockTypes.air);
+                dimension.getBlock(firstElement).setType(MinecraftBlockTypes.Air);
                 resolve();
             });
             continue;
         } else {
             await new Promise<void>((resolve) => {
-                dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.air);
+                dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.Air);
                 resolve();
             });
         }
@@ -113,7 +113,7 @@ function getBlockNear(dimension: Dimension, location: Vector3, radius: number = 
             for (let z = centerZ - radius; z <= centerZ + radius; z++) {
                 if(centerX === x && centerY === y && centerZ === z) continue;
                 _block = dimension.getBlock({ x, y, z });
-                if(_block.isAir()) continue;
+                if(_block.isAir) continue;
                 positions.push(_block);
             }
         }

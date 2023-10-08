@@ -1,4 +1,4 @@
-import { GameMode, Player, system } from "@minecraft/server";
+import { Player, system } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
 
 // Calculates the amount of items to be dropped in each stack. O(1)
@@ -17,13 +17,6 @@ function stackDistribution(number: number, groupSize: number = 64): number[] {
     return groups;
 }
 
-function isGameModeSurvival(player: Player): boolean {
-    // Modified Version
-    // Author: Lete114 <https://github.com/Lete114>
-    // Project: https://github.com/mcbe-mods/Cut-tree-one-click
-    return player.dimension.getPlayers({ gameMode: GameMode.survival, name: player.name, location: player.location, maxDistance: 1, closest: 1 }).length > 0;
-}
-
 async function forceShow(player: Player, form: ActionFormData, timeout: number = Infinity): Promise<ActionFormResponse> {
     // Script example for ScriptAPI
     // Author: Jayly#1397 <Jayly Discord>
@@ -39,4 +32,4 @@ async function forceShow(player: Player, form: ActionFormData, timeout: number =
     throw new Error(`Timed out after ${timeout} ticks`);
 }
 
-export {isGameModeSurvival, stackDistribution, forceShow}
+export {stackDistribution, forceShow}

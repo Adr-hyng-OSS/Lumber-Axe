@@ -25,7 +25,7 @@ system.beforeEvents.watchdogTerminate.subscribe((e) => {
 world.afterEvents.playerLeave.subscribe((e) => {
     playerInteractionMap.set(e.playerId, false);
 });
-world.afterEvents.blockBreak.subscribe(async (e) => {
+world.afterEvents.playerBreakBlock.subscribe(async (e) => {
     const { dimension, player, block } = e;
     const currentBreakBlock = e.brokenBlockPermutation;
     const blockTypeId = currentBreakBlock.type.id;
