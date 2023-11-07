@@ -70,7 +70,7 @@ world.beforeEvents.itemUseOn.subscribe((e) => {
                     translate: `LumberAxe.form.treeSizeAbrev.text`
                 },
                 {
-                    text: ` ${treeCollected.size}${canBeChopped ? "" : "+"} `
+                    text: ` ${treeCollected.size !== 0 ? treeCollected.size : 1}${canBeChopped ? "" : "+"} `
                 },
                 {
                     translate: `LumberAxe.form.treeSizeAbrevLogs.text`
