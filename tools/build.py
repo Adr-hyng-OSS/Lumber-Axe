@@ -12,7 +12,7 @@ args = parser.parse_args()
 
 addon_name = json.loads(open('setup/mc_manifest.json', 'r').read()).get("header").get("bp_name")
 build_pack_name = addon_name[:addon_name.rfind(" BP")]
-version_tag = 'v1.20.4x-108'
+version_tag = 'v1.20.5x-109'
 
 def handleError(err):
     if err: exit(err)
