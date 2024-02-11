@@ -14,7 +14,7 @@ async function treeCut(player, dimension, location, blockTypeId) {
         currentHeldAxe.lockMode = ItemLockMode.slot;
     const itemDurability = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId);
     const enchantments = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId));
-    const level = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level;
+    const level = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
     const unbreakingMultiplier = (100 / (level + 1)) / 100;
     const unbreakingDamage = durabilityDamagePerBlock * unbreakingMultiplier;
     const visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);

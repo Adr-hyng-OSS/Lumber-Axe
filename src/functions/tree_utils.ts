@@ -21,7 +21,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     //! MAKE THIS D-R-Y
     const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
     const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId));
-    const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level;
+    const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
     const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
     const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
     

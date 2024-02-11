@@ -49,8 +49,7 @@ world.beforeEvents.itemUseOn.subscribe((e: ItemUseOnBeforeEvent) => {
     //! MAKE THIS D-R-Y
     const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
     const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
-    console.warn(JSON.stringify(enchantments));
-    const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level;
+    const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
     const currentDurability = itemDurability.damage;
     const maxDurability = itemDurability.maxDurability;
     const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
@@ -59,7 +58,7 @@ world.beforeEvents.itemUseOn.subscribe((e: ItemUseOnBeforeEvent) => {
     getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1).then( (treeCollected: Set<string>) => {
         const totalDamage: number = (treeCollected.size) * unbreakingDamage;
         const totalDurabilityConsumed: number = currentDurability + totalDamage;
-        const canBeChopped: boolean = ((totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability));
+        const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
         
         const inspectionForm: ActionFormData = new ActionFormData()
             .title({
