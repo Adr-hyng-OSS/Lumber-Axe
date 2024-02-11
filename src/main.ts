@@ -1,6 +1,7 @@
-import { world, ItemStack, system, Block, BlockPermutation, Player, ItemDurabilityComponent, ItemEnchantsComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, EnchantmentList, PlayerLeaveAfterEvent, PlayerBreakBlockAfterEvent } from '@minecraft/server';
+import { world, ItemStack, system, Block, BlockPermutation, Player, ItemDurabilityComponent, ItemEnchantableComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, PlayerLeaveAfterEvent, PlayerBreakBlockAfterEvent, EnchantmentType, EnchantmentTypes } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData, ActionFormResponse} from "@minecraft/server-ui";
 import { disableWatchDogTerminateLog, durabilityDamagePerBlock ,axeEquipments, forceShow, getTreeLogs, isLogIncluded, treeCut} from "./index"
+import { MinecraftEnchantmentTypes } from './modules/vanilla-types/index';
 
 const logMap: Map<string, number> = new Map<string, number>();
 const playerInteractionMap: Map<string, boolean> = new Map<string, boolean>();
@@ -47,17 +48,18 @@ world.beforeEvents.itemUseOn.subscribe((e: ItemUseOnBeforeEvent) => {
 
     //! MAKE THIS D-R-Y
     const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
-    const enchantments: EnchantmentList = (currentHeldAxe?.getComponent(ItemEnchantsComponent.componentId) as ItemEnchantsComponent)?.enchantments;
-    const level: number = enchantments.hasEnchantment('unbreaking');
+    const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
+    console.warn(JSON.stringify(enchantments));
+    const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level;
     const currentDurability = itemDurability.damage;
     const maxDurability = itemDurability.maxDurability;
     const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
     const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
-    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1).then( async (treeCollected: Set<string>) => {
+    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1).then( (treeCollected: Set<string>) => {
         const totalDamage: number = (treeCollected.size) * unbreakingDamage;
         const totalDurabilityConsumed: number = currentDurability + totalDamage;
-        const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
+        const canBeChopped: boolean = ((totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability));
         
         const inspectionForm: ActionFormData = new ActionFormData()
             .title({

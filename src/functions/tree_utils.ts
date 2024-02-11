@@ -1,5 +1,5 @@
-import { Block, Dimension, EnchantmentList, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantsComponent, ItemLockMode, ItemStack, Player, Vector3 } from "@minecraft/server";
-import { MinecraftBlockTypes} from "../modules/vanilla-types/index";
+import { Block, Dimension, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, System, Vector3, system } from "@minecraft/server";
+import { MinecraftBlockTypes, MinecraftEnchantmentTypes} from "../modules/vanilla-types/index";
 
 import { validLogBlocks, axeEquipments, stackDistribution, durabilityDamagePerBlock, excludedLog, includedLog, chopLimit } from "../index";
 
@@ -19,9 +19,9 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     if (player.isSurvival()) currentHeldAxe.lockMode = ItemLockMode.slot;
 
     //! MAKE THIS D-R-Y
-    const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent('minecraft:durability') as ItemDurabilityComponent;
-    const enchantments: EnchantmentList = (currentHeldAxe.getComponent('minecraft:enchantments') as ItemEnchantsComponent).enchantments;
-    const level: number = enchantments.hasEnchantment('unbreaking');
+    const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
+    const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId));
+    const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level;
     const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
     const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
     
@@ -30,7 +30,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
     const totalDamage: number = visited.size * unbreakingDamage;
     const postDamagedDurability: number = itemDurability.damage + totalDamage;
 
-    //! USE Lumberjack Axe Interface / Class for this
+    //! Put this to Durability interface
     // Check if durabiliy is exact that can chop the tree but broke the axe, then broke it.
     if (postDamagedDurability + 1 === itemDurability.maxDurability) {
         equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
@@ -45,7 +45,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
         equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
     }
     
-    //! Lumberjack Axe Interface / Class
+    //! IDK where to put this.
     for (const group of groupAdjacentBlocks(visited)) {
         const firstElement = JSON.parse(group[0]);
         const lastElement = JSON.parse(group[group.length - 1]);
@@ -63,12 +63,15 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
         }
     }
     
-    for (const group of stackDistribution(visited.size)) {
-        await new Promise<void>((resolve) => {
-            dimension.spawnItem(new ItemStack(blockTypeId, group), location);
-            resolve();
-        });
-    }
+    system.runTimeout( async () => {
+        for (const group of stackDistribution(visited.size)) {
+            await new Promise<void>((resolve) => {
+                dimension.spawnItem(new ItemStack(blockTypeId, group), location);
+                resolve();
+            });
+        }
+    }, 5);
+    
 }
 
 function isLogIncluded(blockTypeId: string): boolean {
@@ -77,26 +80,32 @@ function isLogIncluded(blockTypeId: string): boolean {
     return false;
 }
 
-async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Promise<Set<string>> {
+function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Promise<Set<string>> {
     // Modified Version
     // Author: Lete114 <https://github.com/Lete114>
     // Project: https://github.com/mcbe-mods/Cut-tree-one-click
-    const visited: Set<string> = new Set<string>();
-    let queue: Block[] = getBlockNear(dimension, location);
-    while (queue.length > 0) {
-        if(visited.size >= chopLimit || visited.size >= maxNeeded) {
-            return visited;
-        }
-        const _block: Block = queue.shift();
-        if (!_block || !isLogIncluded(_block?.typeId)) continue;
-        if (_block.typeId !== blockTypeId) continue;
-        const pos: string = JSON.stringify(_block.location);
-        if (visited.has(pos)) continue;
-        visited.add(pos);
-        queue.push(...getBlockNear(dimension, _block.location));
-    }
-    queue = [];
-    return visited;
+    return new Promise<Set<string>>((resolve) => {
+        const traversingTreeInterval: number = system.runInterval(() => {
+            const visited: Set<string> = new Set<string>();
+            let queue: Block[] = getBlockNear(dimension, location);
+            while (queue.length > 0) {
+                if(visited.size >= chopLimit || visited.size >= maxNeeded) {
+                    system.clearRun(traversingTreeInterval);
+                    resolve(visited);
+                }
+                const _block: Block = queue.shift();
+                if (!_block || !isLogIncluded(_block?.typeId)) continue;
+                if (_block.typeId !== blockTypeId) continue;
+                const pos: string = JSON.stringify(_block.location);
+                if (visited.has(pos)) continue;
+                visited.add(pos);
+                queue.push(...getBlockNear(dimension, _block.location));
+            }
+            queue = [];
+            system.clearRun(traversingTreeInterval);
+            resolve(visited);
+        }, 1);
+    });
 }
 
 function getBlockNear(dimension: Dimension, location: Vector3, radius: number = 1): Block[] {
