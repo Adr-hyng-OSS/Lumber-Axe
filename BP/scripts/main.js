@@ -1,6 +1,7 @@
-import { world, system, ItemDurabilityComponent, ItemEnchantsComponent, WatchdogTerminateReason } from '@minecraft/server';
+import { world, system, ItemDurabilityComponent, ItemEnchantableComponent, WatchdogTerminateReason } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData } from "@minecraft/server-ui";
 import { disableWatchDogTerminateLog, durabilityDamagePerBlock, axeEquipments, forceShow, getTreeLogs, isLogIncluded, treeCut } from "./index";
+import { MinecraftEnchantmentTypes } from './modules/vanilla-types/index';
 const logMap = new Map();
 const playerInteractionMap = new Map();
 system.beforeEvents.watchdogTerminate.subscribe((e) => {
@@ -45,14 +46,14 @@ world.beforeEvents.itemUseOn.subscribe((e) => {
         return;
     playerInteractionMap.set(player.id, true);
     const itemDurability = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId);
-    const enchantments = currentHeldAxe?.getComponent(ItemEnchantsComponent.componentId)?.enchantments;
-    const level = enchantments.hasEnchantment('unbreaking');
+    const enchantments = currentHeldAxe.getComponent(ItemEnchantableComponent.componentId);
+    const level = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
     const currentDurability = itemDurability.damage;
     const maxDurability = itemDurability.maxDurability;
     const unbreakingMultiplier = (100 / (level + 1)) / 100;
     const unbreakingDamage = durabilityDamagePerBlock * unbreakingMultiplier;
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
-    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1).then(async (treeCollected) => {
+    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1).then((treeCollected) => {
         const totalDamage = (treeCollected.size) * unbreakingDamage;
         const totalDurabilityConsumed = currentDurability + totalDamage;
         const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);

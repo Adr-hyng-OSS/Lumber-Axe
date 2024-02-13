@@ -1,5 +1,5 @@
-import { EntityEquippableComponent, EquipmentSlot, ItemLockMode, ItemStack } from "@minecraft/server";
-import { MinecraftBlockTypes } from "../modules/vanilla-types/index";
+import { EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, system } from "@minecraft/server";
+import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "../modules/vanilla-types/index";
 import { validLogBlocks, axeEquipments, stackDistribution, durabilityDamagePerBlock, excludedLog, includedLog, chopLimit } from "../index";
 async function treeCut(player, dimension, location, blockTypeId) {
     const equipment = player.getComponent(EntityEquippableComponent.componentId);
@@ -12,9 +12,9 @@ async function treeCut(player, dimension, location, blockTypeId) {
         return;
     if (player.isSurvival())
         currentHeldAxe.lockMode = ItemLockMode.slot;
-    const itemDurability = currentHeldAxe.getComponent('minecraft:durability');
-    const enchantments = currentHeldAxe.getComponent('minecraft:enchantments').enchantments;
-    const level = enchantments.hasEnchantment('unbreaking');
+    const itemDurability = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId);
+    const enchantments = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId));
+    const level = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
     const unbreakingMultiplier = (100 / (level + 1)) / 100;
     const unbreakingDamage = durabilityDamagePerBlock * unbreakingMultiplier;
     const visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
@@ -49,12 +49,14 @@ async function treeCut(player, dimension, location, blockTypeId) {
             });
         }
     }
-    for (const group of stackDistribution(visited.size)) {
-        await new Promise((resolve) => {
-            dimension.spawnItem(new ItemStack(blockTypeId, group), location);
-            resolve();
-        });
-    }
+    system.runTimeout(async () => {
+        for (const group of stackDistribution(visited.size)) {
+            await new Promise((resolve) => {
+                dimension.spawnItem(new ItemStack(blockTypeId, group), location);
+                resolve();
+            });
+        }
+    }, 5);
 }
 function isLogIncluded(blockTypeId) {
     if (excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_'))
@@ -63,26 +65,32 @@ function isLogIncluded(blockTypeId) {
         return true;
     return false;
 }
-async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
-    const visited = new Set();
-    let queue = getBlockNear(dimension, location);
-    while (queue.length > 0) {
-        if (visited.size >= chopLimit || visited.size >= maxNeeded) {
-            return visited;
-        }
-        const _block = queue.shift();
-        if (!_block || !isLogIncluded(_block?.typeId))
-            continue;
-        if (_block.typeId !== blockTypeId)
-            continue;
-        const pos = JSON.stringify(_block.location);
-        if (visited.has(pos))
-            continue;
-        visited.add(pos);
-        queue.push(...getBlockNear(dimension, _block.location));
-    }
-    queue = [];
-    return visited;
+function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
+    return new Promise((resolve) => {
+        const traversingTreeInterval = system.runInterval(() => {
+            const visited = new Set();
+            let queue = getBlockNear(dimension, location);
+            while (queue.length > 0) {
+                if (visited.size >= chopLimit || visited.size >= maxNeeded) {
+                    system.clearRun(traversingTreeInterval);
+                    resolve(visited);
+                }
+                const _block = queue.shift();
+                if (!_block || !isLogIncluded(_block?.typeId))
+                    continue;
+                if (_block.typeId !== blockTypeId)
+                    continue;
+                const pos = JSON.stringify(_block.location);
+                if (visited.has(pos))
+                    continue;
+                visited.add(pos);
+                queue.push(...getBlockNear(dimension, _block.location));
+            }
+            queue = [];
+            system.clearRun(traversingTreeInterval);
+            resolve(visited);
+        }, 1);
+    });
 }
 function getBlockNear(dimension, location, radius = 1) {
     const centerX = location.x;
