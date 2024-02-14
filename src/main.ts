@@ -55,69 +55,65 @@ world.beforeEvents.itemUseOn.subscribe((e: ItemUseOnBeforeEvent) => {
     const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
     const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
-    getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1).then( (treeCollected: Set<string>) => {
-        const totalDamage: number = (treeCollected.size) * unbreakingDamage;
-        const totalDurabilityConsumed: number = currentDurability + totalDamage;
-        const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
+    const tree: Set<string> = getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
+    const totalDamage: number = (tree.size) * unbreakingDamage;
+    const totalDurabilityConsumed: number = currentDurability + totalDamage;
+    const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
         
-        const inspectionForm: ActionFormData = new ActionFormData()
-            .title({
-                rawtext: [
-                {
-                    translate: "LumberAxe.form.title.text"
-                }
-                ]})
-            .button(
-                {
-                    rawtext: [
-                    {
-                        translate: `LumberAxe.form.treeSizeAbrev.text`
-                    },
-                    {
-                        text: ` ${treeCollected.size !== 0 ? treeCollected.size : 1}${canBeChopped ? "" : "+" } `
-                    },
-                    {
-                        translate: `LumberAxe.form.treeSizeAbrevLogs.text`
-                    }
-                ]}, "textures/InfoUI/blocks.png")
-            .button(
-                {
-                    rawtext: [
-                    {
-                        translate: `LumberAxe.form.durabilityAbrev.text`
-                    },
-                    {
-                        text: ` ${currentDurability}`
-                    }
-                ]}, "textures/InfoUI/axe_durability.png")
-            .button(
-                {
-                    rawtext: [
-                    {
-                        translate: `LumberAxe.form.maxDurabilityAbrev.text`
-                    },
-                    {
-                        text: ` ${maxDurability}`
-                    }
-                ]}, "textures/InfoUI/required_durability.png")
-            .button(
-                {
-                    rawtext: [
-                    {
-                        text: "§l"
-                    },
-                    {
-                        translate: `${canBeChopped ? "LumberAxe.form.canBeChopped.text": "LumberAxe.form.cannotBeChopped.text"}`
-                    }
-                ]}, "textures/InfoUI/canBeCut.png");
-        forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
-            playerInteractionMap.set(player.id, false);
-            if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) return;
-        }).catch((error: Error) => {
-            console.warn("Form Error: ", error, error.stack);
-        });
-    }).catch((error: Error) => {
-        console.warn("Tree Error: ", error, error.stack);
+    const inspectionForm: ActionFormData = new ActionFormData()
+    .title({
+        rawtext: [
+        {
+            translate: "LumberAxe.form.title.text"
+        }
+        ]})
+    .button(
+        {
+            rawtext: [
+            {
+                translate: `LumberAxe.form.treeSizeAbrev.text`
+            },
+            {
+                text: ` ${tree.size !== 0 ? tree.size : 1}${canBeChopped ? "" : "+" } `
+            },
+            {
+                translate: `LumberAxe.form.treeSizeAbrevLogs.text`
+            }
+        ]}, "textures/InfoUI/blocks.png")
+    .button(
+        {
+            rawtext: [
+            {
+                translate: `LumberAxe.form.durabilityAbrev.text`
+            },
+            {
+                text: ` ${currentDurability}`
+            }
+        ]}, "textures/InfoUI/axe_durability.png")
+    .button(
+        {
+            rawtext: [
+            {
+                translate: `LumberAxe.form.maxDurabilityAbrev.text`
+            },
+            {
+                text: ` ${maxDurability}`
+            }
+        ]}, "textures/InfoUI/required_durability.png")
+    .button(
+        {
+            rawtext: [
+            {
+                text: "§l"
+            },
+            {
+                translate: `${canBeChopped ? "LumberAxe.form.canBeChopped.text": "LumberAxe.form.cannotBeChopped.text"}`
+            }
+        ]}, "textures/InfoUI/canBeCut.png");
+    forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
         playerInteractionMap.set(player.id, false);
+        if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) return;
+    }).catch((error: Error) => {
+        console.warn("Form Error: ", error, error.stack);
     });
-});
+  });

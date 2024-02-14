@@ -46,7 +46,9 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
   }
 
   // When done it should return boolean,and distribute the total chopped.
-  const breakBlocksGenerator: number = system.runJob(function*(): Generator<void, void, unknown> {
+  const breakBlocksGeneratorID: number = system.runJob(breakBlocksGenerator());
+
+  function *breakBlocksGenerator(): Generator<void, void, void> {
     try {
       for (const group of groupAdjacentBlocks(visited)) {
         const firstElement = JSON.parse(group[0]);
@@ -65,10 +67,8 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
         dimension.spawnItem(new ItemStack(blockTypeId, +stack), location);
         yield;
       }
-    } catch (error) {
-      system.clearJob(breakBlocksGenerator);
-    }
-  });
+    } catch (error) { system.clearJob(breakBlocksGeneratorID); }
+  }
 }
 
 function isLogIncluded(blockTypeId: string): boolean {

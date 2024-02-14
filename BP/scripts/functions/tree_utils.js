@@ -32,31 +32,31 @@ async function treeCut(player, dimension, location, blockTypeId) {
         currentHeldAxe.lockMode = ItemLockMode.none;
         equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
     }
-    for (const group of groupAdjacentBlocks(visited)) {
-        const firstElement = JSON.parse(group[0]);
-        const lastElement = JSON.parse(group[group.length - 1]);
-        if (firstElement === lastElement) {
-            await new Promise((resolve) => {
-                dimension.getBlock(firstElement).setType(MinecraftBlockTypes.Air);
-                resolve();
-            });
-            continue;
+    const breakBlocksGeneratorID = system.runJob(breakBlocksGenerator());
+    function* breakBlocksGenerator() {
+        try {
+            for (const group of groupAdjacentBlocks(visited)) {
+                const firstElement = JSON.parse(group[0]);
+                const lastElement = JSON.parse(group[group.length - 1]);
+                if (firstElement === lastElement) {
+                    dimension.getBlock(firstElement).setType(MinecraftBlockTypes.Air);
+                    yield;
+                    continue;
+                }
+                else {
+                    dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.Air);
+                    yield;
+                }
+            }
+            for (const stack in stackDistribution(visited.size)) {
+                dimension.spawnItem(new ItemStack(blockTypeId, +stack), location);
+                yield;
+            }
         }
-        else {
-            await new Promise((resolve) => {
-                dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.Air);
-                resolve();
-            });
+        catch (error) {
+            system.clearJob(breakBlocksGeneratorID);
         }
     }
-    system.runTimeout(async () => {
-        for (const group of stackDistribution(visited.size)) {
-            await new Promise((resolve) => {
-                dimension.spawnItem(new ItemStack(blockTypeId, group), location);
-                resolve();
-            });
-        }
-    }, 5);
 }
 function isLogIncluded(blockTypeId) {
     if (excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_'))
@@ -66,51 +66,49 @@ function isLogIncluded(blockTypeId) {
     return false;
 }
 function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
-    return new Promise((resolve) => {
-        const traversingTreeInterval = system.runInterval(() => {
-            const visited = new Set();
-            let queue = getBlockNear(dimension, location);
-            while (queue.length > 0) {
-                if (visited.size >= chopLimit || visited.size >= maxNeeded) {
-                    system.clearRun(traversingTreeInterval);
-                    resolve(visited);
+    const visitedLocations = new Set();
+    visitedLocations.add(JSON.stringify(location));
+    function getBlockNear(dimension, location, radius = 1) {
+        const originalX = location.x;
+        const originalY = location.y;
+        const originalZ = location.z;
+        const positions = [];
+        let _block;
+        for (let x = originalX - radius; x <= originalX + radius; x++) {
+            for (let y = originalY - radius; y <= originalY + radius; y++) {
+                for (let z = originalZ - radius; z <= originalZ + radius; z++) {
+                    const newLoc = { x, y, z };
+                    const parsedLoc = JSON.stringify(newLoc);
+                    if (visitedLocations.has(parsedLoc))
+                        continue;
+                    visitedLocations.add(parsedLoc);
+                    _block = dimension.getBlock(newLoc);
+                    if (_block.isAir)
+                        continue;
+                    positions.push(_block);
                 }
-                const _block = queue.shift();
-                if (!_block || !isLogIncluded(_block?.typeId))
-                    continue;
-                if (_block.typeId !== blockTypeId)
-                    continue;
-                const pos = JSON.stringify(_block.location);
-                if (visited.has(pos))
-                    continue;
-                visited.add(pos);
-                queue.push(...getBlockNear(dimension, _block.location));
-            }
-            queue = [];
-            system.clearRun(traversingTreeInterval);
-            resolve(visited);
-        }, 1);
-    });
-}
-function getBlockNear(dimension, location, radius = 1) {
-    const centerX = location.x;
-    const centerY = location.y;
-    const centerZ = location.z;
-    const positions = [];
-    let _block;
-    for (let x = centerX - radius; x <= centerX + radius; x++) {
-        for (let y = centerY - radius; y <= centerY + radius; y++) {
-            for (let z = centerZ - radius; z <= centerZ + radius; z++) {
-                if (centerX === x && centerY === y && centerZ === z)
-                    continue;
-                _block = dimension.getBlock({ x, y, z });
-                if (_block.isAir)
-                    continue;
-                positions.push(_block);
             }
         }
+        return positions;
     }
-    return positions;
+    const visited = new Set();
+    let queue = getBlockNear(dimension, location);
+    while (queue.length > 0) {
+        if (visited.size >= chopLimit || visited.size >= maxNeeded) {
+            return visited;
+        }
+        const _block = queue.shift();
+        if (!_block?.isValid() || !isLogIncluded(_block?.typeId))
+            continue;
+        if (_block.typeId !== blockTypeId)
+            continue;
+        const pos = JSON.stringify(_block.location);
+        if (visited.has(pos))
+            continue;
+        visited.add(pos);
+        queue.push(...getBlockNear(dimension, _block.location));
+    }
+    return visited;
 }
 function groupAdjacentBlocks(visited) {
     const array = Array.from(visited).map(item => JSON.parse(item));
