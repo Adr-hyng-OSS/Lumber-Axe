@@ -2,7 +2,7 @@ import { Block, Dimension, EntityEquippableComponent, EquipmentSlot, ItemDurabil
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes, MinecraftItemTypes } from "../modules/vanilla-types/index";
 
 import { validLogBlocks, axeEquipments, stackDistribution, durabilityDamagePerBlock, excludedLog, includedLog, chopLimit } from "../index";
-
+// Test
 
 async function treeCut(player: Player, dimension: Dimension, location: Vector3, blockTypeId: string): Promise<void> {
   // Modified Version

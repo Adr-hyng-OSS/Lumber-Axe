@@ -59,7 +59,8 @@ world.beforeEvents.itemUseOn.subscribe((e: ItemUseOnBeforeEvent) => {
     const totalDamage: number = (tree.size) * unbreakingDamage;
     const totalDurabilityConsumed: number = currentDurability + totalDamage;
     const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
-        
+
+    // Test
     const inspectionForm: ActionFormData = new ActionFormData()
     .title({
         rawtext: [
