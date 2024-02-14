@@ -2,14 +2,14 @@ import { Block, Dimension, EntityEquippableComponent, EquipmentSlot, ItemDurabil
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes, MinecraftItemTypes } from "../modules/vanilla-types/index";
 
 import { validLogBlocks, axeEquipments, stackDistribution, durabilityDamagePerBlock, excludedLog, includedLog, chopLimit } from "../index";
-// Test
+// Test 2
 
 async function treeCut(player: Player, dimension: Dimension, location: Vector3, blockTypeId: string): Promise<void> {
   // Modified Version
   // Author: Lete114 <https://github.com/Lete114>
   // Project: https://github.com/mcbe-mods/Cut-tree-one-click
 
-  //! Make Lumberjack (extends Player) Interface / class for this.
+  //! Make Lumberjack (extends Player) Interface i/ class for this
   const equipment = player.getComponent(EntityEquippableComponent.componentId) as EntityEquippableComponent;
   const currentHeldAxe = equipment.getEquipment(EquipmentSlot.Mainhand);
   if (!axeEquipments.includes(currentHeldAxe?.typeId)) return;
