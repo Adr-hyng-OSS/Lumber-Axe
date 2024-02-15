@@ -17,24 +17,26 @@ async function treeCut(player, dimension, location, blockTypeId) {
     const level = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
     const unbreakingMultiplier = (100 / (level + 1)) / 100;
     const unbreakingDamage = durabilityDamagePerBlock * unbreakingMultiplier;
-    const visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
-    const totalDamage = visited.size * unbreakingDamage;
-    const postDamagedDurability = itemDurability.damage + totalDamage;
-    if (postDamagedDurability + 1 === itemDurability.maxDurability) {
-        equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
-    }
-    else if (postDamagedDurability > itemDurability.maxDurability) {
-        currentHeldAxe.lockMode = ItemLockMode.none;
-        return;
-    }
-    else if (postDamagedDurability < itemDurability.maxDurability) {
-        itemDurability.damage = itemDurability.damage + totalDamage;
-        currentHeldAxe.lockMode = ItemLockMode.none;
-        equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
-    }
     const breakBlocksGeneratorID = system.runJob(breakBlocksGenerator());
     function* breakBlocksGenerator() {
         try {
+            const visited = getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
+            console.warn("Awaited Visiteds: ", visited.size);
+            const totalDamage = visited.size * unbreakingDamage;
+            console.warn("Idk if it waited: ", visited.size);
+            const postDamagedDurability = itemDurability.damage + totalDamage;
+            if (postDamagedDurability + 1 === itemDurability.maxDurability) {
+                equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
+            }
+            else if (postDamagedDurability > itemDurability.maxDurability) {
+                currentHeldAxe.lockMode = ItemLockMode.none;
+                return;
+            }
+            else if (postDamagedDurability < itemDurability.maxDurability) {
+                itemDurability.damage = itemDurability.damage + totalDamage;
+                currentHeldAxe.lockMode = ItemLockMode.none;
+                equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
+            }
             for (const group of groupAdjacentBlocks(visited)) {
                 const firstElement = JSON.parse(group[0]);
                 const lastElement = JSON.parse(group[group.length - 1]);
@@ -48,12 +50,14 @@ async function treeCut(player, dimension, location, blockTypeId) {
                     yield;
                 }
             }
-            for (const stack in stackDistribution(visited.size)) {
-                dimension.spawnItem(new ItemStack(blockTypeId, +stack), location);
+            for (const stack of stackDistribution(visited.size)) {
+                console.warn(stack, typeof stack);
+                dimension.spawnItem(new ItemStack(blockTypeId, stack), location);
                 yield;
             }
         }
         catch (error) {
+            console.warn(error);
             system.clearJob(breakBlocksGeneratorID);
         }
     }
@@ -66,14 +70,13 @@ function isLogIncluded(blockTypeId) {
     return false;
 }
 function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
+    const visited = new Set();
     const visitedLocations = new Set();
     visitedLocations.add(JSON.stringify(location));
-    function getBlockNear(dimension, location, radius = 1) {
+    function* getBlockNear(dimension, location, radius = 1) {
         const originalX = location.x;
         const originalY = location.y;
         const originalZ = location.z;
-        const positions = [];
-        let _block;
         for (let x = originalX - radius; x <= originalX + radius; x++) {
             for (let y = originalY - radius; y <= originalY + radius; y++) {
                 for (let z = originalZ - radius; z <= originalZ + radius; z++) {
@@ -82,22 +85,31 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
                     if (visitedLocations.has(parsedLoc))
                         continue;
                     visitedLocations.add(parsedLoc);
-                    _block = dimension.getBlock(newLoc);
-                    if (_block.isAir)
-                        continue;
-                    positions.push(_block);
+                    const _block = dimension.getBlock(newLoc);
+                    yield _block;
                 }
             }
         }
-        return positions;
     }
-    const visited = new Set();
-    let queue = getBlockNear(dimension, location);
-    while (queue.length > 0) {
+    let fetchBlockGenerator = getBlockNear(dimension, location);
+    let nextIteration = fetchBlockGenerator.next();
+    let _block;
+    let queue = [];
+    while (!nextIteration.done || queue.length > 0) {
         if (visited.size >= chopLimit || visited.size >= maxNeeded) {
-            return visited;
+            break;
         }
-        const _block = queue.shift();
+        if (nextIteration.done) {
+            const newLoc = queue.shift();
+            fetchBlockGenerator = getBlockNear(dimension, newLoc);
+            nextIteration = fetchBlockGenerator.next();
+            _block = nextIteration.value;
+            nextIteration = fetchBlockGenerator.next();
+        }
+        else {
+            _block = nextIteration.value;
+            nextIteration = fetchBlockGenerator.next();
+        }
         if (!_block?.isValid() || !isLogIncluded(_block?.typeId))
             continue;
         if (_block.typeId !== blockTypeId)
@@ -106,7 +118,7 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
         if (visited.has(pos))
             continue;
         visited.add(pos);
-        queue.push(...getBlockNear(dimension, _block.location));
+        queue.push(_block.location);
     }
     return visited;
 }

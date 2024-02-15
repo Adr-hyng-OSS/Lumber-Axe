@@ -2,7 +2,7 @@ import { Player, system } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
 
 // Calculates the amount of items to be dropped in each stack. O(1)
-function stackDistribution(number: number, groupSize: number = 64): number[] {
+function stackDistribution(number: number, groupSize: number = 64): Array<number> {
   // Author: Adr-hyng <https://github.com/Adr-hyng>
   // Project: https://github.com/Adr-hyng-OSS/Lumber-Axe
   const fullGroupsCount = Math.floor(number / groupSize);

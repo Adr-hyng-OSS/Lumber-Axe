@@ -55,6 +55,8 @@ world.beforeEvents.itemUseOn.subscribe((e: ItemUseOnBeforeEvent) => {
     const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
     const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
+
+    // Currently this is synchronoze that blocks the main thread.
     const tree: Set<string> = getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
     const totalDamage: number = (tree.size) * unbreakingDamage;
     const totalDurabilityConsumed: number = currentDurability + totalDamage;

@@ -24,32 +24,27 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
   const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
   const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
   const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
-
-  const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
-
-  const totalDamage: number = visited.size * unbreakingDamage;
-  const postDamagedDurability: number = itemDurability.damage + totalDamage;
-
-  //! Put this to Durability interface
-  // Check if durabiliy is exact that can chop the tree but broke the axe, then broke it.
-  if (postDamagedDurability + 1 === itemDurability.maxDurability) {
-    equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
-    // Check if the durability is not enough to chop the tree. Then don't apply the 3 damage.
-  } else if (postDamagedDurability > itemDurability.maxDurability) {
-    currentHeldAxe.lockMode = ItemLockMode.none;
-    return;
-    // Check if total durability will consume is still enough and not near the max durability
-  } else if (postDamagedDurability < itemDurability.maxDurability) {
-    itemDurability.damage = itemDurability.damage + totalDamage;
-    currentHeldAxe.lockMode = ItemLockMode.none;
-    equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
-  }
-
+  
   // When done it should return boolean,and distribute the total chopped.
   const breakBlocksGeneratorID: number = system.runJob(breakBlocksGenerator());
 
-  function *breakBlocksGenerator(): Generator<void, void, void> {
+  function* breakBlocksGenerator(): Generator<void, void, void> {
     try {
+      const visited: Set<string> = getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
+      const totalDamage: number = visited.size * unbreakingDamage;
+      const postDamagedDurability: number = itemDurability.damage + totalDamage;
+
+      if (postDamagedDurability + 1 === itemDurability.maxDurability) {
+        equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
+      } else if (postDamagedDurability > itemDurability.maxDurability) {
+        currentHeldAxe.lockMode = ItemLockMode.none;
+        return;
+      } else if (postDamagedDurability < itemDurability.maxDurability) {
+        itemDurability.damage = itemDurability.damage + totalDamage;
+        currentHeldAxe.lockMode = ItemLockMode.none;
+        equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
+      }
+
       for (const group of groupAdjacentBlocks(visited)) {
         const firstElement = JSON.parse(group[0]);
         const lastElement = JSON.parse(group[group.length - 1]);
@@ -63,11 +58,14 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
         }
       }
 
-      for(const stack in stackDistribution(visited.size)) {
-        dimension.spawnItem(new ItemStack(blockTypeId, +stack), location);
+      for(const stack of stackDistribution(visited.size)) {
+        dimension.spawnItem(new ItemStack(blockTypeId, stack), location);
         yield;
       }
-    } catch (error) { system.clearJob(breakBlocksGeneratorID); }
+    } catch (error) { 
+      console.warn(error);
+      system.clearJob(breakBlocksGeneratorID); 
+    }
   }
 }
 
@@ -78,14 +76,16 @@ function isLogIncluded(blockTypeId: string): boolean {
 }
 
 function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Set<string> {
+  const visited: Set<string> = new Set<string>();
   const visitedLocations: Set<string> = new Set<string>();
   visitedLocations.add(JSON.stringify(location));
-  function getBlockNear(dimension: Dimension, location: Vector3, radius: number = 1): Block[] {
+
+  // Make this a generator, and the traversing also.
+  // Make this return a block to while loop of BFS,each iteration.
+  function* getBlockNear(dimension: Dimension, location: Vector3, radius: number = 1): Generator<Block, any, void> {
     const originalX: number = location.x;
     const originalY: number = location.y;
     const originalZ: number = location.z;
-    const positions: Block[] = [];
-    let _block: Block;
     for (let x = originalX - radius; x <= originalX + radius; x++) {
       for (let y = originalY - radius; y <= originalY + radius; y++) {
         for (let z = originalZ - radius; z <= originalZ + radius; z++) {
@@ -93,23 +93,35 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
           const parsedLoc: string = JSON.stringify(newLoc);
           if(visitedLocations.has(parsedLoc)) continue;
           visitedLocations.add(parsedLoc);
-          _block = dimension.getBlock(newLoc);
-          if (_block.isAir) continue;
-          positions.push(_block);
+          const _block: Block = dimension.getBlock(newLoc);
+          yield _block;
         }
       }
     }
-    return positions;
   }    
+
+  let fetchBlockGenerator = getBlockNear(dimension, location);
   // This only checks for visited log blocks to traverse.
-  const visited: Set<string> = new Set<string>();
-  let queue: Block[] = getBlockNear(dimension, location);
-  while (queue.length > 0) {
+  
+  // Fetches the first element,if its done or no more. Ifnot proceed.
+  let nextIteration = fetchBlockGenerator.next();
+  let _block: Block;
+  let queue: Vector3[] = [];
+  while (!nextIteration.done || queue.length > 0) { 
     if (visited.size >= chopLimit || visited.size >= maxNeeded) {
-      return visited;
+      break;
     }
-    // Gets the first selected block
-    const _block: Block = queue.shift();
+    
+    if(nextIteration.done) { 
+      const newLoc: Vector3 = queue.shift(); 
+      fetchBlockGenerator = getBlockNear(dimension, newLoc);
+      nextIteration = fetchBlockGenerator.next();
+      _block = nextIteration.value;
+      nextIteration = fetchBlockGenerator.next();
+    } else {
+      _block = nextIteration.value;
+      nextIteration = fetchBlockGenerator.next();
+    }
 
     // Identify if it's a log block.
     if (!_block?.isValid() || !isLogIncluded(_block?.typeId)) continue;
@@ -123,7 +135,7 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
     // If the position of log block is already visited, then just go next or ignore.
     if (visited.has(pos)) continue;
     visited.add(pos);
-    queue.push(...getBlockNear(dimension, _block.location));
+    queue.push(_block.location);
   }
   return visited;
 }
