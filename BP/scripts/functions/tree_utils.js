@@ -20,9 +20,13 @@ async function treeCut(player, dimension, location, blockTypeId) {
     const breakBlocksGeneratorID = system.runJob(breakBlocksGenerator());
     function* breakBlocksGenerator() {
         try {
-            const visited = getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
+            let visited;
+            system.run(async () => {
+                visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
+            });
             const totalDamage = visited.size * unbreakingDamage;
             const postDamagedDurability = itemDurability.damage + totalDamage;
+            console.warn(visited.size);
             if (postDamagedDurability + 1 === itemDurability.maxDurability) {
                 equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
             }
@@ -66,7 +70,7 @@ function isLogIncluded(blockTypeId) {
         return true;
     return false;
 }
-function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
+async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
     let visited = new Set();
     const visitedLocations = new Set();
     visitedLocations.add(JSON.stringify(location));
@@ -122,7 +126,13 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
     }
     const t = traverseTree();
     const x = system.runJob(t);
-    return visited;
+    return await new Promise((resolve) => {
+        const awaitResolve = system.runJob((function* () {
+            while (!t.next().done) { }
+            system.clearJob(awaitResolve);
+            resolve(visited);
+        })());
+    });
 }
 function groupAdjacentBlocks(visited) {
     const array = Array.from(visited).map(item => JSON.parse(item));

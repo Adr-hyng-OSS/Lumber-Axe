@@ -30,10 +30,16 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
 
   function* breakBlocksGenerator(): Generator<void, void, void> {
     try {
-      const visited: Set<string> = getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
+      let visited: Set<string>;
+      
+
+      system.run(async () => {
+        visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
+      });
       const totalDamage: number = visited.size * unbreakingDamage;
       const postDamagedDurability: number = itemDurability.damage + totalDamage;
 
+      console.warn(visited.size);
       if (postDamagedDurability + 1 === itemDurability.maxDurability) {
         equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
       } else if (postDamagedDurability > itemDurability.maxDurability) {
@@ -75,7 +81,7 @@ function isLogIncluded(blockTypeId: string): boolean {
   return false;
 }
 
-function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Set<string> {
+async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number):Promise<Set<string>> {
   let visited: Set<string> = new Set<string>();
   const visitedLocations: Set<string> = new Set<string>();
   visitedLocations.add(JSON.stringify(location));
@@ -133,7 +139,13 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
   const t = traverseTree();
   const x = system.runJob(t);
   // It should return after generator is done.
-  return visited;
+  return await new Promise<Set<string>>((resolve) => {
+    const awaitResolve: number = system.runJob((function* () {
+      while(!t.next().done) {}
+      system.clearJob(awaitResolve);
+      resolve(visited);
+    })());
+  });
 }
 
 

@@ -34,7 +34,7 @@ world.afterEvents.playerBreakBlock.subscribe(async (e: PlayerBreakBlockAfterEven
     treeCut(player, dimension, block.location, blockTypeId);
 });
 
-world.beforeEvents.itemUseOn.subscribe((e: ItemUseOnBeforeEvent) => {
+world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const currentHeldAxe: ItemStack = e.itemStack;
     const blockInteracted: Block = e.block; //! NEEDED
     const player: Player = e.source as Player; //! NEEDED
@@ -57,7 +57,7 @@ world.beforeEvents.itemUseOn.subscribe((e: ItemUseOnBeforeEvent) => {
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
 
     // Currently this is synchronoze that blocks the main thread.
-    const tree: Set<string> = getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
+    const tree: Set<string> = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
     const totalDamage: number = (tree.size) * unbreakingDamage;
     const totalDurabilityConsumed: number = currentDurability + totalDamage;
     const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);

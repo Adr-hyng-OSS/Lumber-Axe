@@ -17,7 +17,7 @@ args = parser.parse_args()
 
 if args.dest == 'stable':
     if is_pocket_edition:
-        com_mojang = os.path.expanduser('~/storage/shared/Android/data/com.mojang.minecraftpe/files/games/com.mojang/')
+        com_mojang = os.path.expanduser('~/storage/shared/Android/data/com.mojang.minecraftpe/files/games/com.mojang')
     else:
         com_mojang = os.path.expandvars('%localappdata%\\Packages\\Microsoftft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang')
 elif args.dest == 'preview':
@@ -26,8 +26,8 @@ elif args.dest == 'server':
     com_mojang = os.path.expandvars(SERVER_LOCATION)
 
 
-behaviour_pack = com_mojang + f'\\development_behavior_packs\\{pack_folder} BP'
-resource_pack = com_mojang + f'\\development_resource_packs\\{pack_folder} RP'
+behaviour_pack = com_mojang + f'/development_behavior_packs/{pack_folder} BP'
+resource_pack = com_mojang + f'/development_resource_packs/{pack_folder} RP'
 
 def sync_file(path, from_root, to_root):
     from_file = Path(path).relative_to(from_root)

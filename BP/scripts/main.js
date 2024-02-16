@@ -32,7 +32,7 @@ world.afterEvents.playerBreakBlock.subscribe(async (e) => {
     const blockTypeId = currentBreakBlock.type.id;
     treeCut(player, dimension, block.location, blockTypeId);
 });
-world.beforeEvents.itemUseOn.subscribe((e) => {
+world.beforeEvents.itemUseOn.subscribe(async (e) => {
     const currentHeldAxe = e.itemStack;
     const blockInteracted = e.block;
     const player = e.source;
@@ -53,7 +53,7 @@ world.beforeEvents.itemUseOn.subscribe((e) => {
     const unbreakingMultiplier = (100 / (level + 1)) / 100;
     const unbreakingDamage = durabilityDamagePerBlock * unbreakingMultiplier;
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
-    const tree = getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
+    const tree = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
     const totalDamage = (tree.size) * unbreakingDamage;
     const totalDurabilityConsumed = currentDurability + totalDamage;
     const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
