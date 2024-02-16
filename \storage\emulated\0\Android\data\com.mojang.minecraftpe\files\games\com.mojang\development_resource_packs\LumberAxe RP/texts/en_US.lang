@@ -1,0 +1,20 @@
+## Items
+item.yn:wooden_lumber_axe.name=Wooden Lumber Axe
+item.yn:stone_lumber_axe.name=Stone Lumber Axe
+item.yn:golden_lumber_axe.name=Golden Lumber Axe
+item.yn:iron_lumber_axe.name=Iron Lumber Axe
+item.yn:diamond_lumber_axe.name=Diamond Lumber Axe
+item.yn:netherite_lumber_axe.name=Netherite Lumber Axe
+
+
+## Form-UI
+LumberAxe.form.title.text=LOG INFORMATION
+LumberAxe.form.treeSizeAbrev.text=HAS
+LumberAxe.form.treeSizeAbrevLogs.text=LOG/S
+LumberAxe.form.durabilityAbrev.text=DMG
+LumberAxe.form.maxDurabilityAbrev.text=MAX
+LumberAxe.form.canBeChopped.text=§aChoppable
+LumberAxe.form.cannotBeChopped.text=§cCannot be chopped
+
+## Error Message
+LumberAxe.watchdogError.hang.text=Scripting Error: Try chopping or inspecting smaller trees or different angle.

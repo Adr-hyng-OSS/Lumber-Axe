@@ -76,7 +76,7 @@ function isLogIncluded(blockTypeId: string): boolean {
 }
 
 function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Set<string> {
-  const visited: Set<string> = new Set<string>();
+  let visited: Set<string> = new Set<string>();
   const visitedLocations: Set<string> = new Set<string>();
   visitedLocations.add(JSON.stringify(location));
 
@@ -100,43 +100,39 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
     }
   }    
 
-  let fetchBlockGenerator = getBlockNear(dimension, location);
-  // This only checks for visited log blocks to traverse.
-  
-  // Fetches the first element,if its done or no more. Ifnot proceed.
-  let nextIteration = fetchBlockGenerator.next();
-  let _block: Block;
-  let queue: Vector3[] = [];
-  while (!nextIteration.done || queue.length > 0) { 
-    if (visited.size >= chopLimit || visited.size >= maxNeeded) {
-      break;
+  function* traverseTree(): Generator<void, void, void> {
+    let fetchBlockGenerator = getBlockNear(dimension, location);
+    let nextIteration = fetchBlockGenerator.next();
+    let _block: Block;
+    let queue: Vector3[] = [];
+    while (!nextIteration.done || queue.length > 0) {
+      if (visited.size >= chopLimit || visited.size >= maxNeeded) {
+        break;
+      }
+      
+      if(nextIteration.done) { 
+        const newLoc: Vector3 = queue.shift(); 
+        fetchBlockGenerator = getBlockNear(dimension, newLoc);
+        nextIteration = fetchBlockGenerator.next();
+        _block = nextIteration.value;
+        nextIteration = fetchBlockGenerator.next();
+      } else {
+        _block = nextIteration.value;
+        nextIteration = fetchBlockGenerator.next();
+      }
+      if (!_block?.isValid() || !isLogIncluded(_block?.typeId)) continue;
+
+      if (_block.typeId !== blockTypeId) continue;
+      const pos: string = JSON.stringify(_block.location);
+      if (visited.has(pos)) continue;
+      visited.add(pos);
+      queue.push(_block.location);
+      yield;
     }
-    
-    if(nextIteration.done) { 
-      const newLoc: Vector3 = queue.shift(); 
-      fetchBlockGenerator = getBlockNear(dimension, newLoc);
-      nextIteration = fetchBlockGenerator.next();
-      _block = nextIteration.value;
-      nextIteration = fetchBlockGenerator.next();
-    } else {
-      _block = nextIteration.value;
-      nextIteration = fetchBlockGenerator.next();
-    }
-
-    // Identify if it's a log block.
-    if (!_block?.isValid() || !isLogIncluded(_block?.typeId)) continue;
-
-    // Identify if it's not the same variant log block from the chopped log.
-    if (_block.typeId !== blockTypeId) continue;
-
-    // Get the location or position.
-    const pos: string = JSON.stringify(_block.location);
-
-    // If the position of log block is already visited, then just go next or ignore.
-    if (visited.has(pos)) continue;
-    visited.add(pos);
-    queue.push(_block.location);
   }
+  const t = traverseTree();
+  const x = system.runJob(t);
+  // It should return after generator is done.
   return visited;
 }
 

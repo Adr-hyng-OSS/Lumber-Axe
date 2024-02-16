@@ -1,0 +1,20 @@
+## Items
+item.yn:wooden_lumber_axe.name=Деревянный топор дровосека
+item.yn:stone_lumber_axe.name=Каменный топор дровосека
+item.yn:golden_lumber_axe.name=Золотой топор дровосека
+item.yn:iron_lumber_axe.name=Топор железного дровосека
+item.yn:diamond_lumber_axe.name=Алмазный топор дровосека
+item.yn:netherite_lumber_axe.name=Незеритовый топор дровосека
+
+
+## Form-UI
+LumberAxe.form.title.text=Информация о дереве
+LumberAxe.form.treeSizeAbrev.text=имеет
+LumberAxe.form.treeSizeAbrevLogs.text=бревен дерева
+LumberAxe.form.durabilityAbrev.text=DMG
+LumberAxe.form.maxDurabilityAbrev.text=MAX
+LumberAxe.form.canBeChopped.text=§aДерево можно срубить
+LumberAxe.form.cannotBeChopped.text=§cДерево нельзя срубить
+
+## Error Message
+LumberAxe.watchdogError.hang.text=Ошибка сценария: попробуйте рубить или осматривать деревья меньшего размера или под другим углом.

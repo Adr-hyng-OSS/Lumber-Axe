@@ -1,0 +1,13 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_smithing_transform": {
+    "description": {
+      "identifier": "yn:smithing_netherite_lumber_axe"
+    },
+    "tags": [ "smithing_table" ],
+    "template": "minecraft:netherite_upgrade_smithing_template",
+    "base": "yn:diamond_lumber_axe",
+    "addition": "minecraft:netherite_ingot",
+    "result": "yn:netherite_lumber_axe"
+  }
+}

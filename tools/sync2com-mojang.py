@@ -2,7 +2,7 @@ from pathlib import Path
 import glob, os, shutil
 import argparse, json
 
-bp_name = json.loads(open('setup/mc_manifest.json', 'r').read()).get("header").get("bp_name")
+bp_name = json.loads(open('./setup/mc_manifest.json', 'r').read()).get("header").get("bp_name")
 pack_folder = "".join(bp_name[:bp_name.rfind(" BP")].split(" "))
 
 SERVER_LOCATION = '%appdata%\\.minecraft_bedrock\\servers\\1.20.10.24'
@@ -19,7 +19,7 @@ if args.dest == 'stable':
     if is_pocket_edition:
         com_mojang = os.path.expandvars('\\storage\\emulated\\0\\Android\\data\\com.mojang.minecraftpe\\files\\games\\com.mojang')
     else:
-        com_mojang = os.path.expandvars('%localappdata%\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang')
+        com_mojang = os.path.expandvars('%localappdata%\\Packages\\Microsoftft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang')
 elif args.dest == 'preview':
     com_mojang = os.path.expandvars('%localappdata%\\Packages\\Microsoft.MinecraftWindowsBeta_8wekyb3d8bbwe\\LocalState\\games\\com.mojang')
 elif args.dest == 'server':
@@ -43,7 +43,7 @@ def sync_file(path, from_root, to_root):
             os.remove(to_file)
             print(f'deleted {path} from com.mojang')
     except OSError:
-        pass
+        print(to_root, from_root)
 
 def remove_dir_if_exists(path):
     if os.path.exists(path):
@@ -53,10 +53,10 @@ def sync_all():
     remove_dir_if_exists(behaviour_pack)
     remove_dir_if_exists(resource_pack)
 
-    for file in glob.iglob('BP/**', recursive=True):
+    for file in glob.iglob('./BP/**', recursive=True):
         if os.path.isfile(file):
             sync_file(file, './BP', behaviour_pack)
-    for file in glob.iglob('RP/**', recursive=True):
+    for file in glob.iglob('./RP/**', recursive=True):
         if os.path.isfile(file):
             sync_file(file, './RP', resource_pack)
 
@@ -91,11 +91,11 @@ if args.watch:
                 self.update(ev.src_path)
     
     observerBP = Observer()
-    observerBP.schedule(MyHandler('BP'),  path='BP',  recursive=True)
+    observerBP.schedule(MyHandler('BP'),  path='./BP',  recursive=True)
     observerBP.start()
 
     observerRP = Observer()
-    observerRP.schedule(MyHandler('RP'),  path='RP',  recursive=True)
+    observerRP.schedule(MyHandler('RP'),  path='./RP',  recursive=True)
     observerRP.start()
 
     if args.init == 'True':
