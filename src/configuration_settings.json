@@ -6,7 +6,7 @@
   
     "chopLimit": {
       "description": "1500 above is not recommended. It Does work but it's not recommended.",
-      "default": 300
+      "default": 500
     },
   
     "includedLog": {

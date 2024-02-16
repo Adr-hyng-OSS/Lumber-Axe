@@ -17,7 +17,7 @@ args = parser.parse_args()
 
 if args.dest == 'stable':
     if is_pocket_edition:
-        com_mojang = os.path.expandvars('\\storage\\emulated\\0\\Android\\data\\com.mojang.minecraftpe\\files\\games\\com.mojang')
+        com_mojang = os.path.expanduser('~/storage/shared/Android/data/com.mojang.minecraftpe/files/games/com.mojang/')
     else:
         com_mojang = os.path.expandvars('%localappdata%\\Packages\\Microsoftft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang')
 elif args.dest == 'preview':
