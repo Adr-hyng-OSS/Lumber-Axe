@@ -27,11 +27,11 @@ world.afterEvents.playerLeave.subscribe((e: PlayerLeaveAfterEvent) => {
     playerInteractionMap.set(e.playerId, false);
 });
 
-world.afterEvents.playerBreakBlock.subscribe(async (e: PlayerBreakBlockAfterEvent) => {
+world.afterEvents.playerBreakBlock.subscribe((e: PlayerBreakBlockAfterEvent) => {
     const { dimension, player, block } = e;
     const currentBreakBlock: BlockPermutation = e.brokenBlockPermutation;
     const blockTypeId: string = currentBreakBlock.type.id;
-    treeCut(player, dimension, block.location, blockTypeId);
+    system.run(async () => await treeCut(player, dimension, block.location, blockTypeId));
 });
 
 world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
@@ -62,7 +62,6 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const totalDurabilityConsumed: number = currentDurability + totalDamage;
     const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
 
-    // Test
     const inspectionForm: ActionFormData = new ActionFormData()
     .title({
         rawtext: [

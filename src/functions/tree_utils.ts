@@ -25,32 +25,27 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
   const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
   const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
   
-  // When done it should return boolean,and distribute the total chopped.
-  const breakBlocksGeneratorID: number = system.runJob(breakBlocksGenerator());
+  // When done it should return boolean,and distribute.
+  const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
 
+  const totalDamage: number = visited.size * unbreakingDamage;
+  const postDamagedDurability: number = itemDurability.damage + totalDamage;
+
+  if (postDamagedDurability + 1 === itemDurability.maxDurability) {
+    equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
+  }
+  else if (postDamagedDurability > itemDurability.maxDurability) {
+    currentHeldAxe.lockMode = ItemLockMode.none;
+    return;
+  }
+  else if (postDamagedDurability < itemDurability.maxDurability) {
+    itemDurability.damage = itemDurability.damage + totalDamage;
+    currentHeldAxe.lockMode = ItemLockMode.none;
+    equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
+  }
+  const breakBlocksGeneratorID = system.runJob(breakBlocksGenerator());
   function* breakBlocksGenerator(): Generator<void, void, void> {
     try {
-      let visited: Set<string>;
-      
-
-      system.run(async () => {
-        visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
-      });
-      const totalDamage: number = visited.size * unbreakingDamage;
-      const postDamagedDurability: number = itemDurability.damage + totalDamage;
-
-      console.warn(visited.size);
-      if (postDamagedDurability + 1 === itemDurability.maxDurability) {
-        equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
-      } else if (postDamagedDurability > itemDurability.maxDurability) {
-        currentHeldAxe.lockMode = ItemLockMode.none;
-        return;
-      } else if (postDamagedDurability < itemDurability.maxDurability) {
-        itemDurability.damage = itemDurability.damage + totalDamage;
-        currentHeldAxe.lockMode = ItemLockMode.none;
-        equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
-      }
-
       for (const group of groupAdjacentBlocks(visited)) {
         const firstElement = JSON.parse(group[0]);
         const lastElement = JSON.parse(group[group.length - 1]);

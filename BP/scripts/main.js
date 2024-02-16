@@ -26,11 +26,11 @@ system.beforeEvents.watchdogTerminate.subscribe((e) => {
 world.afterEvents.playerLeave.subscribe((e) => {
     playerInteractionMap.set(e.playerId, false);
 });
-world.afterEvents.playerBreakBlock.subscribe(async (e) => {
+world.afterEvents.playerBreakBlock.subscribe((e) => {
     const { dimension, player, block } = e;
     const currentBreakBlock = e.brokenBlockPermutation;
     const blockTypeId = currentBreakBlock.type.id;
-    treeCut(player, dimension, block.location, blockTypeId);
+    system.run(async () => await treeCut(player, dimension, block.location, blockTypeId));
 });
 world.beforeEvents.itemUseOn.subscribe(async (e) => {
     const currentHeldAxe = e.itemStack;
