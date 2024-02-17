@@ -88,37 +88,45 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
             }
         }
     }
-    return new Promise((resolve) => {
-        system.runJob((function* () {
-            let fetchBlockGenerator = getBlockNear(dimension, location);
-            let nextIteration = fetchBlockGenerator.next();
-            let _block;
-            let queue = [];
-            while (!nextIteration.done || queue.length > 0) {
-                if (visited.size >= chopLimit || visited.size >= maxNeeded)
-                    break;
-                if (nextIteration.done) {
-                    const newLoc = queue.shift();
-                    fetchBlockGenerator = getBlockNear(dimension, newLoc);
-                    nextIteration = fetchBlockGenerator.next();
-                    _block = nextIteration.value;
-                    nextIteration = fetchBlockGenerator.next();
-                }
-                else {
-                    _block = nextIteration.value;
-                    nextIteration = fetchBlockGenerator.next();
-                }
-                if (!_block?.isValid() || !isLogIncluded(_block?.typeId))
-                    continue;
-                if (_block.typeId !== blockTypeId)
-                    continue;
-                const pos = JSON.stringify(_block.location);
-                if (visited.has(pos))
-                    continue;
-                visited.add(pos);
-                queue.push(_block.location);
-                yield;
+    function* traverseTree() {
+        let fetchBlockGenerator = getBlockNear(dimension, location);
+        let nextIteration = fetchBlockGenerator.next();
+        let _block;
+        let queue = [];
+        while (!nextIteration.done || queue.length > 0) {
+            if (visited.size >= chopLimit || visited.size >= maxNeeded) {
+                break;
             }
+            if (nextIteration.done) {
+                const newLoc = queue.shift();
+                fetchBlockGenerator = getBlockNear(dimension, newLoc);
+                nextIteration = fetchBlockGenerator.next();
+                _block = nextIteration.value;
+                nextIteration = fetchBlockGenerator.next();
+            }
+            else {
+                _block = nextIteration.value;
+                nextIteration = fetchBlockGenerator.next();
+            }
+            if (!_block?.isValid() || !isLogIncluded(_block?.typeId))
+                continue;
+            if (_block.typeId !== blockTypeId)
+                continue;
+            const pos = JSON.stringify(_block.location);
+            if (visited.has(pos))
+                continue;
+            visited.add(pos);
+            queue.push(_block.location);
+            yield;
+        }
+    }
+    const t = traverseTree();
+    const x = system.runJob(t);
+    return new Promise((resolve) => {
+        const awaitResolve = system.runJob((function* () {
+            while (!t.next().done) { }
+            system.clearJob(x);
+            system.clearJob(awaitResolve);
             resolve(visited);
         })());
     });

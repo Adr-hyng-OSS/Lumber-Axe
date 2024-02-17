@@ -80,6 +80,7 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
   let visited: Set<string> = new Set<string>();
   const visitedLocations: Set<string> = new Set<string>();
   visitedLocations.add(JSON.stringify(location));
+
   // Make this a generator, and the traversing also.
   // Make this return a block to while loop of BFS,each iteration.
   function* getBlockNear(dimension: Dimension, location: Vector3, radius: number = 1): Generator<Block, any, void> {
@@ -98,38 +99,47 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
         }
       }
     }
-  }
-  // Thanks to #WavePlayz {Minecraft Bedrock Addons Discord Sserver}
-  return new Promise<Set<string>>((resolve) => {
-      system.runJob((function* () {
-        let fetchBlockGenerator = getBlockNear(dimension, location);
-        let nextIteration = fetchBlockGenerator.next();
-        let _block: Block;
-        let queue: Vector3[] = [];
-        while (!nextIteration.done || queue.length > 0) {
-          if (visited.size >= chopLimit || visited.size >= maxNeeded) break;
-          if(nextIteration.done) { 
-            const newLoc: Vector3 = queue.shift(); 
-            fetchBlockGenerator = getBlockNear(dimension, newLoc);
-            nextIteration = fetchBlockGenerator.next();
-            _block = nextIteration.value;
-            nextIteration = fetchBlockGenerator.next();
-          } else {
-            _block = nextIteration.value;
-            nextIteration = fetchBlockGenerator.next();
-          }
-          if (!_block?.isValid() || !isLogIncluded(_block?.typeId)) continue;
+  }    
 
-          if (_block.typeId !== blockTypeId) continue;
-          const pos: string = JSON.stringify(_block.location);
-          if (visited.has(pos)) continue;
-          visited.add(pos);
-          queue.push(_block.location);
-          yield;
-        }
-        resolve(visited);
-      })
-    ());
+  function* traverseTree(): Generator<void, void, void> {
+    let fetchBlockGenerator = getBlockNear(dimension, location);
+    let nextIteration = fetchBlockGenerator.next();
+    let _block: Block;
+    let queue: Vector3[] = [];
+    while (!nextIteration.done || queue.length > 0) {
+      if (visited.size >= chopLimit || visited.size >= maxNeeded) {
+        break;
+      }
+      
+      if(nextIteration.done) { 
+        const newLoc: Vector3 = queue.shift(); 
+        fetchBlockGenerator = getBlockNear(dimension, newLoc);
+        nextIteration = fetchBlockGenerator.next();
+        _block = nextIteration.value;
+        nextIteration = fetchBlockGenerator.next();
+      } else {
+        _block = nextIteration.value;
+        nextIteration = fetchBlockGenerator.next();
+      }
+      if (!_block?.isValid() || !isLogIncluded(_block?.typeId)) continue;
+
+      if (_block.typeId !== blockTypeId) continue;
+      const pos: string = JSON.stringify(_block.location);
+      if (visited.has(pos)) continue;
+      visited.add(pos);
+      queue.push(_block.location);
+      yield;
+    }
+  }
+  const t = traverseTree();
+  const x = system.runJob(t);
+  return new Promise<Set<string>>((resolve) => {
+    const awaitResolve: number = system.runJob((function* () {
+      while(!t.next().done) {}
+      system.clearJob(x);
+      system.clearJob(awaitResolve);
+      resolve(visited);
+    })());
   });
 }
 
