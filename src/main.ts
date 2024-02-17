@@ -1,7 +1,7 @@
 import { world, ItemStack, system, Block, BlockPermutation, Player, ItemDurabilityComponent, ItemEnchantableComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, PlayerLeaveAfterEvent, PlayerBreakBlockAfterEvent, EnchantmentType, EnchantmentTypes } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData, ActionFormResponse} from "@minecraft/server-ui";
 import { disableWatchDogTerminateLog, durabilityDamagePerBlock ,axeEquipments, forceShow, getTreeLogs, isLogIncluded, treeCut} from "./index"
-import { MinecraftEnchantmentTypes } from './modules/vanilla-types/index';
+import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from './modules/vanilla-types/index';
 
 const logMap: Map<string, number> = new Map<string, number>();
 const playerInteractionMap: Map<string, boolean> = new Map<string, boolean>();
@@ -36,7 +36,7 @@ world.afterEvents.playerBreakBlock.subscribe((e: PlayerBreakBlockAfterEvent) => 
 
 world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const currentHeldAxe: ItemStack = e.itemStack;
-    const blockInteracted: Block = e.block; //! NEEDED
+    const blockInteracted: Block = e.block as Block; //! NEEDED
     const player: Player = e.source as Player; //! NEEDED
 
     const oldLog: number = logMap.get(player.name);
@@ -56,7 +56,6 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
 
-    // Currently this is synchronoze that blocks the main thread.
     const tree: Set<string> = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
     const totalDamage: number = (tree.size) * unbreakingDamage;
     const totalDurabilityConsumed: number = currentDurability + totalDamage;

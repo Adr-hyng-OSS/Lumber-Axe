@@ -9,6 +9,13 @@ function stackDistribution(number, groupSize = 64) {
     }
     return groups;
 }
+function runJob(callback, finishCallBack) {
+    return system.runJob((function* () {
+        yield* callback;
+        if (finishCallBack)
+            yield* finishCallBack;
+    })());
+}
 async function forceShow(player, form, timeout = Infinity) {
     const startTick = system.currentTick;
     while ((system.currentTick - startTick) < timeout) {
@@ -20,4 +27,4 @@ async function forceShow(player, form, timeout = Infinity) {
     ;
     throw new Error(`Timed out after ${timeout} ticks`);
 }
-export { stackDistribution, forceShow };
+export { stackDistribution, forceShow, runJob };

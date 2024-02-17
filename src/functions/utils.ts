@@ -17,6 +17,14 @@ function stackDistribution(number: number, groupSize: number = 64): Array<number
   return groups;
 }
 
+function runJob(callback, finishCallBack? ): number {
+  return system.runJob( (function* (){
+    yield* callback;
+    if(finishCallBack) yield* finishCallBack;
+  })() );
+}
+
+
 async function forceShow(player: Player, form: ActionFormData, timeout: number = Infinity): Promise<ActionFormResponse> {
   // Script example for ScriptAPI
   // Author: Jayly#1397 <Jayly Discord>
@@ -32,4 +40,4 @@ async function forceShow(player: Player, form: ActionFormData, timeout: number =
   throw new Error(`Timed out after ${timeout} ticks`);
 }
 
-export {stackDistribution, forceShow}
+export {stackDistribution, forceShow, runJob}
