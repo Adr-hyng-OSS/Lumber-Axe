@@ -1,7 +1,7 @@
 export default {
     debug: true,
     durabilityDamagePerBlock: 3,
-    chopLimit: 500,
+    chopLimit: 1000,
     includedLog: [],
     excludedLog: [],
     disableWatchDogTerminateLog: true,

@@ -1,10 +1,36 @@
-import { world, ItemStack, system, Block, BlockPermutation, Player, ItemDurabilityComponent, ItemEnchantableComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, PlayerLeaveAfterEvent, PlayerBreakBlockAfterEvent, EnchantmentType, EnchantmentTypes } from '@minecraft/server';
+import { world, ItemStack, system, Block, BlockPermutation, Player, ItemDurabilityComponent, ItemEnchantableComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, PlayerLeaveAfterEvent, PlayerBreakBlockAfterEvent, EnchantmentType, EnchantmentTypes, ChatSendBeforeEvent } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData, ActionFormResponse} from "@minecraft/server-ui";
-import { disableWatchDogTerminateLog, durabilityDamagePerBlock ,axeEquipments, forceShow, getTreeLogs, isLogIncluded, treeCut} from "./index"
-import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from './modules/vanilla-types/index';
-
+import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, treeCut, SERVER_CONFIGURATION} from "./index"
+import { MinecraftEnchantmentTypes } from './modules/vanilla-types/index';
+import { CommandRegistry } from 'cmd_setup/handler';
+import { CommandHandler, ICommandBase } from 'cmd_setup/setup';
 const logMap: Map<string, number> = new Map<string, number>();
 const playerInteractionMap: Map<string, boolean> = new Map<string, boolean>();
+
+const playerBeingShown: Map<string, boolean> = new Map<string, boolean>();
+
+import('@minecraft/server-ui').then((ui) => {
+    var [userBusy, userClosed] = Object.values(ui.FormCancelationReason), formData;
+    for (formData of [ui.ActionFormData, ui.MessageFormData, ui.ModalFormData]) {
+        const formShow = Object.getOwnPropertyDescriptor(formData.prototype, "show").value;
+        Object.defineProperty(formData.prototype, "show", {
+            value: function (player, persistent = false, trials = 50) {
+                const show = formShow.bind(this,player);
+                if (player.id in playerBeingShown) return;
+                playerBeingShown[player.id] = true;
+                return new Promise(async (resolve) => {
+                    let result;
+                    do {
+                        result = await show();
+                        if (!trials-- || persistent && result.cancelationReason === userClosed) return delete playerBeingShown[player.id];
+                    } while (result.cancelationReason === userBusy);
+                    delete playerBeingShown[player.id];
+                    resolve(result);
+                })
+            }
+        })
+    };
+});
 
 system.beforeEvents.watchdogTerminate.subscribe((e: WatchdogTerminateBeforeEvent) => {
     e.cancel = true;
@@ -12,19 +38,20 @@ system.beforeEvents.watchdogTerminate.subscribe((e: WatchdogTerminateBeforeEvent
         for(const key of playerInteractionMap.keys()) {
             playerInteractionMap.set(key, false);
         }
-        if(!disableWatchDogTerminateLog) world.sendMessage({
+        if(!SERVER_CONFIGURATION.disableWatchDogTerminateLog) world.sendMessage({
             rawtext: [
             {
                 translate: "LumberAxe.watchdogError.hang.text"
             }
         ]});
-        if(disableWatchDogTerminateLog) console.warn(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
+        if(SERVER_CONFIGURATION.disableWatchDogTerminateLog) console.warn(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
     }
     console.warn(`Watchdog Error: ${(e.terminateReason as WatchdogTerminateReason)}`)
 });
 
 world.afterEvents.playerLeave.subscribe((e: PlayerLeaveAfterEvent) => {
     playerInteractionMap.set(e.playerId, false);
+    delete playerBeingShown[e.playerId];
 });
 
 world.afterEvents.playerBreakBlock.subscribe((e: PlayerBreakBlockAfterEvent) => {
@@ -36,8 +63,8 @@ world.afterEvents.playerBreakBlock.subscribe((e: PlayerBreakBlockAfterEvent) => 
 
 world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const currentHeldAxe: ItemStack = e.itemStack;
-    const blockInteracted: Block = e.block as Block; //! NEEDED
-    const player: Player = e.source as Player; //! NEEDED
+    const blockInteracted: Block = e.block as Block;
+    const player: Player = e.source as Player;
 
     const oldLog: number = logMap.get(player.name);
     logMap.set(player.name, Date.now());
@@ -50,13 +77,13 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
     const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
     const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
-    const currentDurability = itemDurability.damage;
-    const maxDurability = itemDurability.maxDurability;
+    const currentDurability: number = itemDurability.damage;
+    const maxDurability: number = itemDurability.maxDurability;
     const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
-    const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
-    const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
+    const unbreakingDamage: number = SERVER_CONFIGURATION.durabilityDamagePerBlock * unbreakingMultiplier;
+    const reachableLogs: number = (maxDurability - currentDurability) / unbreakingDamage;
 
-    const tree: Set<string> = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
+    const tree: Set<string> = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs);
     const totalDamage: number = (tree.size) * unbreakingDamage;
     const totalDurabilityConsumed: number = currentDurability + totalDamage;
     const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
@@ -75,7 +102,7 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
                 translate: `LumberAxe.form.treeSizeAbrev.text`
             },
             {
-                text: ` ${tree.size !== 0 ? tree.size : 1}${canBeChopped ? "" : "+" } `
+                text: ` ${tree.size !== 0 ? tree.size + 1 : 1}${canBeChopped ? "" : "+" } `
             },
             {
                 translate: `LumberAxe.form.treeSizeAbrevLogs.text`
@@ -117,4 +144,23 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     }).catch((error: Error) => {
         console.warn("Form Error: ", error, error.stack);
     });
-  });
+});
+
+world.beforeEvents.chatSend.subscribe((chat: ChatSendBeforeEvent) => {
+    if (!chat.message.startsWith(CommandHandler.prefix)) return;
+    chat.cancel = true;
+    const player = chat.sender;
+    const message = chat.message;
+    const args = message.slice(CommandHandler.prefix.length).trim().split(/ +/g);
+    const cmd = args.shift().toLowerCase();
+    try {
+        const CommandObject: ICommandBase = CommandRegistry.get(cmd);
+        CommandObject.execute(chat, player, args);
+    } catch (err) {
+        if (err instanceof ReferenceError) {
+            player.sendMessage(`§cInvalid Command ${cmd}\nCheck If The Command Actually Exists.`);
+        } else {
+            console.error(err);
+        }
+    }
+});

@@ -1,8 +1,7 @@
-import { Block, Dimension, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, System, Vector, Vector3, system } from "@minecraft/server";
-import { MinecraftBlockTypes, MinecraftEnchantmentTypes, MinecraftItemTypes } from "../modules/vanilla-types/index";
+import { Block, Dimension, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, Vector3, system } from "@minecraft/server";
+import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "../modules/vanilla-types/index";
 
-import { validLogBlocks, axeEquipments, stackDistribution, durabilityDamagePerBlock, excludedLog, includedLog, chopLimit } from "../index";
-// Test 2
+import { validLogBlocks, axeEquipments, stackDistribution, SERVER_CONFIGURATION } from "../index";
 
 async function treeCut(player: Player, dimension: Dimension, location: Vector3, blockTypeId: string): Promise<void> {
   // Modified Version
@@ -23,7 +22,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
   const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId));
   const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
   const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
-  const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
+  const unbreakingDamage: number = SERVER_CONFIGURATION.durabilityDamagePerBlock * unbreakingMultiplier;
   
   // When done it should return boolean,and distribute.
   const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
@@ -71,8 +70,8 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
 }
 
 function isLogIncluded(blockTypeId: string): boolean {
-  if (excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
-  if (includedLog.includes(blockTypeId) || validLogBlocks.test(blockTypeId)) return true;
+  if (SERVER_CONFIGURATION.excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
+  if (SERVER_CONFIGURATION.includedLog.includes(blockTypeId) || validLogBlocks.test(blockTypeId)) return true;
   return false;
 }
 
@@ -107,7 +106,7 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
     let _block: Block;
     let queue: Vector3[] = [];
     while (!nextIteration.done || queue.length > 0) {
-      if (visited.size >= chopLimit || visited.size >= maxNeeded) {
+      if (visited.size >= SERVER_CONFIGURATION.chopLimit || visited.size >= maxNeeded) {
         break;
       }
       
@@ -133,11 +132,12 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
   }
   const t = traverseTree();
   const x = system.runJob(t);
+  let awaitResolve: number;
   return new Promise<Set<string>>((resolve) => {
-    const awaitResolve: number = system.runJob((function* () {
+    awaitResolve = system.runJob((function* () {
       while(!t.next().done) {}
-      system.clearJob(x);
       system.clearJob(awaitResolve);
+      system.clearJob(x);
       resolve(visited);
     })());
   });

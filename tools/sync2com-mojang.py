@@ -7,7 +7,7 @@ pack_folder = "".join(bp_name[:bp_name.rfind(" BP")].split(" "))
 
 SERVER_LOCATION = '%appdata%\\.minecraft_bedrock\\servers\\1.20.10.24'
 
-is_pocket_edition = True
+is_pocket_edition = False
 
 parser = argparse.ArgumentParser(description='Syncs the project folder\'s data with Minecraft (Windows 10/11 only).\nNote: Will only sync CHANGED files in watch mode.')
 parser.add_argument('--watch', '-w', action='store_true', help='Whether to watch for file changes.')
@@ -19,7 +19,7 @@ if args.dest == 'stable':
     if is_pocket_edition:
         com_mojang = os.path.expanduser('~/storage/shared/Android/data/com.mojang.minecraftpe/files/games/com.mojang')
     else:
-        com_mojang = os.path.expandvars('%localappdata%\\Packages\\Microsoftft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang')
+        com_mojang = os.path.expandvars('%localappdata%\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang')
 elif args.dest == 'preview':
     com_mojang = os.path.expandvars('%localappdata%\\Packages\\Microsoft.MinecraftWindowsBeta_8wekyb3d8bbwe\\LocalState\\games\\com.mojang')
 elif args.dest == 'server':

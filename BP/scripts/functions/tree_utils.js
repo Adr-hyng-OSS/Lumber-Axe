@@ -1,6 +1,6 @@
 import { EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, system } from "@minecraft/server";
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "../modules/vanilla-types/index";
-import { validLogBlocks, axeEquipments, stackDistribution, durabilityDamagePerBlock, excludedLog, includedLog, chopLimit } from "../index";
+import { validLogBlocks, axeEquipments, stackDistribution, SERVER_CONFIGURATION } from "../index";
 async function treeCut(player, dimension, location, blockTypeId) {
     const equipment = player.getComponent(EntityEquippableComponent.componentId);
     const currentHeldAxe = equipment.getEquipment(EquipmentSlot.Mainhand);
@@ -16,7 +16,7 @@ async function treeCut(player, dimension, location, blockTypeId) {
     const enchantments = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId));
     const level = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
     const unbreakingMultiplier = (100 / (level + 1)) / 100;
-    const unbreakingDamage = durabilityDamagePerBlock * unbreakingMultiplier;
+    const unbreakingDamage = SERVER_CONFIGURATION.durabilityDamagePerBlock * unbreakingMultiplier;
     const visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
     const totalDamage = visited.size * unbreakingDamage;
     const postDamagedDurability = itemDurability.damage + totalDamage;
@@ -60,9 +60,9 @@ async function treeCut(player, dimension, location, blockTypeId) {
     }
 }
 function isLogIncluded(blockTypeId) {
-    if (excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_'))
+    if (SERVER_CONFIGURATION.excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_'))
         return false;
-    if (includedLog.includes(blockTypeId) || validLogBlocks.test(blockTypeId))
+    if (SERVER_CONFIGURATION.includedLog.includes(blockTypeId) || validLogBlocks.test(blockTypeId))
         return true;
     return false;
 }
@@ -94,7 +94,7 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
         let _block;
         let queue = [];
         while (!nextIteration.done || queue.length > 0) {
-            if (visited.size >= chopLimit || visited.size >= maxNeeded) {
+            if (visited.size >= SERVER_CONFIGURATION.chopLimit || visited.size >= maxNeeded) {
                 break;
             }
             if (nextIteration.done) {
@@ -122,11 +122,12 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
     }
     const t = traverseTree();
     const x = system.runJob(t);
+    let awaitResolve;
     return new Promise((resolve) => {
-        const awaitResolve = system.runJob((function* () {
+        awaitResolve = system.runJob((function* () {
             while (!t.next().done) { }
-            system.clearJob(x);
             system.clearJob(awaitResolve);
+            system.clearJob(x);
             resolve(visited);
         })());
     });

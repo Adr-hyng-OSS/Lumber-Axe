@@ -1,16 +1,44 @@
 import { world, system, ItemDurabilityComponent, ItemEnchantableComponent, WatchdogTerminateReason } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData } from "@minecraft/server-ui";
-import { disableWatchDogTerminateLog, durabilityDamagePerBlock, axeEquipments, forceShow, getTreeLogs, isLogIncluded, treeCut } from "./index";
+import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, treeCut, SERVER_CONFIGURATION } from "./index";
 import { MinecraftEnchantmentTypes } from './modules/vanilla-types/index';
+import { CommandRegistry } from 'cmd_setup/handler';
+import { CommandHandler } from 'cmd_setup/setup';
 const logMap = new Map();
 const playerInteractionMap = new Map();
+const playerBeingShown = new Map();
+import('@minecraft/server-ui').then((ui) => {
+    var [userBusy, userClosed] = Object.values(ui.FormCancelationReason), formData;
+    for (formData of [ui.ActionFormData, ui.MessageFormData, ui.ModalFormData]) {
+        const formShow = Object.getOwnPropertyDescriptor(formData.prototype, "show").value;
+        Object.defineProperty(formData.prototype, "show", {
+            value: function (player, persistent = false, trials = 50) {
+                const show = formShow.bind(this, player);
+                if (player.id in playerBeingShown)
+                    return;
+                playerBeingShown[player.id] = true;
+                return new Promise(async (resolve) => {
+                    let result;
+                    do {
+                        result = await show();
+                        if (!trials-- || persistent && result.cancelationReason === userClosed)
+                            return delete playerBeingShown[player.id];
+                    } while (result.cancelationReason === userBusy);
+                    delete playerBeingShown[player.id];
+                    resolve(result);
+                });
+            }
+        });
+    }
+    ;
+});
 system.beforeEvents.watchdogTerminate.subscribe((e) => {
     e.cancel = true;
     if (e.terminateReason === WatchdogTerminateReason.Hang) {
         for (const key of playerInteractionMap.keys()) {
             playerInteractionMap.set(key, false);
         }
-        if (!disableWatchDogTerminateLog)
+        if (!SERVER_CONFIGURATION.disableWatchDogTerminateLog)
             world.sendMessage({
                 rawtext: [
                     {
@@ -18,13 +46,14 @@ system.beforeEvents.watchdogTerminate.subscribe((e) => {
                     }
                 ]
             });
-        if (disableWatchDogTerminateLog)
+        if (SERVER_CONFIGURATION.disableWatchDogTerminateLog)
             console.warn(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
     }
     console.warn(`Watchdog Error: ${e.terminateReason}`);
 });
 world.afterEvents.playerLeave.subscribe((e) => {
     playerInteractionMap.set(e.playerId, false);
+    delete playerBeingShown[e.playerId];
 });
 world.afterEvents.playerBreakBlock.subscribe((e) => {
     const { dimension, player, block } = e;
@@ -51,9 +80,9 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
     const currentDurability = itemDurability.damage;
     const maxDurability = itemDurability.maxDurability;
     const unbreakingMultiplier = (100 / (level + 1)) / 100;
-    const unbreakingDamage = durabilityDamagePerBlock * unbreakingMultiplier;
+    const unbreakingDamage = SERVER_CONFIGURATION.durabilityDamagePerBlock * unbreakingMultiplier;
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
-    const tree = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
+    const tree = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs);
     const totalDamage = (tree.size) * unbreakingDamage;
     const totalDurabilityConsumed = currentDurability + totalDamage;
     const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
@@ -71,7 +100,7 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
                 translate: `LumberAxe.form.treeSizeAbrev.text`
             },
             {
-                text: ` ${tree.size !== 0 ? tree.size : 1}${canBeChopped ? "" : "+"} `
+                text: ` ${tree.size !== 0 ? tree.size + 1 : 1}${canBeChopped ? "" : "+"} `
             },
             {
                 translate: `LumberAxe.form.treeSizeAbrevLogs.text`
@@ -115,4 +144,25 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
     }).catch((error) => {
         console.warn("Form Error: ", error, error.stack);
     });
+});
+world.beforeEvents.chatSend.subscribe((chat) => {
+    if (!chat.message.startsWith(CommandHandler.prefix))
+        return;
+    chat.cancel = true;
+    const player = chat.sender;
+    const message = chat.message;
+    const args = message.slice(CommandHandler.prefix.length).trim().split(/ +/g);
+    const cmd = args.shift().toLowerCase();
+    try {
+        const CommandObject = CommandRegistry.get(cmd);
+        CommandObject.execute(chat, player, args);
+    }
+    catch (err) {
+        if (err instanceof ReferenceError) {
+            player.sendMessage(`§cInvalid Command ${cmd}\nCheck If The Command Actually Exists.`);
+        }
+        else {
+            console.error(err);
+        }
+    }
 });
