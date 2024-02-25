@@ -1,9 +1,10 @@
-import { world, ItemStack, system, Block, BlockPermutation, Player, ItemDurabilityComponent, ItemEnchantableComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, PlayerLeaveAfterEvent, PlayerBreakBlockAfterEvent, EnchantmentType, EnchantmentTypes, ChatSendBeforeEvent } from '@minecraft/server';
+import { world, ItemStack, system, Block, BlockPermutation, Player, ItemDurabilityComponent, ItemEnchantableComponent, ItemUseOnBeforeEvent, WatchdogTerminateBeforeEvent, WatchdogTerminateReason, PlayerLeaveAfterEvent, PlayerBreakBlockAfterEvent, ChatSendBeforeEvent } from '@minecraft/server';
 import { FormCancelationReason, ActionFormData, ActionFormResponse} from "@minecraft/server-ui";
 import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, treeCut, SERVER_CONFIGURATION} from "./index"
 import { MinecraftEnchantmentTypes } from './modules/vanilla-types/index';
 import { CommandRegistry } from 'cmd_setup/handler';
 import { CommandHandler, ICommandBase } from 'cmd_setup/setup';
+import { Vector } from 'modules/Vector';
 const logMap: Map<string, number> = new Map<string, number>();
 const playerInteractionMap: Map<string, boolean> = new Map<string, boolean>();
 
@@ -54,12 +55,16 @@ world.afterEvents.playerLeave.subscribe((e: PlayerLeaveAfterEvent) => {
     delete playerBeingShown[e.playerId];
 });
 
+let blocksVisited: Array<Block> = [];
+
 world.afterEvents.playerBreakBlock.subscribe((e: PlayerBreakBlockAfterEvent) => {
     const { dimension, player, block } = e;
     const currentBreakBlock: BlockPermutation = e.brokenBlockPermutation;
     const blockTypeId: string = currentBreakBlock.type.id;
-    system.run(async () => await treeCut(player, dimension, block.location, blockTypeId));
+    system.run(async () => await treeCut(player, dimension, new Vector(block.location), blockTypeId, blocksVisited));
 });
+
+
 
 world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const currentHeldAxe: ItemStack = e.itemStack;
@@ -83,8 +88,19 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const unbreakingDamage: number = SERVER_CONFIGURATION.durabilityDamagePerBlock * unbreakingMultiplier;
     const reachableLogs: number = (maxDurability - currentDurability) / unbreakingDamage;
 
-    const tree: Set<string> = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs);
-    const totalDamage: number = (tree.size) * unbreakingDamage;
+    const tree: Array<Block> = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs);
+
+    // Get the blocks after 5 seconds if it's still air or from the past permutation.
+    blocksVisited = tree;
+    system.runTimeout(() => {
+        // blocksVisited.forEach((block) => {
+            // if(isLogIncluded(block?.typeId))
+        // });
+        blocksVisited = [];
+        player.sendMessage("Reseted");
+    }, 80);
+
+    const totalDamage: number = (tree.length) * unbreakingDamage;
     const totalDurabilityConsumed: number = currentDurability + totalDamage;
     const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
 
@@ -102,7 +118,7 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
                 translate: `LumberAxe.form.treeSizeAbrev.text`
             },
             {
-                text: ` ${tree.size !== 0 ? tree.size + 1 : 1}${canBeChopped ? "" : "+" } `
+                text: ` ${tree.length !== 0 ? tree.length + 1 : 1}${canBeChopped ? "" : "+" } `
             },
             {
                 translate: `LumberAxe.form.treeSizeAbrevLogs.text`

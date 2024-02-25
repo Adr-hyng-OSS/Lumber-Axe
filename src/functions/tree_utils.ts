@@ -1,9 +1,10 @@
-import { Block, Dimension, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, Vector3, system } from "@minecraft/server";
+import { Block, BlockAreaSize, BlockVolumeUtils, Dimension, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, Vector3, system } from "@minecraft/server";
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "../modules/vanilla-types/index";
+import { Vector } from "modules/Vector";
 
-import { validLogBlocks, axeEquipments, stackDistribution, SERVER_CONFIGURATION } from "../index";
+import { validLogBlocks, axeEquipments, stackDistribution, SERVER_CONFIGURATION, BlockToLocations } from "../index";
 
-async function treeCut(player: Player, dimension: Dimension, location: Vector3, blockTypeId: string): Promise<void> {
+async function treeCut(player: Player, dimension: Dimension, location: Vector, blockTypeId: string, blocksVisited: Array<Block>): Promise<void> {
   // Modified Version
   // Author: Lete114 <https://github.com/Lete114>
   // Project: https://github.com/mcbe-mods/Cut-tree-one-click
@@ -25,9 +26,31 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
   const unbreakingDamage: number = SERVER_CONFIGURATION.durabilityDamagePerBlock * unbreakingMultiplier;
   
   // When done it should return boolean,and distribute.
-  const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
+  let visited: Array<Block> = [];
+  let groupedBlocks = [];
 
-  const totalDamage: number = visited.size * unbreakingDamage;
+  const filteredVisited: Block[] = [...blocksVisited.filter(block => isLogIncluded(block?.typeId))];
+  let finalVisits: Set<string> = new Set<string>();
+  if(filteredVisited.length) {
+    visited = filteredVisited;
+    // Traverse blockss within 3x3x3 for final checking.
+    //! Currently it doesn't efficiently destroys based on cached data
+    // It should final check the cache, if what's missing, and the nodes connected to what's messing should be forgotten.
+    // I think using a Tree Data Structure would be handy.
+    // Like when a branch is detected deleted, it should cut those branches
+
+    // const radius: number = 1;
+    // const isInRange: boolean = BlockVolumeUtils.isInside({ from: currentLocation.subtract(radius), to: currentLocation.add(radius) }, nextLocation);
+  } else {
+    visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage)
+  }
+
+  for (const group of groupAdjacentBlocks(finalVisits)) {
+    const firstElement: Vector = JSON.parse(group[0]);
+    const lastElement: Vector = JSON.parse(group[group.length - 1]);
+    groupedBlocks.push([firstElement, lastElement]);
+  }
+  const totalDamage: number = visited.length * unbreakingDamage;
   const postDamagedDurability: number = itemDurability.damage + totalDamage;
 
   if (postDamagedDurability + 1 === itemDurability.maxDurability) {
@@ -45,11 +68,11 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
   const breakBlocksGeneratorID = system.runJob(breakBlocksGenerator());
   function* breakBlocksGenerator(): Generator<void, void, void> {
     try {
-      for (const group of groupAdjacentBlocks(visited)) {
-        const firstElement = JSON.parse(group[0]);
-        const lastElement = JSON.parse(group[group.length - 1]);
+      for (const group of groupedBlocks) {
+        const firstElement  = group[0];
+        const lastElement = group[group.length - 1];
         if (firstElement === lastElement) {
-          dimension.getBlock(firstElement).setType(MinecraftBlockTypes.Air);
+          dimension.getBlock(firstElement)?.setType(MinecraftBlockTypes.Air);
           yield;
           continue;
         } else {
@@ -58,7 +81,7 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
         }
       }
 
-      for(const stack of stackDistribution(visited.size)) {
+      for(const stack of stackDistribution(visited.length)) {
         dimension.spawnItem(new ItemStack(blockTypeId, stack), location);
         yield;
       }
@@ -69,14 +92,11 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector3, 
   }
 }
 
-function isLogIncluded(blockTypeId: string): boolean {
-  if (SERVER_CONFIGURATION.excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
-  if (SERVER_CONFIGURATION.includedLog.includes(blockTypeId) || validLogBlocks.test(blockTypeId)) return true;
-  return false;
-}
 
-async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number):Promise<Set<string>> {
+
+async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number):Promise<Array<Block>> {
   let visited: Set<string> = new Set<string>();
+  let visitedBlocks: Array<Block> = [];
   const visitedLocations: Set<string> = new Set<string>();
   visitedLocations.add(JSON.stringify(location));
 
@@ -126,6 +146,7 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
       const pos: string = JSON.stringify(_block.location);
       if (visited.has(pos)) continue;
       visited.add(pos);
+      visitedBlocks.push(_block);
       queue.push(_block.location);
       yield;
     }
@@ -133,16 +154,21 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
   const t = traverseTree();
   const x = system.runJob(t);
   let awaitResolve: number;
-  return new Promise<Set<string>>((resolve) => {
+  return new Promise<Array<Block>>((resolve) => {
     awaitResolve = system.runJob((function* () {
       while(!t.next().done) {}
       system.clearJob(awaitResolve);
       system.clearJob(x);
-      resolve(visited);
+      resolve(visitedBlocks);
     })());
   });
 }
 
+function isLogIncluded(blockTypeId: string): boolean {
+  if (SERVER_CONFIGURATION.excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
+  if (SERVER_CONFIGURATION.includedLog.includes(blockTypeId) || validLogBlocks.test(blockTypeId)) return true;
+  return false;
+}
 
 // Gets all the visited blocks and groups them together.
 function groupAdjacentBlocks(visited: Set<string>): string[][] {

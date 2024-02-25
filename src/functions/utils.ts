@@ -1,4 +1,4 @@
-import { Player, system } from "@minecraft/server";
+import { Block, Player, system } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
 
 // Calculates the amount of items to be dropped in each stack. O(1)
@@ -17,6 +17,24 @@ function stackDistribution(number: number, groupSize: number = 64): Array<number
   return groups;
 }
 
+export const deepCopy = <T, U = T extends Array<infer V> ? V : never>(source: T): T => {
+  if (Array.isArray(source)) {
+    return source.map(item => deepCopy(item)) as T & U[];
+  }
+  if (source instanceof Date) {
+    return new Date(source.getTime()) as T & Date;
+  }
+  if (source && typeof source === 'object') {
+    return (Object.getOwnPropertyNames(source) as (keyof T)[]).reduce<T>((o, prop) => {
+      Object.defineProperty(o, prop, Object.getOwnPropertyDescriptor(source, prop)!);
+      o[prop] = deepCopy(source[prop]);
+      return o;
+    }, Object.create(Object.getPrototypeOf(source))) as T;
+  }
+  return source;
+};
+
+
 function runJob(callback, finishCallBack? ): number {
   return system.runJob( (function* (){
     yield* callback;
@@ -24,6 +42,9 @@ function runJob(callback, finishCallBack? ): number {
   })() );
 }
 
+function BlockToLocations(blocks: Array<Block>): Set<string> {
+  return new Set(blocks.map(block => JSON.stringify(block.location)));
+}
 
 async function forceShow(player: Player, form: ActionFormData, timeout: number = Infinity): Promise<ActionFormResponse> {
   // Script example for ScriptAPI
@@ -40,4 +61,4 @@ async function forceShow(player: Player, form: ActionFormData, timeout: number =
   throw new Error(`Timed out after ${timeout} ticks`);
 }
 
-export {stackDistribution, forceShow, runJob}
+export {stackDistribution, forceShow, runJob, BlockToLocations}
