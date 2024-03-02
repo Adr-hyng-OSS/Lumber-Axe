@@ -1,8 +1,9 @@
 import { EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, system } from "@minecraft/server";
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "../modules/vanilla-types/index";
 import { Vector } from "modules/Vector";
-import { validLogBlocks, axeEquipments, stackDistribution, SERVER_CONFIGURATION, BlockToLocations } from "../index";
-async function treeCut(player, dimension, location, blockTypeId, blocksVisited) {
+import { validLogBlocks, axeEquipments, stackDistribution, SERVER_CONFIGURATION } from "../index";
+import { BlockGraph } from "classes/BlockGraph";
+async function treeCut(player, dimension, blockChopped, blockTypeId, blocksVisited) {
     const equipment = player.getComponent(EntityEquippableComponent.componentId);
     const currentHeldAxe = equipment.getEquipment(EquipmentSlot.Mainhand);
     if (!axeEquipments.includes(currentHeldAxe?.typeId))
@@ -18,28 +19,23 @@ async function treeCut(player, dimension, location, blockTypeId, blocksVisited) 
     const level = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
     const unbreakingMultiplier = (100 / (level + 1)) / 100;
     const unbreakingDamage = SERVER_CONFIGURATION.durabilityDamagePerBlock * unbreakingMultiplier;
-    let visited = [];
+    let visited = new BlockGraph();
     let groupedBlocks = [];
-    const filteredVisited = [...blocksVisited.filter(block => isLogIncluded(block?.typeId))];
-    let finalVisits = new Set();
-    if (filteredVisited.length) {
+    const filteredVisited = blocksVisited.filter((block) => isLogIncluded(block?.typeId) || Vector.equals(block.location, blockChopped));
+    if (filteredVisited.size) {
         visited = filteredVisited;
-        for (let block of filteredVisited) {
-            if (!isLogIncluded(block?.typeId)) {
-            }
-            if (Vector.equals(block.location, location)) {
-            }
-        }
+        visited.locations = new Set(Array.from(visited.traverse(blockChopped, "bfs")).map(block => JSON.stringify(block.location)));
     }
     else {
-        visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
+        visited = await getTreeLogs(dimension, blockChopped, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
     }
-    for (const group of groupAdjacentBlocks(BlockToLocations(visited))) {
+    const size = visited.locations.size - 1;
+    for (const group of groupAdjacentBlocks(visited.locations)) {
         const firstElement = JSON.parse(group[0]);
         const lastElement = JSON.parse(group[group.length - 1]);
         groupedBlocks.push([firstElement, lastElement]);
     }
-    const totalDamage = visited.length * unbreakingDamage;
+    const totalDamage = size * unbreakingDamage;
     const postDamagedDurability = itemDurability.damage + totalDamage;
     if (postDamagedDurability + 1 === itemDurability.maxDurability) {
         equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
@@ -53,29 +49,28 @@ async function treeCut(player, dimension, location, blockTypeId, blocksVisited) 
         currentHeldAxe.lockMode = ItemLockMode.none;
         equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
     }
-    const breakBlocksGeneratorID = system.runJob(breakBlocksGenerator());
-    function* breakBlocksGenerator() {
+    let breakBlocksGeneratorID;
+    breakBlocksGeneratorID = system.runJob((function* () {
         try {
             for (const group of groupedBlocks) {
                 dimension.fillBlocks(group[0], group[group.length - 1], MinecraftBlockTypes.Air);
                 yield;
             }
-            for (const stack of stackDistribution(visited.length)) {
-                dimension.spawnItem(new ItemStack(blockTypeId, stack), location);
+            for (const stack of stackDistribution(size)) {
+                dimension.spawnItem(new ItemStack(blockTypeId, stack), blockChopped.location);
                 yield;
             }
         }
         catch (error) {
-            console.warn(error);
             system.clearJob(breakBlocksGeneratorID);
         }
-    }
+    })());
 }
-async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
-    let visited = new Set();
-    let visitedBlocks = [];
+async function getTreeLogs(dimension, blockChopped, blockTypeId, maxNeeded) {
+    const visited2 = new BlockGraph();
     const visitedLocations = new Set();
-    visitedLocations.add(JSON.stringify(location));
+    visited2.addVertex(blockChopped);
+    visitedLocations.add(JSON.stringify(blockChopped));
     function* getBlockNear(dimension, location, radius = 1) {
         const originalX = location.x;
         const originalY = location.y;
@@ -95,12 +90,12 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
         }
     }
     function* traverseTree() {
-        let fetchBlockGenerator = getBlockNear(dimension, location);
+        let fetchBlockGenerator = getBlockNear(dimension, blockChopped.location);
         let nextIteration = fetchBlockGenerator.next();
         let _block;
         let queue = [];
         while (!nextIteration.done || queue.length > 0) {
-            if (visited.size >= SERVER_CONFIGURATION.chopLimit || visited.size >= maxNeeded) {
+            if (visited2.locations.size >= SERVER_CONFIGURATION.chopLimit || visited2.locations.size >= maxNeeded) {
                 break;
             }
             if (nextIteration.done) {
@@ -119,11 +114,13 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
             if (_block.typeId !== blockTypeId)
                 continue;
             const pos = JSON.stringify(_block.location);
-            if (visited.has(pos))
+            if (visited2.locations.has(pos))
                 continue;
-            visited.add(pos);
-            visitedBlocks.push(_block);
             queue.push(_block.location);
+            visited2.locations.add(pos);
+            const prev = visited2.previousVertex;
+            visited2.addVertex(_block);
+            visited2.addEdge(prev, _block);
             yield;
         }
     }
@@ -135,7 +132,7 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
             while (!t.next().done) { }
             system.clearJob(awaitResolve);
             system.clearJob(x);
-            resolve(visitedBlocks);
+            resolve(visited2);
         })());
     });
 }

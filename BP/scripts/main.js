@@ -4,7 +4,7 @@ import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, treeCut, SERVER_C
 import { MinecraftEnchantmentTypes } from './modules/vanilla-types/index';
 import { CommandRegistry } from 'cmd_setup/handler';
 import { CommandHandler } from 'cmd_setup/setup';
-import { Vector } from 'modules/Vector';
+import { BlockGraph } from 'classes/BlockGraph';
 const logMap = new Map();
 const playerInteractionMap = new Map();
 const playerBeingShown = new Map();
@@ -56,12 +56,12 @@ world.afterEvents.playerLeave.subscribe((e) => {
     playerInteractionMap.set(e.playerId, false);
     delete playerBeingShown[e.playerId];
 });
-let blocksVisited = [];
+let blocksVisited = new BlockGraph();
 world.afterEvents.playerBreakBlock.subscribe((e) => {
     const { dimension, player, block } = e;
     const currentBreakBlock = e.brokenBlockPermutation;
     const blockTypeId = currentBreakBlock.type.id;
-    system.run(async () => await treeCut(player, dimension, new Vector(block.location), blockTypeId, blocksVisited));
+    system.run(async () => await treeCut(player, dimension, block, blockTypeId, blocksVisited));
 });
 world.beforeEvents.itemUseOn.subscribe(async (e) => {
     const currentHeldAxe = e.itemStack;
@@ -84,13 +84,22 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
     const unbreakingMultiplier = (100 / (level + 1)) / 100;
     const unbreakingDamage = SERVER_CONFIGURATION.durabilityDamagePerBlock * unbreakingMultiplier;
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
-    const tree = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs);
+    let tree;
+    let size;
+    if (blocksVisited.size) {
+        tree = blocksVisited.filter(block => isLogIncluded(block?.typeId));
+        size = tree.traverse(blockInteracted, "bfs").size;
+    }
+    else {
+        tree = await getTreeLogs(player.dimension, blockInteracted, blockInteracted.typeId, reachableLogs);
+        size = tree.size;
+    }
     blocksVisited = tree;
     system.runTimeout(() => {
-        blocksVisited = [];
+        blocksVisited.clear();
         player.sendMessage("Reseted");
     }, 80);
-    const totalDamage = (tree.length) * unbreakingDamage;
+    const totalDamage = (size) * unbreakingDamage;
     const totalDurabilityConsumed = currentDurability + totalDamage;
     const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
     const inspectionForm = new ActionFormData()
@@ -107,7 +116,7 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
                 translate: `LumberAxe.form.treeSizeAbrev.text`
             },
             {
-                text: ` ${tree.length !== 0 ? tree.length + 1 : 1}${canBeChopped ? "" : "+"} `
+                text: ` ${size !== 0 ? size : 1}${canBeChopped ? "" : "+"} `
             },
             {
                 translate: `LumberAxe.form.treeSizeAbrevLogs.text`
@@ -144,12 +153,14 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
             }
         ]
     }, "textures/InfoUI/canBeCut.png");
-    forceShow(player, inspectionForm).then((response) => {
-        playerInteractionMap.set(player.id, false);
-        if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed)
-            return;
-    }).catch((error) => {
-        console.warn("Form Error: ", error, error.stack);
+    system.run(() => {
+        forceShow(player, inspectionForm).then((response) => {
+            playerInteractionMap.set(player.id, false);
+            if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed)
+                return;
+        }).catch((error) => {
+            console.warn("Form Error: ", error, error.stack);
+        });
     });
 });
 world.beforeEvents.chatSend.subscribe((chat) => {

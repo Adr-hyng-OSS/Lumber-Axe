@@ -3,10 +3,12 @@ import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "../modules/vanil
 import { Vector } from "modules/Vector";
 
 import { Graph } from "classes/Graph";
+import { validLogBlocks, axeEquipments, stackDistribution, SERVER_CONFIGURATION } from "../index";
+import { BlockGraph } from "classes/BlockGraph";
 
-import { validLogBlocks, axeEquipments, stackDistribution, SERVER_CONFIGURATION, BlockToLocations } from "../index";
+//! STOP making including interfaces to compilation.
 
-async function treeCut(player: Player, dimension: Dimension, location: Vector, blockTypeId: string, blocksVisited: Array<Block>): Promise<void> {
+async function treeCut(player: Player, dimension: Dimension, blockChopped: Block, blockTypeId: string, blocksVisited: BlockGraph): Promise<void> {
   // Modified Version
   // Author: Lete114 <https://github.com/Lete114>
   // Project: https://github.com/mcbe-mods/Cut-tree-one-click
@@ -27,31 +29,24 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector, b
   const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
   const unbreakingDamage: number = SERVER_CONFIGURATION.durabilityDamagePerBlock * unbreakingMultiplier;
   
-  let visited: Array<Block> = [];
+  let visited: BlockGraph = new BlockGraph();
   let groupedBlocks = [];
 
-  const filteredVisited: Block[] = [...blocksVisited.filter(block => isLogIncluded(block?.typeId))];
-  
-  if(filteredVisited.length) {
+  const filteredVisited: BlockGraph = blocksVisited.filter((block) => isLogIncluded(block?.typeId) || Vector.equals(block.location, blockChopped));
+  if(filteredVisited.size) {
     visited = filteredVisited;
-
-    // Using Dinjointed Set Data Structure for checking if one is disjointed or not or graph
-    // Through adding based on distance.
-
-    // Possible enhancement should be from the getTree Logs function or the Traversing of logs.
-    
-    // const radius: number = 1;
-    // const isInRange: boolean = BlockVolumeUtils.isInside({ from: currentLocation.subtract(radius), to: currentLocation.add(radius) }, nextLocation);
+    visited.locations = new Set( Array.from(visited.traverse(blockChopped, "bfs")).map(block => JSON.stringify(block.location)) );
   } else {
-    visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage)
+    visited = await getTreeLogs(dimension, blockChopped, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage)
   }
-
-  for (const group of groupAdjacentBlocks( BlockToLocations(visited) )) {
+  const size: number = visited.locations.size - 1;
+  
+  for (const group of groupAdjacentBlocks( visited.locations )) {
     const firstElement: Vector = JSON.parse(group[0]);
     const lastElement: Vector = JSON.parse(group[group.length - 1]);
     groupedBlocks.push([firstElement, lastElement]);
   }
-  const totalDamage: number = visited.length * unbreakingDamage;
+  const totalDamage: number = size * unbreakingDamage;
   const postDamagedDurability: number = itemDurability.damage + totalDamage;
 
   if (postDamagedDurability + 1 === itemDurability.maxDurability) {
@@ -66,32 +61,32 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector, b
     currentHeldAxe.lockMode = ItemLockMode.none;
     equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
   }
-  const breakBlocksGeneratorID = system.runJob(breakBlocksGenerator());
-  function* breakBlocksGenerator(): Generator<void, void, void> {
+  let breakBlocksGeneratorID;
+  breakBlocksGeneratorID = system.runJob((function*() {
     try {
       for (const group of groupedBlocks) {
         dimension.fillBlocks(group[0], group[group.length - 1], MinecraftBlockTypes.Air);
         yield;
       }
-
-      for(const stack of stackDistribution(visited.length)) {
-        dimension.spawnItem(new ItemStack(blockTypeId, stack), location);
+  
+      for(const stack of stackDistribution(size)) {
+        dimension.spawnItem(new ItemStack(blockTypeId, stack), blockChopped.location);
         yield;
       }
-    } catch (error) { 
-      console.warn(error);
-      system.clearJob(breakBlocksGeneratorID); 
+    } catch (error) {
+      system.clearJob(breakBlocksGeneratorID)
     }
-  }
+  })());
 }
 
 
-
-async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number):Promise<Array<Block>> {
-  let visited: Set<string> = new Set<string>();
-  let visitedBlocks: Array<Block> = [];
-  const visitedLocations: Set<string> = new Set<string>();
-  visitedLocations.add(JSON.stringify(location));
+async function getTreeLogs(dimension: Dimension, blockChopped: Block, blockTypeId: string, maxNeeded: number):Promise<BlockGraph> {
+  const visited2: BlockGraph = new BlockGraph();
+  
+  const visitedLocations: Set<string> = new Set();
+  
+  visited2.addVertex(blockChopped);
+  visitedLocations.add(JSON.stringify(blockChopped));
 
   // Make this a generator, and the traversing also.
   // Make this return a block to while loop of BFS,each iteration.
@@ -114,12 +109,12 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
   }    
 
   function* traverseTree(): Generator<void, void, void> {
-    let fetchBlockGenerator = getBlockNear(dimension, location);
+    let fetchBlockGenerator = getBlockNear(dimension, blockChopped.location);
     let nextIteration = fetchBlockGenerator.next();
     let _block: Block;
     let queue: Vector3[] = [];
     while (!nextIteration.done || queue.length > 0) {
-      if (visited.size >= SERVER_CONFIGURATION.chopLimit || visited.size >= maxNeeded) {
+      if (visited2.locations.size >= SERVER_CONFIGURATION.chopLimit || visited2.locations.size >= maxNeeded) {
         break;
       }
       
@@ -137,25 +132,27 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
 
       if (_block.typeId !== blockTypeId) continue;
       const pos: string = JSON.stringify(_block.location);
-      if (visited.has(pos)) continue;
-      visited.add(pos);
-      // Connect current, to next possible log block
-
-
-      visitedBlocks.push(_block);
+      if (visited2.locations.has(pos)) continue;
       queue.push(_block.location);
+      visited2.locations.add(pos);
+
+      // Connect current, to next possible log block, and connect them
+      const prev = visited2.previousVertex; // IT SHOULD  BE DEEPO COPY
+      visited2.addVertex(_block);
+      visited2.addEdge(prev, _block)
       yield;
     }
   }
+
   const t = traverseTree();
   const x = system.runJob(t);
   let awaitResolve: number;
-  return new Promise<Array<Block>>((resolve) => {
+  return new Promise<BlockGraph>((resolve) => {
     awaitResolve = system.runJob((function* () {
       while(!t.next().done) {}
       system.clearJob(awaitResolve);
       system.clearJob(x);
-      resolve(visitedBlocks);
+      resolve(visited2);
     })());
   });
 }

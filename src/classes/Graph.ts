@@ -1,8 +1,53 @@
+import { Block } from "@minecraft/server";
+import { Vector } from "modules/Vector";
+
 export class Graph<T> {
-  private adjacencyList: Map<T, T[]>;
+  protected adjacencyList: Map<T, T[]>;
+  protected keyAdjacencyList: Map<string, T[]>;
+  firstVertex: T;
+  previousVertex: T;
 
   constructor() {
-      this.adjacencyList = new Map();
+    this.adjacencyList = new Map();
+    this.keyAdjacencyList = new Map();
+  }
+
+  show() {
+    this.keyAdjacencyList.forEach((blocks, key) => {
+      if(blocks.length){
+        console.log(key, ": ", blocks.map(b => JSON.stringify(b) + ", "))
+      }
+    })
+  
+  }
+
+  get size() {
+    return this.adjacencyList.size;
+  }
+
+  protected get(arg: T) {
+    return this.keyAdjacencyList.get(JSON.stringify(arg)) || this.adjacencyList.get(arg);
+  }
+
+  protected set(arg: T) {
+    this.adjacencyList.set(arg, []);
+    this.keyAdjacencyList.set(JSON.stringify(arg), []);
+  }
+
+  /**
+   * Checks if vertex is existing or not
+   * @param vertex Vertex to check
+   * @returns boolean value if existing or not
+   */
+  has(vertex: T): boolean {
+    return this.keyAdjacencyList.has(JSON.stringify(vertex));
+  }
+
+  /**
+   * Clears the entire graph
+   */
+  clear() {
+    this.adjacencyList.clear();
   }
 
   /**
@@ -10,9 +55,11 @@ export class Graph<T> {
    * @param vertex Vertex to insert
    */
   addVertex(vertex: T): void {
-      if (!this.adjacencyList.has(vertex)) {
-          this.adjacencyList.set(vertex, []);
-      }
+    if (!this.has(vertex)) {
+      this.set(vertex)
+      if(!this.firstVertex) this.firstVertex = vertex;
+      this.previousVertex = vertex;
+    }
   }
 
   /**
@@ -20,16 +67,18 @@ export class Graph<T> {
    * @param vertex Vertex to remove
    */
   removeVertex(vertex: T): void {
-      if (this.adjacencyList.has(vertex)) {
-          this.adjacencyList.delete(vertex);
-          // Remove vertex from all other adjacency lists
-          this.adjacencyList.forEach((value, key) => {
-              const index = value.indexOf(vertex);
-              if (index > -1) {
-                  value.splice(index, 1);
-              }
-          });
-      }
+    const vertexString = JSON.stringify(vertex);
+    if (this.has(vertex)) {
+      this.adjacencyList.delete(vertex);
+      this.keyAdjacencyList.delete(vertexString);
+      // Remove vertex from all other adjacency lists
+      this.adjacencyList.forEach((value, key) => {
+        const index = value.indexOf(vertex);
+        if (index > -1) {
+            value.splice(index, 1);
+        }
+      });
+    }
   }
 
   /**
@@ -38,10 +87,10 @@ export class Graph<T> {
    * @param vertex2 destination vertex
    */
   addEdge(vertex1: T, vertex2: T): void {
-      if (this.adjacencyList.has(vertex1) && this.adjacencyList.has(vertex2)) {
-          this.adjacencyList.get(vertex1)?.push(vertex2);
-          this.adjacencyList.get(vertex2)?.push(vertex1);
-      }
+    if (this.has(vertex1) && this.has(vertex2)) {
+        this.get(vertex1)?.push(vertex2);
+        this.get(vertex2)?.push(vertex1);
+    }
   }
 
   /**
@@ -50,43 +99,42 @@ export class Graph<T> {
    * @param vertex2 destination vertex
    */
   removeEdge(vertex1: T, vertex2: T): void {
-      if (this.adjacencyList.has(vertex1) && this.adjacencyList.has(vertex2)) {
-          const vertex1Edges = this.adjacencyList.get(vertex1);
-          const vertex2Edges = this.adjacencyList.get(vertex2);
-          if (vertex1Edges && vertex2Edges) {
-              const index1 = vertex1Edges.indexOf(vertex2);
-              const index2 = vertex2Edges.indexOf(vertex1);
-              if (index1 > -1) {
-                  vertex1Edges.splice(index1, 1);
-              }
-              if (index2 > -1) {
-                  vertex2Edges.splice(index2, 1);
-              }
-          }
+    if (this.has(vertex1) && this.has(vertex2)) {
+      const vertex1Edges = this.get(vertex1);
+      const vertex2Edges = this.get(vertex2);
+      if (vertex1Edges && vertex2Edges) {
+        const index1 = vertex1Edges.indexOf(vertex2);
+        const index2 = vertex2Edges.indexOf(vertex1);
+        if (index1 > -1) {
+          vertex1Edges.splice(index1, 1);
+        }
+        if (index2 > -1) {
+          vertex2Edges.splice(index2, 1);
+        }
       }
+    }
   }
 
   /**
    * Traverses the Graph in Breadth First Search Manner
    * @param vertex Starting vertex or node to traverse from.
    */
-  private bfs(vertex: T): void {
-      const queue: T[] = [vertex];
-      const visited: Set<T> = new Set();
-
-      while (queue.length) {
-          const currentVertex = queue.shift() as T;
-          if (!visited.has(currentVertex)) {
-              visited.add(currentVertex);
-              console.log(currentVertex);
-              const neighbors = this.adjacencyList.get(currentVertex) || [];
-              neighbors.forEach(neighbor => {
-                  if (!visited.has(neighbor)) {
-                      queue.push(neighbor);
-                  }
-              });
+  protected bfs(vertex: T): Set<T> {
+    const queue: T[] = [vertex];
+    const visited: Set<T> = new Set();
+    while (queue.length) {
+      const currentVertex = queue.shift() as T;
+      if (!visited.has(currentVertex)) {
+        visited.add(currentVertex);
+        const neighbors = this.get(currentVertex) || [];
+        neighbors.forEach(neighbor => {
+          if (!visited.has(neighbor)) {
+            queue.push(neighbor);
           }
+        });
       }
+    }
+    return visited;
   }
 
   /**
@@ -94,15 +142,16 @@ export class Graph<T> {
    * @param vertex Starting vertex or node to traverse from.
    * @param visited (Optional) Set to traverse the whole operation.
    */
-  private dfs(vertex: T, visited: Set<T> = new Set()): void {
-      if (!visited.has(vertex)) {
-          visited.add(vertex);
-          console.log(vertex);
-          const neighbors = this.adjacencyList.get(vertex) || [];
-          neighbors.forEach(neighbor => {
-              this.dfs(neighbor, visited);
-          });
-      }
+  protected dfs(vertex: T, visited: Set<T> = new Set()): Set<T> {
+    if (!visited.has(vertex)) {
+      visited.add(vertex);
+      console.log(vertex);
+      const neighbors = this.get(vertex) || [];
+      neighbors.forEach(neighbor => {
+        this.dfs(neighbor, visited);
+      });
+    }
+    return visited;
   }
 
   /**
@@ -110,11 +159,44 @@ export class Graph<T> {
    * @param vertex Starting vertex or node to traverse from.
    * @param traversalType type of traversing approach option: 'bfs' or 'dfs'
    */
-  traverse(vertex: T, traversalType: 'bfs' | 'dfs'): void {
-      if (traversalType === 'bfs') {
-          this.bfs(vertex);
-      } else if (traversalType === 'dfs') {
-          this.dfs(vertex);
+  traverse(vertex: T, traversalType: 'bfs' | 'dfs'): Set<T> {
+    if (traversalType === 'bfs') {
+      return this.bfs(vertex);
+    } else if (traversalType === 'dfs') {
+      return this.dfs(vertex);
+    }
+  }
+
+  [Symbol.iterator](): Iterator<T> {
+    let currentVertex = this.adjacencyList.keys().next();
+    const vertices = Array.from(this.adjacencyList.keys());
+    let index = 0;
+
+    return {
+        next: (): IteratorResult<T> => {
+            if (index < vertices.length) {
+                return { value: vertices[index++], done: false };
+            } else {
+                return { done: true, value: undefined };
+            }
+        }
+    };
+  }
+
+  filter(predicate: (vertex: T) => boolean): Graph<T> {
+    const filteredGraph = new Graph<T>();
+
+    // Iterate over the keys (vertices) of the adjacency list
+    for (const vertex of this.adjacencyList.keys()) {
+      if (!predicate(vertex)) continue;
+      filteredGraph.addVertex(vertex);
+      const neighbors = this.get(vertex);
+      if (!neighbors) continue;
+      for (const neighbor of neighbors) {
+        if (!predicate(neighbor)) continue;
+        filteredGraph.addEdge(vertex, neighbor);
       }
+    }
+    return filteredGraph;
   }
 }

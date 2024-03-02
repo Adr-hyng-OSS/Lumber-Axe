@@ -5,6 +5,8 @@ import { MinecraftEnchantmentTypes } from './modules/vanilla-types/index';
 import { CommandRegistry } from 'cmd_setup/handler';
 import { CommandHandler, ICommandBase } from 'cmd_setup/setup';
 import { Vector } from 'modules/Vector';
+import { Graph } from 'classes/Graph';
+import { BlockGraph } from 'classes/BlockGraph';
 const logMap: Map<string, number> = new Map<string, number>();
 const playerInteractionMap: Map<string, boolean> = new Map<string, boolean>();
 
@@ -55,16 +57,15 @@ world.afterEvents.playerLeave.subscribe((e: PlayerLeaveAfterEvent) => {
     delete playerBeingShown[e.playerId];
 });
 
-let blocksVisited: Array<Block> = [];
+// Put this to each player.
+let blocksVisited: BlockGraph = new BlockGraph();
 
 world.afterEvents.playerBreakBlock.subscribe((e: PlayerBreakBlockAfterEvent) => {
     const { dimension, player, block } = e;
     const currentBreakBlock: BlockPermutation = e.brokenBlockPermutation;
     const blockTypeId: string = currentBreakBlock.type.id;
-    system.run(async () => await treeCut(player, dimension, new Vector(block.location), blockTypeId, blocksVisited));
+    system.run(async () => await treeCut(player, dimension, block, blockTypeId, blocksVisited));
 });
-
-
 
 world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const currentHeldAxe: ItemStack = e.itemStack;
@@ -87,23 +88,26 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
     const unbreakingDamage: number = SERVER_CONFIGURATION.durabilityDamagePerBlock * unbreakingMultiplier;
     const reachableLogs: number = (maxDurability - currentDurability) / unbreakingDamage;
-
-    const tree: Array<Block> = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs);
-
-    // Get the blocks after 5 seconds if it's still air or from the past permutation.
+    
+    let tree: BlockGraph;
+    let size: number;
+    if(blocksVisited.size){
+        tree = blocksVisited.filter(block => isLogIncluded(block?.typeId));
+        size = tree.traverse(blockInteracted, "bfs").size;
+    } else {
+        tree = await getTreeLogs(player.dimension, blockInteracted, blockInteracted.typeId, reachableLogs);
+        size = tree.size;
+    }
     blocksVisited = tree;
+    //Todo: Make this reset when I interact it again, so it doesn't repeatedly execute in the future.
     system.runTimeout(() => {
-        // blocksVisited.forEach((block) => {
-            // if(isLogIncluded(block?.typeId))
-        // });
-        blocksVisited = [];
+        blocksVisited.clear();
         player.sendMessage("Reseted");
     }, 80);
 
-    const totalDamage: number = (tree.length) * unbreakingDamage;
+    const totalDamage: number = (size) * unbreakingDamage;
     const totalDurabilityConsumed: number = currentDurability + totalDamage;
     const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
-
     const inspectionForm: ActionFormData = new ActionFormData()
     .title({
         rawtext: [
@@ -118,7 +122,7 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
                 translate: `LumberAxe.form.treeSizeAbrev.text`
             },
             {
-                text: ` ${tree.length !== 0 ? tree.length + 1 : 1}${canBeChopped ? "" : "+" } `
+                text: ` ${size !== 0 ? size : 1}${canBeChopped ? "" : "+" } `
             },
             {
                 translate: `LumberAxe.form.treeSizeAbrevLogs.text`
@@ -154,11 +158,14 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
                 translate: `${canBeChopped ? "LumberAxe.form.canBeChopped.text": "LumberAxe.form.cannotBeChopped.text"}`
             }
         ]}, "textures/InfoUI/canBeCut.png");
-    forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
-        playerInteractionMap.set(player.id, false);
-        if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) return;
-    }).catch((error: Error) => {
-        console.warn("Form Error: ", error, error.stack);
+    
+    system.run(() => {
+        forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
+            playerInteractionMap.set(player.id, false);
+            if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) return;
+        }).catch((error: Error) => {
+            console.warn("Form Error: ", error, error.stack);
+        });
     });
 });
 
