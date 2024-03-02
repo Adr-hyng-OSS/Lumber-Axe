@@ -21,6 +21,12 @@ export class Vector {
         else
             return false;
     }
+    static equals(current, other) {
+        if (current.x === other.x && current.y === other.y && current.z === other.z)
+            return true;
+        else
+            return false;
+    }
     length() {
         return Math.hypot(this.x, this.y, this.z);
     }

@@ -2,6 +2,8 @@ import { Block, BlockAreaSize, BlockVolumeUtils, Dimension, EntityEquippableComp
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "../modules/vanilla-types/index";
 import { Vector } from "modules/Vector";
 
+import { Graph } from "classes/Graph";
+
 import { validLogBlocks, axeEquipments, stackDistribution, SERVER_CONFIGURATION, BlockToLocations } from "../index";
 
 async function treeCut(player: Player, dimension: Dimension, location: Vector, blockTypeId: string, blocksVisited: Array<Block>): Promise<void> {
@@ -25,27 +27,26 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector, b
   const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
   const unbreakingDamage: number = SERVER_CONFIGURATION.durabilityDamagePerBlock * unbreakingMultiplier;
   
-  // When done it should return boolean,and distribute.
   let visited: Array<Block> = [];
   let groupedBlocks = [];
 
   const filteredVisited: Block[] = [...blocksVisited.filter(block => isLogIncluded(block?.typeId))];
-  let finalVisits: Set<string> = new Set<string>();
+  
   if(filteredVisited.length) {
     visited = filteredVisited;
-    // Traverse blockss within 3x3x3 for final checking.
-    //! Currently it doesn't efficiently destroys based on cached data
-    // It should final check the cache, if what's missing, and the nodes connected to what's messing should be forgotten.
-    // I think using a Tree Data Structure would be handy.
-    // Like when a branch is detected deleted, it should cut those branches
 
+    // Using Dinjointed Set Data Structure for checking if one is disjointed or not or graph
+    // Through adding based on distance.
+
+    // Possible enhancement should be from the getTree Logs function or the Traversing of logs.
+    
     // const radius: number = 1;
     // const isInRange: boolean = BlockVolumeUtils.isInside({ from: currentLocation.subtract(radius), to: currentLocation.add(radius) }, nextLocation);
   } else {
     visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage)
   }
 
-  for (const group of groupAdjacentBlocks(finalVisits)) {
+  for (const group of groupAdjacentBlocks( BlockToLocations(visited) )) {
     const firstElement: Vector = JSON.parse(group[0]);
     const lastElement: Vector = JSON.parse(group[group.length - 1]);
     groupedBlocks.push([firstElement, lastElement]);
@@ -69,16 +70,8 @@ async function treeCut(player: Player, dimension: Dimension, location: Vector, b
   function* breakBlocksGenerator(): Generator<void, void, void> {
     try {
       for (const group of groupedBlocks) {
-        const firstElement  = group[0];
-        const lastElement = group[group.length - 1];
-        if (firstElement === lastElement) {
-          dimension.getBlock(firstElement)?.setType(MinecraftBlockTypes.Air);
-          yield;
-          continue;
-        } else {
-          dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.Air);
-          yield;
-        }
+        dimension.fillBlocks(group[0], group[group.length - 1], MinecraftBlockTypes.Air);
+        yield;
       }
 
       for(const stack of stackDistribution(visited.length)) {
@@ -146,6 +139,9 @@ async function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId:
       const pos: string = JSON.stringify(_block.location);
       if (visited.has(pos)) continue;
       visited.add(pos);
+      // Connect current, to next possible log block
+
+
       visitedBlocks.push(_block);
       queue.push(_block.location);
       yield;
@@ -172,9 +168,6 @@ function isLogIncluded(blockTypeId: string): boolean {
 
 // Gets all the visited blocks and groups them together.
 function groupAdjacentBlocks(visited: Set<string>): string[][] {
-  // Author: Adr-hyng <https://github.com/Adr-hyng>
-  // Project: https://github.com/Adr-hyng-OSS/Lumber-Axe
-  // Convert Set to Array and parse each string to JSON object
   const array = Array.from(visited).map(item => JSON.parse(item));
 
   // Sort the array based on "x", "z", and "y"

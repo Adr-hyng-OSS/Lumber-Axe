@@ -1,6 +1,7 @@
 import { EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, system } from "@minecraft/server";
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "../modules/vanilla-types/index";
-import { validLogBlocks, axeEquipments, stackDistribution, SERVER_CONFIGURATION } from "../index";
+import { Vector } from "modules/Vector";
+import { validLogBlocks, axeEquipments, stackDistribution, SERVER_CONFIGURATION, BlockToLocations } from "../index";
 async function treeCut(player, dimension, location, blockTypeId, blocksVisited) {
     const equipment = player.getComponent(EntityEquippableComponent.componentId);
     const currentHeldAxe = equipment.getEquipment(EquipmentSlot.Mainhand);
@@ -23,11 +24,17 @@ async function treeCut(player, dimension, location, blockTypeId, blocksVisited) 
     let finalVisits = new Set();
     if (filteredVisited.length) {
         visited = filteredVisited;
+        for (let block of filteredVisited) {
+            if (!isLogIncluded(block?.typeId)) {
+            }
+            if (Vector.equals(block.location, location)) {
+            }
+        }
     }
     else {
         visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
     }
-    for (const group of groupAdjacentBlocks(finalVisits)) {
+    for (const group of groupAdjacentBlocks(BlockToLocations(visited))) {
         const firstElement = JSON.parse(group[0]);
         const lastElement = JSON.parse(group[group.length - 1]);
         groupedBlocks.push([firstElement, lastElement]);
@@ -50,17 +57,8 @@ async function treeCut(player, dimension, location, blockTypeId, blocksVisited) 
     function* breakBlocksGenerator() {
         try {
             for (const group of groupedBlocks) {
-                const firstElement = group[0];
-                const lastElement = group[group.length - 1];
-                if (firstElement === lastElement) {
-                    dimension.getBlock(firstElement)?.setType(MinecraftBlockTypes.Air);
-                    yield;
-                    continue;
-                }
-                else {
-                    dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.Air);
-                    yield;
-                }
+                dimension.fillBlocks(group[0], group[group.length - 1], MinecraftBlockTypes.Air);
+                yield;
             }
             for (const stack of stackDistribution(visited.length)) {
                 dimension.spawnItem(new ItemStack(blockTypeId, stack), location);

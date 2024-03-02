@@ -107,6 +107,19 @@ export class Vector {
     }
     /**
      * @remarks
+     * Compares this vector and another vector to one another.
+     * @param {Vector} other
+     * Other vector to compare this vector to.
+     * @returns {boolean}
+     * True if the two vectors are equal.
+     */
+    static equals(current: Vector | Vector3, other: Vector | Vector3): boolean {
+        if (current.x === other.x && current.y === other.y && current.z === other.z)
+            return true;
+        else return false;
+    }
+    /**
+     * @remarks
      * Retur
      * @returns {number}ns the length of this vector.
      */
