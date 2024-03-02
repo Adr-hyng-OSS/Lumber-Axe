@@ -1,8 +1,7 @@
-import { Block, BlockAreaSize, BlockVolumeUtils, Dimension, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, Vector3, system } from "@minecraft/server";
+import { Block, Dimension, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, Vector3, system } from "@minecraft/server";
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "../modules/vanilla-types/index";
 import { Vector } from "modules/Vector";
 
-import { Graph } from "classes/Graph";
 import { validLogBlocks, axeEquipments, stackDistribution, SERVER_CONFIGURATION } from "../index";
 import { BlockGraph } from "classes/BlockGraph";
 
@@ -35,7 +34,7 @@ async function treeCut(player: Player, dimension: Dimension, blockChopped: Block
   const filteredVisited: BlockGraph = blocksVisited.filter((block) => isLogIncluded(block?.typeId) || Vector.equals(block.location, blockChopped));
   if(filteredVisited.size) {
     visited = filteredVisited;
-    visited.locations = new Set( Array.from(visited.traverse(blockChopped, "bfs")).map(block => JSON.stringify(block.location)) );
+    visited.locations = new Set( Array.from(visited.traverse(blockChopped, "bfs")).map(block => JSON.stringify(block)) );
   } else {
     visited = await getTreeLogs(dimension, blockChopped, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage)
   }
@@ -46,9 +45,9 @@ async function treeCut(player: Player, dimension: Dimension, blockChopped: Block
     const lastElement: Vector = JSON.parse(group[group.length - 1]);
     groupedBlocks.push([firstElement, lastElement]);
   }
+
   const totalDamage: number = size * unbreakingDamage;
   const postDamagedDurability: number = itemDurability.damage + totalDamage;
-
   if (postDamagedDurability + 1 === itemDurability.maxDurability) {
     equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
   }
@@ -81,11 +80,11 @@ async function treeCut(player: Player, dimension: Dimension, blockChopped: Block
 
 
 async function getTreeLogs(dimension: Dimension, blockChopped: Block, blockTypeId: string, maxNeeded: number):Promise<BlockGraph> {
-  const visited2: BlockGraph = new BlockGraph();
+  const visited: BlockGraph = new BlockGraph();
   
   const visitedLocations: Set<string> = new Set();
   
-  visited2.addVertex(blockChopped);
+  visited.addVertex(blockChopped);
   visitedLocations.add(JSON.stringify(blockChopped));
 
   // Make this a generator, and the traversing also.
@@ -114,10 +113,9 @@ async function getTreeLogs(dimension: Dimension, blockChopped: Block, blockTypeI
     let _block: Block;
     let queue: Vector3[] = [];
     while (!nextIteration.done || queue.length > 0) {
-      if (visited2.locations.size >= SERVER_CONFIGURATION.chopLimit || visited2.locations.size >= maxNeeded) {
+      if (visited.locations.size >= SERVER_CONFIGURATION.chopLimit || visited.locations.size >= maxNeeded) {
         break;
       }
-      
       if(nextIteration.done) { 
         const newLoc: Vector3 = queue.shift(); 
         fetchBlockGenerator = getBlockNear(dimension, newLoc);
@@ -129,17 +127,14 @@ async function getTreeLogs(dimension: Dimension, blockChopped: Block, blockTypeI
         nextIteration = fetchBlockGenerator.next();
       }
       if (!_block?.isValid() || !isLogIncluded(_block?.typeId)) continue;
-
       if (_block.typeId !== blockTypeId) continue;
-      const pos: string = JSON.stringify(_block.location);
-      if (visited2.locations.has(pos)) continue;
+      const pos: string = JSON.stringify(_block);
+      if (visited.locations.has(pos)) continue;
       queue.push(_block.location);
-      visited2.locations.add(pos);
-
-      // Connect current, to next possible log block, and connect them
-      const prev = visited2.previousVertex; // IT SHOULD  BE DEEPO COPY
-      visited2.addVertex(_block);
-      visited2.addEdge(prev, _block)
+      visited.locations.add(pos);
+      const prev = visited.previousVertex; 
+      visited.addVertex(_block);
+      visited.addEdge(prev, _block)
       yield;
     }
   }
@@ -152,7 +147,7 @@ async function getTreeLogs(dimension: Dimension, blockChopped: Block, blockTypeI
       while(!t.next().done) {}
       system.clearJob(awaitResolve);
       system.clearJob(x);
-      resolve(visited2);
+      resolve(visited);
     })());
   });
 }

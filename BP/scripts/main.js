@@ -86,7 +86,7 @@ world.beforeEvents.itemUseOn.subscribe(async (e) => {
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
     let tree;
     let size;
-    if (blocksVisited.size) {
+    if (blocksVisited.has(blockInteracted)) {
         tree = blocksVisited.filter(block => isLogIncluded(block?.typeId));
         size = tree.traverse(blockInteracted, "bfs").size;
     }

@@ -13,23 +13,18 @@ export class BlockGraph extends Graph<Block> {
 
   override filter(predicate: (vertex: Block) => boolean): BlockGraph {
     const filteredGraph = new BlockGraph();
-
-    // Iterate over the keys (vertices) of the adjacency list
     for (const vertex of this.adjacencyList.keys()) {
-        if (predicate(vertex)) {
-            // If the vertex passes the predicate, add it to the new graph
-            filteredGraph.addVertex(vertex);
-
-            // Add edges for the vertex if it exists in the original graph
-            const neighbors = this.get(vertex);
-            if (neighbors) {
-                for (const neighbor of neighbors) {
-                    if (predicate(neighbor)) {
-                        filteredGraph.addEdge(vertex, neighbor);
-                    }
+      if (predicate(vertex)) {
+        filteredGraph.addVertex(vertex);
+        const neighbors = this.get(vertex);
+        if (neighbors) {
+            for (const neighbor of neighbors) {
+                if (predicate(neighbor)) {
+                    filteredGraph.addEdge(vertex, neighbor);
                 }
             }
         }
+      }
     }
     return filteredGraph;
   }
@@ -47,7 +42,6 @@ export class BlockGraph extends Graph<Block> {
         const neighbors = this.get(currentVertex) || [];
         neighbors.forEach(neighbor => {
           const neighborPos = JSON.stringify(neighbor.location)
-          // console.warn(Vector.distance(neighbor.location, currentVertex.location), neighborPos, pos);
           if (!this.locations.has(neighborPos)) {
             queue.push(neighbor);
           }

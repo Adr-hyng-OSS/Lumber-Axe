@@ -24,7 +24,7 @@ async function treeCut(player, dimension, blockChopped, blockTypeId, blocksVisit
     const filteredVisited = blocksVisited.filter((block) => isLogIncluded(block?.typeId) || Vector.equals(block.location, blockChopped));
     if (filteredVisited.size) {
         visited = filteredVisited;
-        visited.locations = new Set(Array.from(visited.traverse(blockChopped, "bfs")).map(block => JSON.stringify(block.location)));
+        visited.locations = new Set(Array.from(visited.traverse(blockChopped, "bfs")).map(block => JSON.stringify(block)));
     }
     else {
         visited = await getTreeLogs(dimension, blockChopped, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
@@ -67,9 +67,9 @@ async function treeCut(player, dimension, blockChopped, blockTypeId, blocksVisit
     })());
 }
 async function getTreeLogs(dimension, blockChopped, blockTypeId, maxNeeded) {
-    const visited2 = new BlockGraph();
+    const visited = new BlockGraph();
     const visitedLocations = new Set();
-    visited2.addVertex(blockChopped);
+    visited.addVertex(blockChopped);
     visitedLocations.add(JSON.stringify(blockChopped));
     function* getBlockNear(dimension, location, radius = 1) {
         const originalX = location.x;
@@ -95,7 +95,7 @@ async function getTreeLogs(dimension, blockChopped, blockTypeId, maxNeeded) {
         let _block;
         let queue = [];
         while (!nextIteration.done || queue.length > 0) {
-            if (visited2.locations.size >= SERVER_CONFIGURATION.chopLimit || visited2.locations.size >= maxNeeded) {
+            if (visited.locations.size >= SERVER_CONFIGURATION.chopLimit || visited.locations.size >= maxNeeded) {
                 break;
             }
             if (nextIteration.done) {
@@ -113,14 +113,14 @@ async function getTreeLogs(dimension, blockChopped, blockTypeId, maxNeeded) {
                 continue;
             if (_block.typeId !== blockTypeId)
                 continue;
-            const pos = JSON.stringify(_block.location);
-            if (visited2.locations.has(pos))
+            const pos = JSON.stringify(_block);
+            if (visited.locations.has(pos))
                 continue;
             queue.push(_block.location);
-            visited2.locations.add(pos);
-            const prev = visited2.previousVertex;
-            visited2.addVertex(_block);
-            visited2.addEdge(prev, _block);
+            visited.locations.add(pos);
+            const prev = visited.previousVertex;
+            visited.addVertex(_block);
+            visited.addEdge(prev, _block);
             yield;
         }
     }
@@ -132,7 +132,7 @@ async function getTreeLogs(dimension, blockChopped, blockTypeId, maxNeeded) {
             while (!t.next().done) { }
             system.clearJob(awaitResolve);
             system.clearJob(x);
-            resolve(visited2);
+            resolve(visited);
         })());
     });
 }

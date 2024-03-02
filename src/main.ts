@@ -4,8 +4,6 @@ import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, treeCut, SERVER_C
 import { MinecraftEnchantmentTypes } from './modules/vanilla-types/index';
 import { CommandRegistry } from 'cmd_setup/handler';
 import { CommandHandler, ICommandBase } from 'cmd_setup/setup';
-import { Vector } from 'modules/Vector';
-import { Graph } from 'classes/Graph';
 import { BlockGraph } from 'classes/BlockGraph';
 const logMap: Map<string, number> = new Map<string, number>();
 const playerInteractionMap: Map<string, boolean> = new Map<string, boolean>();
@@ -57,7 +55,7 @@ world.afterEvents.playerLeave.subscribe((e: PlayerLeaveAfterEvent) => {
     delete playerBeingShown[e.playerId];
 });
 
-// Put this to each player.
+// Todo: Put this on player, so it can only interact every 1 tree, and not all the tree interacted.
 let blocksVisited: BlockGraph = new BlockGraph();
 
 world.afterEvents.playerBreakBlock.subscribe((e: PlayerBreakBlockAfterEvent) => {
@@ -91,7 +89,7 @@ world.beforeEvents.itemUseOn.subscribe(async (e: ItemUseOnBeforeEvent) => {
     
     let tree: BlockGraph;
     let size: number;
-    if(blocksVisited.size){
+    if(blocksVisited.has(blockInteracted)){
         tree = blocksVisited.filter(block => isLogIncluded(block?.typeId));
         size = tree.traverse(blockInteracted, "bfs").size;
     } else {
