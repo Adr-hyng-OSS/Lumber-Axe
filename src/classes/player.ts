@@ -7,5 +7,5 @@ declare module "@minecraft/server" {
 }
 
 Player.prototype.isSurvival = function(): boolean {
-  return this.dimension.getPlayers({ gameMode: GameMode.survival, name: this.name, location: this.location, maxDistance: 1, closest: 1 }).length > 0;
+  return this.getGameMode() === GameMode.survival;
 }

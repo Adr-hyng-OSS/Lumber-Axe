@@ -24,10 +24,6 @@ export default {
    * - It's unnecessary to include log blocks that have "*_log" in their block id.
    */
   excludedLog: [],
-  /**
-   * Disables the watchDogTerminate Log message. If true, it will only show a warning message when you enable content-ui log in the Minecraft settings.
-   */
-  disableWatchDogTerminateLog: true,
 };
 
 // version (do not change)

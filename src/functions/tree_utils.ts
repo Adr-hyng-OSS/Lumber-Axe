@@ -4,74 +4,65 @@ import { MinecraftBlockTypes, MinecraftEnchantmentTypes} from "../modules/vanill
 import { validLogBlocks, axeEquipments, stackDistribution, durabilityDamagePerBlock, excludedLog, includedLog, chopLimit } from "../index";
 
 
-async function treeCut(player: Player, dimension: Dimension, location: Vector3, blockTypeId: string): Promise<void> {
-    // Modified Version
-    // Author: Lete114 <https://github.com/Lete114>
-    // Project: https://github.com/mcbe-mods/Cut-tree-one-click
-
-    //! Make Lumberjack (extends Player) Interface / class for this.
+function treeCut(player: Player, dimension: Dimension, location: Vector3, blockTypeId: string): void {
     const equipment = player.getComponent(EntityEquippableComponent.componentId) as EntityEquippableComponent;
     const currentHeldAxe = equipment.getEquipment(EquipmentSlot.Mainhand);
     if (!axeEquipments.includes(currentHeldAxe?.typeId)) return;
-    if (!isLogIncluded(blockTypeId)) return;
 
     if (!player.isSurvival()) return;
     if (player.isSurvival()) currentHeldAxe.lockMode = ItemLockMode.slot;
 
-    //! MAKE THIS D-R-Y
     const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
-    const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId));
+    const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
     const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
     const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
     const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
     
-    const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
-    
-    const totalDamage: number = visited.size * unbreakingDamage;
-    const postDamagedDurability: number = itemDurability.damage + totalDamage;
+    system.run(async () => {
 
-    //! Put this to Durability interface
-    // Check if durabiliy is exact that can chop the tree but broke the axe, then broke it.
-    if (postDamagedDurability + 1 === itemDurability.maxDurability) {
-        equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
-    // Check if the durability is not enough to chop the tree. Then don't apply the 3 damage.
-    } else if (postDamagedDurability > itemDurability.maxDurability) {
-        currentHeldAxe.lockMode = ItemLockMode.none;
-        return;
-    // Check if total durability will consume is still enough and not near the max durability
-    } else if (postDamagedDurability < itemDurability.maxDurability){
-        itemDurability.damage = itemDurability.damage +  totalDamage;
-        currentHeldAxe.lockMode = ItemLockMode.none;
-        equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
-    }
+        const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
+        
+        const totalDamage: number = visited.size * unbreakingDamage;
+        const postDamagedDurability: number = itemDurability.damage + totalDamage;
     
-    //! IDK where to put this.
-    for (const group of groupAdjacentBlocks(visited)) {
-        const firstElement = JSON.parse(group[0]);
-        const lastElement = JSON.parse(group[group.length - 1]);
-        if (firstElement === lastElement) {
-            await new Promise<void>((resolve) => {
-                dimension.getBlock(firstElement).setType(MinecraftBlockTypes.Air);
-                resolve();
-            });
-            continue;
-        } else {
-            await new Promise<void>((resolve) => {
-                dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.Air);
-                resolve();
-            });
+        // Check if durabiliy is exact that can chop the tree but broke the axe, then broke it.
+        if (postDamagedDurability + 1 === itemDurability.maxDurability) {
+            equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
+        // Check if the durability is not enough to chop the tree. Then don't apply the 3 damage.
+        } else if (postDamagedDurability > itemDurability.maxDurability) {
+            currentHeldAxe.lockMode = ItemLockMode.none;
+            return;
+        // Check if total durability will consume is still enough and not near the max durability
+        } else if (postDamagedDurability < itemDurability.maxDurability){
+            itemDurability.damage = itemDurability.damage +  totalDamage;
+            currentHeldAxe.lockMode = ItemLockMode.none;
+            equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
         }
-    }
-    
-    system.runTimeout( async () => {
-        for (const group of stackDistribution(visited.size)) {
-            await new Promise<void>((resolve) => {
-                dimension.spawnItem(new ItemStack(blockTypeId, group), location);
-                resolve();
-            });
+        
+        //! Use this when fillBlocks is in stable.
+        // for (const group of groupAdjacentBlocks(visited)) {
+        //     const firstElement = JSON.parse(group[0]);
+        //     const lastElement = JSON.parse(group[group.length - 1]);
+        //     if (firstElement === lastElement) {
+        //         dimension.getBlock(firstElement).setType(MinecraftBlockTypes.Air);
+        //         continue;
+        //     } else {
+        //         dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.Air);
+        //     }
+        // }
+        for(const visitedLogLocation of visited) {
+            system.run(() => dimension.setBlockType(JSON.parse(visitedLogLocation), MinecraftBlockTypes.Air));
         }
-    }, 5);
-    
+        
+        system.runTimeout( async () => {
+            for (const group of stackDistribution(visited.size)) {
+                await new Promise<void>((resolve) => {
+                    dimension.spawnItem(new ItemStack(blockTypeId, group), location);
+                    resolve();
+                });
+            }
+        }, 5);
+    });
 }
 
 function isLogIncluded(blockTypeId: string): boolean {
@@ -81,41 +72,38 @@ function isLogIncluded(blockTypeId: string): boolean {
 }
 
 function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Promise<Set<string>> {
-    // Modified Version
-    // Author: Lete114 <https://github.com/Lete114>
-    // Project: https://github.com/mcbe-mods/Cut-tree-one-click
     return new Promise<Set<string>>((resolve) => {
-        const traversingTreeInterval: number = system.runInterval(() => {
+        const traversingTreeInterval: number = system.runJob(function*(){
             const visited: Set<string> = new Set<string>();
-            let queue: Block[] = getBlockNear(dimension, location);
+            let queue: Block[] = getBlockNearInitialize(dimension, location);
             while (queue.length > 0) {
                 if(visited.size >= chopLimit || visited.size >= maxNeeded) {
-                    system.clearRun(traversingTreeInterval);
+                    system.clearJob(traversingTreeInterval);
                     resolve(visited);
                 }
                 const _block: Block = queue.shift();
-                if (!_block || !isLogIncluded(_block?.typeId)) continue;
+                if (!_block?.isValid() || !isLogIncluded(_block?.typeId)) continue;
                 if (_block.typeId !== blockTypeId) continue;
                 const pos: string = JSON.stringify(_block.location);
                 if (visited.has(pos)) continue;
                 visited.add(pos);
-                queue.push(...getBlockNear(dimension, _block.location));
+                for(const block of getBlockNear(dimension, _block.location)) {
+                    queue.push(block);
+                    yield;
+                }
+                yield;
             }
             queue = [];
-            system.clearRun(traversingTreeInterval);
+            system.clearJob(traversingTreeInterval);
             resolve(visited);
-        }, 1);
+        }());
     });
 }
 
-function getBlockNear(dimension: Dimension, location: Vector3, radius: number = 1): Block[] {
-    // Modified Version
-    // Author: Lete114 <https://github.com/Lete114>
-    // Project: https://github.com/mcbe-mods/Cut-tree-one-click
+function* getBlockNear(dimension: Dimension, location: Vector3, radius: number = 1): Generator< Block, any, unknown> {
     const centerX: number = location.x;
     const centerY: number = location.y;
     const centerZ: number = location.z;
-    const positions: Block[] = [];
     let _block: Block;
     for (let x = centerX - radius; x <= centerX + radius; x++) {
         for (let y = centerY - radius; y <= centerY + radius; y++) {
@@ -123,11 +111,29 @@ function getBlockNear(dimension: Dimension, location: Vector3, radius: number = 
                 if(centerX === x && centerY === y && centerZ === z) continue;
                 _block = dimension.getBlock({ x, y, z });
                 if(_block.isAir) continue;
-                positions.push(_block);
+                yield _block
             }
         }
     }
-    return positions;
+}
+
+function getBlockNearInitialize(dimension: Dimension, location: Vector3, radius: number = 1): Block[] {
+    const centerX: number = location.x;
+    const centerY: number = location.y;
+    const centerZ: number = location.z;
+    const blocks: Block[] = [];
+    let _block: Block;
+    for (let x = centerX - radius; x <= centerX + radius; x++) {
+        for (let y = centerY - radius; y <= centerY + radius; y++) {
+            for (let z = centerZ - radius; z <= centerZ + radius; z++) {
+                if(centerX === x && centerY === y && centerZ === z) continue;
+                _block = dimension.getBlock({ x, y, z });
+                if(_block.isAir) continue;
+                blocks.push(_block);
+            }
+        }
+    }
+    return blocks;
 }
 
 // Gets all the visited blocks and groups them together.

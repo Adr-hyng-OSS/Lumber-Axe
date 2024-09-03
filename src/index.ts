@@ -1,11 +1,15 @@
 export * from './functions/utils';
 export * from './functions/tree_utils';
 export * from './classes/player';
+export * from './classes/item_equippable';
 
+import { MyCustomItemTypes } from 'items/CustomItemTypes';
 import Configuration from "./config";
-const { durabilityDamagePerBlock, chopLimit, includedLog, excludedLog, disableWatchDogTerminateLog } = Configuration;
-export { durabilityDamagePerBlock, chopLimit, includedLog, excludedLog, disableWatchDogTerminateLog};
+const { durabilityDamagePerBlock, chopLimit, includedLog, excludedLog, debug} = Configuration;
+export { durabilityDamagePerBlock, chopLimit, includedLog, excludedLog, debug};
 
 export const validLogBlocks: RegExp = /(_log|crimson_stem|warped_stem)$/;
 
-export const axeEquipments: string[] = [ "yn:wooden_lumber_axe", "yn:stone_lumber_axe", "yn:iron_lumber_axe", "yn:diamond_lumber_axe", "yn:golden_lumber_axe", "yn:netherite_lumber_axe" ];
+export const logMap: Map<string, number> = new Map<string, number>();
+export const playerInteractionMap: Map<string, boolean> = new Map<string, boolean>();
+export const axeEquipments: string[] = Object.values(MyCustomItemTypes);

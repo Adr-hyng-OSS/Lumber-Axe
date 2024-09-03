@@ -1,13 +1,14 @@
 {
-	"format_version": "1.16.100",
+	"format_version": "1.21.10",
 	"minecraft:item": {
 		"description": {
 			"identifier": "yn:iron_lumber_axe",
-			"category": "equipment"
+			"menu_category": {
+        "category": "equipment",
+        "group": "itemGroup.name.axe"
+      }
 		},
 		"components": {
-			"minecraft:max_stack_size": 1,
-			"minecraft:hand_equipped": true,
 			"minecraft:durability": {
 				"max_durability": 345,
 				"damage_chance": {
@@ -16,7 +17,9 @@
 				}
 			},
 			"minecraft:icon": {
-				"texture": "yn:iron_lumber_axe"
+				"textures": {
+					"default": "yn:iron_lumber_axe"
+				}
 			},
 			"minecraft:display_name": {
 				"value": "item.yn:iron_lumber_axe.name"
@@ -43,800 +46,643 @@
 					}
 				]
 			},
-			"minecraft:mining_speed": 1.5,
-			"minecraft:damage": 6,
+			"minecraft:damage": {
+				"value": 6
+			},
 			"minecraft:enchantable": {
 				"value": 10,
 				"slot": "axe"
 			},
-			"minecraft:weapon": {
-				"on_hurt_entity": {
-					"event": "defaultDamage"
-				}
-			},
-			"minecraft:creative_category": {
-				"parent": "itemGroup.name.axe"
-			},
-			"minecraft:digger": {
-				"use_efficiency": true,
-				"destroy_speeds": [
-					{
-						"block": {
-							"tags": "q.any_tag('wood', 'log', 'pumpkin', 'plant', 'iron_axe_diggable')"
-						},
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:chest",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:trapdoor",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:wood",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:spruce_trapdoor",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:birch_fence_gate",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:jungle_fence_gate",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:acacia_fence_gate",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:dark_oak_fence_gate",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:warped_fence_gate",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crimson_fence_gate",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:jukebox",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:log",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:log2",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:mangrove_log",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crimson_stem",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:warped_stem",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:stripped_spruce_log",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:stripped_birch_log",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:stripped_jungle_log",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:stripped_acacia_log",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:stripped_dark_oak_log",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:stripped_oak_log",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:stripped_crimson_stem",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:stripped_warped_stem",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:planks",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crimson_planks",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:warped_planks",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:wooden_slab",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:double_wooden_slab",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:oak_stairs",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:spruce_stairs",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:jungle_stairs",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:acacia_stairs",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:dark_oak_stairs",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crimson_stairs",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:warped_stairs",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:mangrove_stairs",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:campfire",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:soul_campfire",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:bookshelf",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:standing_banner",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:wall_banner",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:lit_pumpkin",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:pumpkin",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:carved_pumpkin",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:standing_sign",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crimson_standing_sign",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:warped_standing_sign",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:wall_sign",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:noteblock",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:wooden_pressure_plate",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:beehive",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:bee_nest",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:ladder",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:composter",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:bamboo",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:bamboo_sapling",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:daylight_detector",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:daylight_detector_inverted",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:brown_mushroom_block",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:red_mushroom_block",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:vine",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:cocoa",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:birch_trapdoor",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:jungle_trapdoor",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:acacia_trapdoor",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:dark_oak_trapdoor",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:spruce_door",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:wooden_door",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crimson_planks",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:birch_door",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:jungle_door",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:acacia_door",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:trapped_chest",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:lectern",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:smithing_table",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:loom",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:cartography_table",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:fletching_table",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:barrel",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:fence",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:warped_fence",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crimson_fence",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:fence_gate",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:spruce_fence_gate",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:dark_oak_door",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:bookshelf",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:melon_block",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:warped_stem",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crimson_stem",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:warped_stem",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crimson_stem",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crafting_table",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crimson_planks",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:warped_planks",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:warped_stairs",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:warped_trapdoor",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crimson_stairs",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crimson_trapdoor",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crimson_door",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crimson_double_slab",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:warped_door",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:warped_double_slab",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					},
-					{
-						"block": "minecraft:crafting_table",
-						"speed": 7,
-						"on_dig": {
-							"event": "yn:chopDamage"
-						}
-					}
-				],
-				"on_dig": {
-					"event": "defaultDamage"
-				}
-			}
-		},
-		"events": {
-			"defaultDamage": {
-				"sequence": [
-					{
-						"damage": {
-							"type": "durability",
-							"amount": 1,
-							"target": "self"
-						}
-					}
-				]
-			},
-			"digDamage": {
-				"sequence": [
-					{
-						"damage": {
-							"type": "durability",
-							"amount": 1,
-							"target": "self"
-						}
-					}
-				]
-			},
-			"yn:chopDamage": {
-				"sequence": [
-					{
-						"damage": {
-							"type": "durability",
-							"amount": 2,
-							"target": "self"
-						}
-					}
-				]
-			}
+			
+			"minecraft:custom_components": [
+        "yn:tool_durability"
+      ],
+      "minecraft:tags": {
+        "tags": [
+          "minecraft:is_axe"
+        ]
+      },
+      "minecraft:max_stack_size": 1,
+      "minecraft:hand_equipped": true,
+      "minecraft:digger": {
+        "use_efficiency": true,
+        "destroy_speeds": [
+          {
+              "block": "cherry_planks",
+              "speed": 7
+          },
+          {
+              "block": "cherry_slab",
+              "speed": 7
+          },
+          {
+              "block": "cherry_stairs",
+              "speed": 7
+          },
+          {
+              "block": "nether_wart_block",
+              "speed": 7
+          },
+          {
+              "block": {
+                  "tags": "q.any_tag('wood', 'log', 'pumpkin', 'plant', 'iron_axe_diggable')"
+              },
+              "speed": 7
+          },
+          {
+              "block": "crimson_stem",
+              "speed": 7
+          },
+          {
+              "block": "warped_stem",
+              "speed": 7
+          },
+          {
+              "block": "stripped_crimson_stem",
+              "speed": 7
+          },
+          {
+              "block": "stripped_warped_stem",
+              "speed": 7
+          },
+          {
+              "block": "crimson_hyphae",
+              "speed": 7
+          },
+          {
+              "block": "warped_hyphae",
+              "speed": 7
+          },
+          {
+              "block": "stripped_crimson_hyphae",
+              "speed": 7
+          },
+          {
+              "block": "stripped_warped_hyphae",
+              "speed": 7
+          },
+          {
+              "block": "soul_torch",
+              "speed": 7
+          },
+          {
+              "block": "warped_standing_sign",
+              "speed": 7
+          },
+          {
+              "block": "crimson_standing_sign",
+              "speed": 7
+          },
+          {
+              "block": "warped_wall_sign",
+              "speed": 7
+          },
+          {
+              "block": "crimson_wall_sign",
+              "speed": 7
+          },
+          {
+              "block": "crimson_door",
+              "speed": 7
+          },
+          {
+              "block": "warped_door",
+              "speed": 7
+          },
+          {
+              "block": "crimson_planks",
+              "speed": 7
+          },
+          {
+              "block": "warped_planks",
+              "speed": 7
+          },
+          {
+              "block": "crimson_trapdoor",
+              "speed": 7
+          },
+          {
+              "block": "warped_trapdoor",
+              "speed": 7
+          },
+          {
+              "block": "crimson_fence",
+              "speed": 7
+          },
+          {
+              "block": "warped_fence",
+              "speed": 7
+          },
+          {
+              "block": "crimson_fence_gate",
+              "speed": 7
+          },
+          {
+              "block": "warped_fence_gate",
+              "speed": 7
+          },
+          {
+              "block": "crimson_double_slab",
+              "speed": 7
+          },
+          {
+              "block": "crimson_slab",
+              "speed": 7
+          },
+          {
+              "block": "warped_double_slab",
+              "speed": 7
+          },
+          {
+              "block": "warped_slab",
+              "speed": 7
+          },
+          {
+              "block": "crimson_stairs",
+              "speed": 7
+          },
+          {
+              "block": "warped_stairs",
+              "speed": 7
+          },
+          {
+              "block": "crimson_button",
+              "speed": 7
+          },
+          {
+              "block": "warped_button",
+              "speed": 7
+          },
+          {
+              "block": "crimson_pressure_plate",
+              "speed": 7
+          },
+          {
+              "block": "warped_pressure_plate",
+              "speed": 7
+          },
+          {
+              "block": "soul_campfire",
+              "speed": 7
+          },
+          {
+              "block": "mangrove_log",
+              "speed": 7
+          },
+          {
+              "block": "stripped_mangrove_log",
+              "speed": 7
+          },
+          {
+              "block": "mangrove_planks",
+              "speed": 7
+          },
+          {
+              "block": "mangrove_button",
+              "speed": 7
+          },
+          {
+              "block": "mangrove_stairs",
+              "speed": 7
+          },
+          {
+              "block": "mangrove_slab",
+              "speed": 7
+          },
+          {
+              "block": "mangrove_pressure_plate",
+              "speed": 7
+          },
+          {
+              "block": "mangrove_fence",
+              "speed": 7
+          },
+          {
+              "block": "mangrove_fence_gate",
+              "speed": 7
+          },
+          {
+              "block": "mangrove_door",
+              "speed": 7
+          },
+          {
+              "block": "mangrove_standing_sign",
+              "speed": 7
+          },
+          {
+              "block": "mangrove_wall_sign",
+              "speed": 7
+          },
+          {
+              "block": "mangrove_trapdoor",
+              "speed": 7
+          },
+          {
+              "block": "mangrove_wood",
+              "speed": 7
+          },
+          {
+              "block": "stripped_mangrove_wood",
+              "speed": 7
+          },
+          {
+              "block": "mangrove_double_slab",
+              "speed": 7
+          },
+          {
+              "block": "planks",
+              "speed": 7
+          },
+          {
+              "block": "log",
+              "speed": 7
+          },
+          {
+              "block": "stripped_oak_log",
+              "speed": 7
+          },
+          {
+              "block": "stripped_birch_log",
+              "speed": 7
+          },
+          {
+              "block": "stripped_dark_oak_log",
+              "speed": 7
+          },
+          {
+              "block": "stripped_acacia_log",
+              "speed": 7
+          },
+          {
+              "block": "stripped_jungle_log",
+              "speed": 7
+          },
+          {
+              "block": "stripped_spruce_log",
+              "speed": 7
+          },
+          {
+              "block": "noteblock",
+              "speed": 7
+          },
+          {
+              "block": "jukebox",
+              "speed": 7
+          },
+          {
+              "block": "bed",
+              "speed": 7
+          },
+          {
+              "block": "bookshelf",
+              "speed": 7
+          },
+          {
+              "block": "torch",
+              "speed": 7
+          },
+          {
+              "block": "oak_stairs",
+              "speed": 7
+          },
+          {
+              "block": "chest",
+              "speed": 7
+          },
+          {
+              "block": "crafting_table",
+              "speed": 7
+          },
+          {
+              "block": "standing_sign",
+              "speed": 7
+          },
+          {
+              "block": "wooden_door",
+              "speed": 7
+          },
+          {
+              "block": "ladder",
+              "speed": 7
+          },
+          {
+              "block": "wall_sign",
+              "speed": 7
+          },
+          {
+              "block": "wooden_pressure_plate",
+              "speed": 7
+          },
+          {
+              "block": "acacia_pressure_plate",
+              "speed": 7
+          },
+          {
+              "block": "birch_pressure_plate",
+              "speed": 7
+          },
+          {
+              "block": "dark_oak_pressure_plate",
+              "speed": 7
+          },
+          {
+              "block": "jungle_pressure_plate",
+              "speed": 7
+          },
+          {
+              "block": "spruce_pressure_plate",
+              "speed": 7
+          },
+          {
+              "block": "unlit_redstone_torch",
+              "speed": 7
+          },
+          {
+              "block": "redstone_torch",
+              "speed": 7
+          },
+          {
+              "block": "fence",
+              "speed": 7
+          },
+          {
+              "block": "pumpkin",
+              "speed": 7
+          },
+          {
+              "block": "carved_pumpkin",
+              "speed": 7
+          },
+          {
+              "block": "lit_pumpkin",
+              "speed": 7
+          },
+          {
+              "block": "trapdoor",
+              "speed": 7
+          },
+          {
+              "block": "acacia_trapdoor",
+              "speed": 7
+          },
+          {
+              "block": "birch_trapdoor",
+              "speed": 7
+          },
+          {
+              "block": "dark_oak_trapdoor",
+              "speed": 7
+          },
+          {
+              "block": "jungle_trapdoor",
+              "speed": 7
+          },
+          {
+              "block": "spruce_trapdoor",
+              "speed": 7
+          },
+          {
+              "block": "brown_mushroom_block",
+              "speed": 7
+          },
+          {
+              "block": "red_mushroom_block",
+              "speed": 7
+          },
+          {
+              "block": "melon_block",
+              "speed": 7
+          },
+          {
+              "block": "pumpkin_stem",
+              "speed": 7
+          },
+          {
+              "block": "melon_stem",
+              "speed": 7
+          },
+          {
+              "block": "fence_gate",
+              "speed": 7
+          },
+          {
+              "block": "cocoa",
+              "speed": 7
+          },
+          {
+              "block": "spruce_stairs",
+              "speed": 7
+          },
+          {
+              "block": "birch_stairs",
+              "speed": 7
+          },
+          {
+              "block": "jungle_stairs",
+              "speed": 7
+          },
+          {
+              "block": "wooden_button",
+              "speed": 7
+          },
+          {
+              "block": "acacia_button",
+              "speed": 7
+          },
+          {
+              "block": "birch_button",
+              "speed": 7
+          },
+          {
+              "block": "dark_oak_button",
+              "speed": 7
+          },
+          {
+              "block": "jungle_button",
+              "speed": 7
+          },
+          {
+              "block": "spruce_button",
+              "speed": 7
+          },
+          {
+              "block": "trapped_chest",
+              "speed": 7
+          },
+          {
+              "block": "daylight_detector",
+              "speed": 7
+          },
+          {
+              "block": "double_wooden_slab",
+              "speed": 7
+          },
+          {
+              "block": "wooden_slab",
+              "speed": 7
+          },
+          {
+              "block": "log2",
+              "speed": 7
+          },
+          {
+              "block": "acacia_stairs",
+              "speed": 7
+          },
+          {
+              "block": "dark_oak_stairs",
+              "speed": 7
+          },
+          {
+              "block": "daylight_detector_inverted",
+              "speed": 7
+          },
+          {
+              "block": "spruce_fence_gate",
+              "speed": 7
+          },
+          {
+              "block": "birch_fence_gate",
+              "speed": 7
+          },
+          {
+              "block": "jungle_fence_gate",
+              "speed": 7
+          },
+          {
+              "block": "dark_oak_fence_gate",
+              "speed": 7
+          },
+          {
+              "block": "acacia_fence_gate",
+              "speed": 7
+          },
+          {
+              "block": "spruce_door",
+              "speed": 7
+          },
+          {
+              "block": "birch_door",
+              "speed": 7
+          },
+          {
+              "block": "jungle_door",
+              "speed": 7
+          },
+          {
+              "block": "acacia_door",
+              "speed": 7
+          },
+          {
+              "block": "dark_oak_door",
+              "speed": 7
+          },
+          {
+              "block": "standing_banner",
+              "speed": 7
+          },
+          {
+              "block": "wall_banner",
+              "speed": 7
+          },
+          {
+              "block": "bamboo",
+              "speed": 7
+          },
+          {
+              "block": "bamboo_sapling",
+              "speed": 7
+          },
+          {
+              "block": "scaffolding",
+              "speed": 7
+          },
+          {
+              "block": "spruce_wall_sign",
+              "speed": 7
+          },
+          {
+              "block": "spruce_standing_sign",
+              "speed": 7
+          },
+          {
+              "block": "birch_wall_sign",
+              "speed": 7
+          },
+          {
+              "block": "birch_standing_sign",
+              "speed": 7
+          },
+          {
+              "block": "jungle_wall_sign",
+              "speed": 7
+          },
+          {
+              "block": "jungle_standing_sign",
+              "speed": 7
+          },
+          {
+              "block": "acacia_wall_sign",
+              "speed": 7
+          },
+          {
+              "block": "acacia_standing_sign",
+              "speed": 7
+          },
+          {
+              "block": "darkoak_wall_sign",
+              "speed": 7
+          },
+          {
+              "block": "darkoak_standing_sign",
+              "speed": 7
+          },
+          {
+              "block": "barrel",
+              "speed": 7
+          },
+          {
+              "block": "smithing_table",
+              "speed": 7
+          },
+          {
+              "block": "cartography_table",
+              "speed": 7
+          },
+          {
+              "block": "fletching_table",
+              "speed": 7
+          },
+          {
+              "block": "campfire",
+              "speed": 7
+          },
+          {
+              "block": "loom",
+              "speed": 7
+          },
+          {
+              "block": "lectern",
+              "speed": 7
+          },
+          {
+              "block": "wood",
+              "speed": 7
+          },
+          {
+              "block": "composter",
+              "speed": 7
+          },
+          {
+              "block": "chorus_flower",
+              "speed": 7
+          },
+          {
+              "block": "chorus_plant",
+              "speed": 7
+          }
+        ]
+      }
 		}
 	}
 }

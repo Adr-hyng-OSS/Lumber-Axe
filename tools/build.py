@@ -12,7 +12,22 @@ args = parser.parse_args()
 
 addon_name = json.loads(open('setup/mc_manifest.json', 'r').read()).get("header").get("bp_name")
 build_pack_name = addon_name[:addon_name.rfind(" BP")]
-version_tag = 'v1.20.6x-110'
+version_tag = 'v' + '.'.join(map(str, json.loads(open('setup/mc_manifest.json', 'r').read()).get("header").get("version")))
+
+
+def check_tsc_compiler():
+  try:
+      # Run the command and capture the output
+      result = subprocess.Popen(f"where tsc", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      output, error = result.communicate()
+      if(error): raise Exception("Error from check_tsc_compiler")
+      paths = output.strip().splitlines()
+      if paths:
+          return paths[0]
+  except subprocess.CalledProcessError:
+      return None
+
+tsc_path = check_tsc_compiler()
 
 def handleError(err):
     if err: exit(err)
@@ -65,7 +80,9 @@ if not args.package_only:
         subprocess.call([sys.executable, 'tools/sync2com-mojang.py', f'--dest={args.watch}'], stdout=subprocess.DEVNULL)
 
         print('Watch mode: press control-C to stop.')
-        tsc = subprocess.Popen('tsc -w', shell=True)
+        # tsc = subprocess.Popen('tsc -w', shell=True)
+        tsc = subprocess.Popen([tsc_path, '-w'], shell=True)
+        
         # Build settings file
         process_cfg = subprocess.Popen([sys.executable, 'tools/process_config.py', '-w', f'--target={watch_target}'], stdout=subprocess.DEVNULL)
         # Sync to com.mojang
@@ -82,7 +99,7 @@ if not args.package_only:
             exit()
     else:
         print('building scripts...')
-        handleError(subprocess.call(['tsc', '-b'], shell=True))
+        handleError(subprocess.call([tsc_path, '-b'], shell=True))
 
     # Build manifests
     if args.init:
@@ -131,12 +148,13 @@ if args.target != 'debug':
             
             
 """
+Commands:
+--init (reinitialize bp / rp, creating new uuid and stuffs)
+--watch (sync dev)
+--target (create a debug or release version of addon)
+--clean (clean bp/scripts)
+--package-only (idk)
+
 Add:
-- [--init | -i] make it have choices of ["beh", "res", "all"] to select what to init
-- version should be auto-generated from scripts module.
-- [--module | -m] to select what module of script to use for BP-stable. choices: ["v1.20.0", "v1.20.1", "v1.20.10"]
-
-Bugs:
-- Make it update the mc_manifest.json file, after init.
-
+- [-c | --create ]<args: addon(default) | pack> <pack_args: bp | rp> - creates new uuid (bp, rp, res, script) for mc_manifest
 """
