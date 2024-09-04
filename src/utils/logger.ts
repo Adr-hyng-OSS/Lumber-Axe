@@ -1,7 +1,7 @@
 // Import your configuration if necessary
 
 import { system } from "@minecraft/server";
-import { debug } from "index";
+import { serverConfigurationCopy } from "index";
 
 export enum LogLevel {
   DEBUG = 'DEBUG',
@@ -10,7 +10,7 @@ export enum LogLevel {
 }
 
 export class Logger {
-  private static level: LogLevel = debug ? LogLevel.DEBUG : LogLevel.INFO; // Default log level
+  private static level: LogLevel = serverConfigurationCopy.debug.defaultValue ? LogLevel.DEBUG : LogLevel.INFO; // Default log level
 
   static setLogLevel(level: LogLevel): void {
     Logger.level = level;
@@ -21,7 +21,7 @@ export class Logger {
     const currentLevelIndex = levels.indexOf(Logger.level);
     const logLevelIndex = levels.indexOf(level);
 
-    if (logLevelIndex >= currentLevelIndex && debug) {
+    if (logLevelIndex >= currentLevelIndex && serverConfigurationCopy.debug.defaultValue) {
       // const timestamp = Date.now();
       const timestamp = system.currentTick;
       const formattedMessage = `[${timestamp}] [${level}] - ${message}`;
@@ -41,14 +41,14 @@ export class Logger {
   }
 
   static debug(...message: any[]): void {
-    if(debug) Logger.log(LogLevel.DEBUG, message);
+    if(serverConfigurationCopy.debug.defaultValue) Logger.log(LogLevel.DEBUG, message);
   }
 
   static info(...message: any[]): void {
-    if(debug) Logger.log(LogLevel.INFO, message);
+    if(serverConfigurationCopy.debug.defaultValue) Logger.log(LogLevel.INFO, message);
   }
 
   static error(...message: any[]): void {
-    if(debug) Logger.log(LogLevel.ERROR, message);
+    if(serverConfigurationCopy.debug.defaultValue) Logger.log(LogLevel.ERROR, message);
   }
 }

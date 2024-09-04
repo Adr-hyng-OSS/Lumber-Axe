@@ -1,11 +1,11 @@
 import { Block, BlockPermutation, EntityEquippableComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemStack, Player, system, world } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
-import { axeEquipments, durabilityDamagePerBlock, forceShow, getTreeLogs, isLogIncluded, logMap, playerInteractionMap, treeCut } from "index"
-import { MinecraftEnchantmentTypes } from "modules/vanilla-types";
+import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, playerInteractionMap, serverConfigurationCopy, treeCut } from "index"
+import { MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
 import { Logger } from "utils/logger";
 
 world.beforeEvents.worldInitialize.subscribe((registry) => {
-  registry.itemComponentRegistry.registerCustomComponent("yn:tool_durability", {
+  registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
     onHitEntity(arg) {
       if(!(arg.attackingEntity instanceof Player)) return;
       const player: Player = arg.attackingEntity;
@@ -30,10 +30,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
       const currentHeldAxe: ItemStack = arg.itemStack;
       const blockInteracted: Block = arg.block;
       const player: Player = arg.source as Player;
-
-      const oldLog: number = logMap.get(player.name);
-      logMap.set(player.name, Date.now());
-      if ((oldLog + 1_000) >= Date.now()) return;
       if (!axeEquipments.includes(currentHeldAxe.typeId) || !isLogIncluded(blockInteracted.typeId)) return;
       if(playerInteractionMap.get(player.id)) return;
       playerInteractionMap.set(player.id, true);
@@ -44,7 +40,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
       const currentDurability = itemDurability.damage;
       const maxDurability = itemDurability.maxDurability;
       const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
-      const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
+      
+      const unbreakingDamage: number = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
       const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
       getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1).then( (treeCollected: Set<string>) => {
           const totalDamage: number = (treeCollected.size) * unbreakingDamage;

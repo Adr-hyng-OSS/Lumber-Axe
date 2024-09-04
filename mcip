@@ -6,9 +6,10 @@ watch=""
 target="debug"
 clean=false
 package_only=false
+dev=false
 
 # Read the options
-TEMP=`getopt -o hiw:t:cp --long help,init,watch:,target:,clean,package-only -n 'build_script' -- "$@"`
+TEMP=`getopt -o hiw:t:cpd --long help,init,watch:,target:,clean,package-only,dev -n 'build_script' -- "$@"`
 eval set -- "$TEMP"
 
 # Extract options and their arguments into variables
@@ -22,28 +23,36 @@ while true ; do
             echo -e "[--target] <opt: release, debug, server> -> Whether to build the addon in debug or release mode. Default is 'debug'. \nCan Generate Config out of settings.json"
             echo "[--clean | -c] -> Clean 'BP/scripts' folder before building."
             echo "[--package-only | -p] -> Only package what's already there."
+            echo "[--dev | -d] -> The usual watch and target debug"
+            echo "-----------------------------------------------------------"
+            echo "Debugging: ./mcip --watch \"stable\" --target \"debug\" "
+            echo "Building: ./mcip --target \"release\" "
             exit 0 ;;
         -i|--init)
             init=true ; shift ;;
         -w|--watch)
             watch=$2 ; shift 2 ;;
         --target)
-            if ! $init ; then
-                target=$2
-            fi
-            shift 2 ;;
+            target=$2 ; shift 2 ;;
         -c|--clean)
             clean=true ; shift ;;
         -p|--package-only)
             package_only=true ; shift ;;
+        -d|--dev)
+            dev=true ; shift ;;
         --) shift ; break ;;
         *) echo "Internal error!" ; exit 1 ;;
     esac
 done
 
+# Set default values for dev option
+if $dev; then
+    watch="stable"
+    target="debug"
+fi
+
 # Build the command
 command="python tools/build.py"
-command2="python tools/process_config.py --generateConfigTS"
 
 if $init; then
     command+=" --init"
@@ -53,9 +62,7 @@ if [[ ! -z "$watch" ]]; then
     command+=" --watch $watch"
 fi
 
-if ! $init; then
-    command+=" --target $target"
-fi
+command+=" --target $target"
 
 if $clean; then
     command+=" --clean"
@@ -66,11 +73,4 @@ if $package_only; then
 fi
 
 # Execute the command
-
 eval $command
-
-# Execute command2 if --init was called
-if $init; then
-    command="python tools/process_manifest.py --init"
-    eval $command2
-fi

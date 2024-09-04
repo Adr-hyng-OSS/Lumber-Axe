@@ -58,7 +58,7 @@
       ],
       "minecraft:tags": {
         "tags": [
-          "minecraft:is_axe"
+          "minecraft:transformable_items"
         ]
       },
       "minecraft:max_stack_size": 1,

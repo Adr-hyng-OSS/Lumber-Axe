@@ -1,7 +1,7 @@
 import { Block, Dimension, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, System, Vector3, system } from "@minecraft/server";
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes} from "../modules/vanilla-types/index";
 
-import { validLogBlocks, axeEquipments, stackDistribution, durabilityDamagePerBlock, excludedLog, includedLog, chopLimit } from "../index";
+import { validLogBlocks, axeEquipments, stackDistribution, serverConfigurationCopy } from "../index";
 
 
 function treeCut(player: Player, dimension: Dimension, location: Vector3, blockTypeId: string): void {
@@ -16,7 +16,7 @@ function treeCut(player: Player, dimension: Dimension, location: Vector3, blockT
     const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
     const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
     const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
-    const unbreakingDamage: number = durabilityDamagePerBlock * unbreakingMultiplier;
+    const unbreakingDamage: number = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
     
     system.run(async () => {
 
@@ -54,20 +54,17 @@ function treeCut(player: Player, dimension: Dimension, location: Vector3, blockT
             system.run(() => dimension.setBlockType(JSON.parse(visitedLogLocation), MinecraftBlockTypes.Air));
         }
         
-        system.runTimeout( async () => {
+        system.runTimeout( () => {
             for (const group of stackDistribution(visited.size)) {
-                await new Promise<void>((resolve) => {
-                    dimension.spawnItem(new ItemStack(blockTypeId, group), location);
-                    resolve();
-                });
+                system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
             }
         }, 5);
     });
 }
 
 function isLogIncluded(blockTypeId: string): boolean {
-    if(excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
-    if(includedLog.includes(blockTypeId) || validLogBlocks.test(blockTypeId)) return true;
+    if(serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
+    if(serverConfigurationCopy.includedLog.values.includes(blockTypeId) || validLogBlocks.test(blockTypeId)) return true;
     return false;
 }
 
@@ -77,7 +74,7 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
             const visited: Set<string> = new Set<string>();
             let queue: Block[] = getBlockNearInitialize(dimension, location);
             while (queue.length > 0) {
-                if(visited.size >= chopLimit || visited.size >= maxNeeded) {
+                if(visited.size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || visited.size >= maxNeeded) {
                     system.clearJob(traversingTreeInterval);
                     resolve(visited);
                 }

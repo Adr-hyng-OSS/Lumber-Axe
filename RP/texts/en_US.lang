@@ -16,5 +16,39 @@ LumberAxe.form.maxDurabilityAbrev.text=MAX
 LumberAxe.form.canBeChopped.text=§aChoppable
 LumberAxe.form.cannotBeChopped.text=§cCannot be chopped
 
-## Error Message
-LumberAxe.watchdogError.hang.text=Scripting Error: Try chopping or inspecting smaller trees or different angle.
+## Log Messages
+LumberAxe.on_load_message=§a§lLumber Axe Addon§r §ahas been loaded successfully. Created by Adr-hyng.
+LumberAxe.on_caught_invalid_command=§cInvalid Usage Format. %1
+LumberAxe.on_database_empty=§4No configuration record found in database.§r
+LumberAxe.on_database_reset=§aThe database has been reset.§r
+LumberAxe.show_database=Database ID: §e%1§r%2%3
+### LumberAxe.show_help_message= -> Not Implemented
+LumberAxe.on_caught_command_404=§cError while fetching %1 command: %2
+LumberAxe.on_caught_main_command_not_found=§cInvalid Command: §l%1§r%2§cCheck If The Command Actually Exists. Use /scriptevent %3 help
+
+## Server Options Details
+LumberAxe.server.show_message_on_join=Show Message On Join
+LumberAxe.server.durability_damage_per_block=Durability loss per block
+LumberAxe.server.chop_limit=Tree Logs Limitation
+
+## Configuration Options
+LumberAxe.configuration.title=%1 Settings
+LumberAxe.configuration.general=General Options
+LumberAxe.configuration.log_include_manager=Included Logs Manager
+LumberAxe.configuration.log_exclude_manager=Excluded Logs Manager
+
+## Include Manager
+LumberAxe.log_include_manager.drop_down=Included Choppable Logs
+LumberAxe.log_include_manager.text_field=Log Block to Include
+LumberAxe.log_include_manager.toggle=Insert
+LumberAxe.log_include_manager.add_success_log=§aBlock named '%1' was successfully added to §oIncluded Choppable Blocks.
+LumberAxe.log_include_manager.remove_success_log=§cBlock named '%1' was successfully removed from §oIncluded Choppable Blocks.
+LumberAxe.log_include_manager.update_success_log=§eBlock named '%1' from §oIncluded Choppable Blocks§r §ewas successfully updated to '%2' in §oIncluded Choppable Blocks.
+
+## Exclude Manager
+LumberAxe.log_exclude_manager.drop_down=Excluded Choppable Logs
+LumberAxe.log_exclude_manager.text_field=Log Block to Exclude
+LumberAxe.log_exclude_manager.toggle=Insert
+LumberAxe.log_exclude_manager.add_success_log=§aBlock named '%1' was successfully added to §oExcluded Choppable Blocks.
+LumberAxe.log_exclude_manager.remove_success_log=§cBlock named '%1' was successfully removed from §oExcluded Choppable Blocks.
+LumberAxe.log_exclude_manager.update_success_log=§eBlock named '%1' from §oExcluded Choppable Blocks§r §ewas successfully updated to '%2' in §oExcluded Choppable Blocks.

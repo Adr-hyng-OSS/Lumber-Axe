@@ -1,4 +1,4 @@
-import { Enchantment, ItemComponentTypes, ItemDurabilityComponent, ItemEnchantableComponent, ItemStack, Player } from "@minecraft/server";
+import { ItemComponentTypes, ItemDurabilityComponent, ItemEnchantableComponent, ItemStack, Player } from "@minecraft/server";
 import { EntityEquippableComponent, EquipmentSlot } from "@minecraft/server";
 import { MinecraftEnchantmentTypes, MinecraftItemTypes} from "modules/vanilla-types/index";
 import { OverTakes } from "./partial_overtakes";

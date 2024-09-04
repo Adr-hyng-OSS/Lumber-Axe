@@ -21,7 +21,7 @@ settings = {
     }
 }
 version_str = ''
-configuration_path = "fishing_system/configuration";
+configuration_path = "configuration";
 
 def compute_hash(filename):
     with open(filename, 'rb') as f:
@@ -50,8 +50,11 @@ def generateScript(isServer):
             elif type(value) is bool:
                 value = f'new FormBuilder("{form_name}").createToggle(true)' if value else f'new FormBuilder("{form_name}").createToggle(false)'
             elif type(value) is list:
-                list_representation = repr(value)
-                value = f'new FormBuilder("{form_name}").createDropdown({list_representation}, "{value[0]}")'
+                if len(value) > 0:
+                    list_representation = repr(value)
+                    value = f'new FormBuilder("{form_name}").createDropdown({list_representation}, "{value[0]}")'
+                else: 
+                    value = f'new FormBuilder("{form_name}").createDropdown(["Empty"], "")'
             
             result += '  /**\n'
             for line in data['description'].splitlines():
