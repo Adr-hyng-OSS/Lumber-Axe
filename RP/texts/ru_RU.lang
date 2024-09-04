@@ -16,5 +16,33 @@ LumberAxe.form.maxDurabilityAbrev.text=MAX
 LumberAxe.form.canBeChopped.text=§aДерево можно срубить
 LumberAxe.form.cannotBeChopped.text=§cДерево нельзя срубить
 
-## Error Message
-LumberAxe.watchdogError.hang.text=Ошибка сценария: попробуйте рубить или осматривать деревья меньшего размера или под другим углом.
+LumberAxe.on_load_message=§a§lLumber Axe Addon§r §aуспешно загружен. Создатель: Adr-hyng.
+LumberAxe.on_caught_invalid_command=§cНеверный формат использования. %1
+LumberAxe.on_database_empty=§4В базе данных не найдено ни одной записи конфигурации.§r
+LumberAxe.on_database_reset=§aБаза данных была сброшена.§r
+LumberAxe.show_database=ID базы данных: §e%1§r%2%3
+LumberAxe.on_caught_command_404=§cОшибка при получении команды %1: %2
+LumberAxe.on_caught_main_command_not_found=§cНеверная команда: §l%1§r%2§cПроверьте, существует ли команда. Используйте /scriptevent %3 help
+
+LumberAxe.server.show_message_on_join=Показывать сообщение при входе
+LumberAxe.server.durability_damage_per_block=Потеря прочности за блок
+LumberAxe.server.chop_limit=Лимит блоков дерева
+
+LumberAxe.configuration.title=Настройки %1
+LumberAxe.configuration.general=Общие параметры
+LumberAxe.configuration.log_include_manager=Менеджер включённых брёвен
+LumberAxe.configuration.log_exclude_manager=Менеджер исключённых брёвен
+
+LumberAxe.log_include_manager.drop_down=Включённые рубимые брёвна
+LumberAxe.log_include_manager.text_field=Блок брёвен для включения
+LumberAxe.log_include_manager.toggle=Добавить
+LumberAxe.log_include_manager.add_success_log=§aБлок под названием '%1' успешно добавлен в §oВключённые рубимые блоки.
+LumberAxe.log_include_manager.remove_success_log=§cБлок под названием '%1' успешно удалён из §oВключённых рубимых блоков.
+LumberAxe.log_include_manager.update_success_log=§eБлок под названием '%1' из §oВключённых рубимых блоков§r §eуспешно обновлён на '%2' в §oВключённых рубимых блоках.
+
+LumberAxe.log_exclude_manager.drop_down=Исключённые рубимые брёвна
+LumberAxe.log_exclude_manager.text_field=Блок брёвен для исключения
+LumberAxe.log_exclude_manager.toggle=Добавить
+LumberAxe.log_exclude_manager.add_success_log=§aБлок под названием '%1' успешно добавлен в §oИсключённые рубимые блоки.
+LumberAxe.log_exclude_manager.remove_success_log=§cБлок под названием '%1' успешно удалён из §oИсключённых рубимых блоков.
+LumberAxe.log_exclude_manager.update_success_log=§eБлок под названием '%1' из §oИсключённых рубимых блоков§r §eуспешно обновлён на '%2' в §oИсключённых рубимых блоках.

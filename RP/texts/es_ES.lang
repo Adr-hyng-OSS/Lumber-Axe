@@ -16,5 +16,33 @@ LumberAxe.form.maxDurabilityAbrev.text=MAX
 LumberAxe.form.canBeChopped.text=§ael árbol se puede cortar
 LumberAxe.form.cannotBeChopped.text=§cel árbol no se puede cortar
 
-## Error Message
-LumberAxe.watchdogError.hang.text=Error de secuencias de comandos: intente cortar o inspeccionar árboles más pequeños o en un ángulo diferente.
+LumberAxe.on_load_message=§a§lLumber Axe Addon§r §aha sido cargado correctamente. Creado por Adr-hyng.
+LumberAxe.on_caught_invalid_command=§cFormato de uso inválido. %1
+LumberAxe.on_database_empty=§4No se encontró ningún registro de configuración en la base de datos.§r
+LumberAxe.on_database_reset=§aLa base de datos ha sido restablecida.§r
+LumberAxe.show_database=ID de la base de datos: §e%1§r%2%3
+LumberAxe.on_caught_command_404=§cError al obtener el comando %1: %2
+LumberAxe.on_caught_main_command_not_found=§cComando inválido: §l%1§r%2§cVerifica si el comando realmente existe. Usa /scriptevent %3 help
+
+LumberAxe.server.show_message_on_join=Mostrar mensaje al unirse
+LumberAxe.server.durability_damage_per_block=Pérdida de durabilidad por bloque
+LumberAxe.server.chop_limit=Límite de troncos de árbol
+
+LumberAxe.configuration.title=Configuración de %1
+LumberAxe.configuration.general=Opciones generales
+LumberAxe.configuration.log_include_manager=Gestor de troncos incluidos
+LumberAxe.configuration.log_exclude_manager=Gestor de troncos excluidos
+
+LumberAxe.log_include_manager.drop_down=Troncos cortables incluidos
+LumberAxe.log_include_manager.text_field=Bloque de tronco a incluir
+LumberAxe.log_include_manager.toggle=Insertar
+LumberAxe.log_include_manager.add_success_log=§aEl bloque llamado '%1' se ha añadido correctamente a §oTroncos cortables incluidos.
+LumberAxe.log_include_manager.remove_success_log=§cEl bloque llamado '%1' se ha eliminado correctamente de §oTroncos cortables incluidos.
+LumberAxe.log_include_manager.update_success_log=§eEl bloque llamado '%1' de §oTroncos cortables incluidos§r §ese ha actualizado correctamente a '%2' en §oTroncos cortables incluidos.
+
+LumberAxe.log_exclude_manager.drop_down=Troncos cortables excluidos
+LumberAxe.log_exclude_manager.text_field=Bloque de tronco a excluir
+LumberAxe.log_exclude_manager.toggle=Insertar
+LumberAxe.log_exclude_manager.add_success_log=§aEl bloque llamado '%1' se ha añadido correctamente a §oTroncos cortables excluidos.
+LumberAxe.log_exclude_manager.remove_success_log=§cEl bloque llamado '%1' se ha eliminado correctamente de §oTroncos cortables excluidos.
+LumberAxe.log_exclude_manager.update_success_log=§eEl bloque llamado '%1' de §oTroncos cortables excluidos§r §ese ha actualizado correctamente a '%2' en §oTroncos cortables excluidos.
