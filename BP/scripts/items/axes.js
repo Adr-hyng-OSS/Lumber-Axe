@@ -133,6 +133,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 console.warn("DOESNT HAVE BLOCK OUITLINE");
                 system.run(async () => {
                     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
+                    console.warn(treeCollectedResult.graph.getSize(), treeCollectedResult.blockOutlines.length);
                     visitedLogs.push(treeCollectedResult.blockOutlines);
                     system.runTimeout(() => {
                         visitedLogs.splice(visitedLogs.indexOf(treeCollectedResult.blockOutlines));

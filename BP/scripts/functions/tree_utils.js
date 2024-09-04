@@ -1,6 +1,6 @@
-import { EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, system } from "@minecraft/server";
-import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "../modules/vanilla-types/index";
-import { validLogBlocks, axeEquipments, stackDistribution, serverConfigurationCopy } from "../index";
+import { EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, system } from "@minecraft/server";
+import { MinecraftEnchantmentTypes } from "../modules/vanilla-types/index";
+import { validLogBlocks, axeEquipments, serverConfigurationCopy } from "../index";
 function treeCut(player, dimension, location, blockTypeId) {
     const equipment = player.getComponent(EntityEquippableComponent.componentId);
     const currentHeldAxe = equipment.getEquipment(EquipmentSlot.Mainhand);
@@ -14,8 +14,9 @@ function treeCut(player, dimension, location, blockTypeId) {
     const unbreakingMultiplier = (100 / (level + 1)) / 100;
     const unbreakingDamage = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
     system.run(async () => {
-        const visited = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage)).visited;
-        const totalDamage = visited.size * unbreakingDamage;
+        const visited = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage)).graph;
+        const size = visited.getSize();
+        const totalDamage = size * unbreakingDamage;
         const postDamagedDurability = itemDurability.damage + totalDamage;
         if (postDamagedDurability + 1 === itemDurability.maxDurability) {
             equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
@@ -29,14 +30,6 @@ function treeCut(player, dimension, location, blockTypeId) {
             currentHeldAxe.lockMode = ItemLockMode.none;
             equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
         }
-        for (const visitedLogLocation of visited) {
-            system.run(() => dimension.setBlockType(JSON.parse(visitedLogLocation), MinecraftBlockTypes.Air));
-        }
-        system.runTimeout(() => {
-            for (const group of stackDistribution(visited.size)) {
-                system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
-            }
-        }, 5);
     });
 }
 function isLogIncluded(blockTypeId) {
@@ -48,35 +41,45 @@ function isLogIncluded(blockTypeId) {
 }
 function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
     return new Promise((resolve) => {
+        const graph = new Graph();
+        const blockOutlines = [];
+        let queue = [];
+        const firstBlock = dimension.getBlock(location);
+        queue.push(firstBlock);
+        graph.addNode(firstBlock.location);
         const traversingTreeInterval = system.runJob(function* () {
-            const _visited = new Set();
-            const _blockOutlines = [];
-            let queue = getBlockNearInitialize(dimension, location);
             while (queue.length > 0) {
-                if (_visited.size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || _visited.size >= maxNeeded) {
+                const size = graph.getSize();
+                if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || size >= maxNeeded) {
                     system.clearJob(traversingTreeInterval);
-                    resolve({ visited: _visited, blockOutlines: _blockOutlines });
+                    resolve({ graph, blockOutlines });
+                    return;
                 }
-                const _block = queue.shift();
-                if (!_block?.isValid() || !isLogIncluded(_block?.typeId))
+                const block = queue.shift();
+                const pos = block.location;
+                const node = graph.getNode(pos);
+                if (!node)
                     continue;
-                if (_block.typeId !== blockTypeId)
-                    continue;
-                const pos = JSON.stringify(_block.location);
-                if (_visited.has(pos))
-                    continue;
-                _visited.add(pos);
-                _blockOutlines.push(dimension.spawnEntity('yn:block_outline', { x: _block.x + 0.5, y: _block.y, z: _block.z + 0.5 }));
+                blockOutlines.push(dimension.spawnEntity('yn:block_outline', { x: pos.x + 0.5, y: pos.y, z: pos.z + 0.5 }));
                 yield;
-                for (const block of getBlockNear(dimension, _block.location)) {
-                    queue.push(block);
+                for (const neighborBlock of getBlockNear(dimension, block.location)) {
+                    if (!neighborBlock?.isValid() || !isLogIncluded(neighborBlock?.typeId))
+                        continue;
+                    if (neighborBlock.typeId !== blockTypeId)
+                        continue;
+                    if (graph.getNode(neighborBlock.location))
+                        continue;
+                    const neighborNode = graph.addNode(neighborBlock.location);
+                    node.addNeighbor(neighborNode);
+                    neighborNode.addNeighbor(node);
+                    queue.push(neighborBlock);
                     yield;
                 }
                 yield;
             }
             queue = [];
             system.clearJob(traversingTreeInterval);
-            resolve({ visited: _visited, blockOutlines: _blockOutlines });
+            resolve({ graph, blockOutlines });
         }());
     });
 }
@@ -136,5 +139,50 @@ function groupAdjacentBlocks(visited) {
         groups.push(currentGroup);
     }
     return groups;
+}
+class GraphNode {
+    constructor(location) {
+        this.location = location;
+        this.neighbors = new Set();
+    }
+    addNeighbor(node) {
+        this.neighbors.add(node);
+    }
+    removeNeighbor(node) {
+        this.neighbors.delete(node);
+    }
+}
+class Graph {
+    constructor() {
+        this.nodes = new Map();
+    }
+    getNode(location) {
+        return this.nodes.get(this.serializeLocation(location));
+    }
+    addNode(location) {
+        const key = this.serializeLocation(location);
+        let node = this.nodes.get(key);
+        if (!node) {
+            node = new GraphNode(location);
+            this.nodes.set(key, node);
+        }
+        return node;
+    }
+    removeNode(location) {
+        const key = this.serializeLocation(location);
+        const node = this.nodes.get(key);
+        if (node) {
+            node.neighbors.forEach(neighbor => {
+                neighbor.removeNeighbor(node);
+            });
+            this.nodes.delete(key);
+        }
+    }
+    serializeLocation(location) {
+        return JSON.stringify(location);
+    }
+    getSize() {
+        return this.nodes.size;
+    }
 }
 export { treeCut, isLogIncluded, getTreeLogs };

@@ -18,8 +18,9 @@ function treeCut(player: Player, dimension: Dimension, location: Vector3, blockT
     
     system.run(async () => {
 
-        const visited: Set<string> = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage) as VisitedBlockResult).visited;
-        const totalDamage: number = visited.size * unbreakingDamage;
+        const visited: Graph = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage) as VisitedBlockResult).graph;
+        const size = visited.getSize();
+        const totalDamage: number = size * unbreakingDamage;
         const postDamagedDurability: number = itemDurability.damage + totalDamage;
     
         // Check if durabiliy is exact that can chop the tree but broke the axe, then broke it.
@@ -47,15 +48,23 @@ function treeCut(player: Player, dimension: Dimension, location: Vector3, blockT
         //         dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.Air);
         //     }
         // }
-        for(const visitedLogLocation of visited) {
-            system.run(() => dimension.setBlockType(JSON.parse(visitedLogLocation), MinecraftBlockTypes.Air));
-        }
+
+
+        // const visitedNodes = visited.getConnectedComponents();  // Get all connected components (all nodes)
+
+        // for (const node of visitedNodes) {
+        //     const blockLocation = node.location;  // Extract the location (Vector3) from the node
+ 
+        //     system.run(() => {
+        //         dimension.setBlockType(blockLocation, MinecraftBlockTypes.Air);
+        //     });
+        // }
         
-        system.runTimeout( () => {
-            for (const group of stackDistribution(visited.size)) {
-                system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
-            }
-        }, 5);
+        // system.runTimeout( () => {
+        //     for (const group of stackDistribution(size)) {
+        //         system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
+        //     }
+        // }, 5);
     });
 }
 
@@ -66,38 +75,72 @@ function isLogIncluded(blockTypeId: string): boolean {
 }
 
 export type VisitedBlockResult = {
-    visited: Set<string>;
+    graph: Graph;
     blockOutlines: Entity[];
 }
 
 function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Promise<VisitedBlockResult> {
     return new Promise<VisitedBlockResult>((resolve) => {
-        const traversingTreeInterval: number = system.runJob(function*(){
-            const _visited: Set<string> = new Set<string>();
-            const _blockOutlines: Entity[] = [];
-            let queue: Block[] = getBlockNearInitialize(dimension, location);
+        const graph = new Graph();
+        const blockOutlines: Entity[] = [];
+        let queue: Block[] = []; // Solid Blocks (There's still non-logs)
+        const firstBlock = dimension.getBlock(location);
+        queue.push(firstBlock);
+        graph.addNode(firstBlock.location);
+
+        const traversingTreeInterval: number = system.runJob(function* () {
             while (queue.length > 0) {
-                if(_visited.size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || _visited.size >= maxNeeded) {
+                // Get the graph size
+                const size = graph.getSize();
+
+                // Check termination conditions
+                if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || size >= maxNeeded) {
                     system.clearJob(traversingTreeInterval);
-                    resolve({visited: _visited, blockOutlines: _blockOutlines});
+                    resolve({ graph, blockOutlines });
+                    return;
                 }
-                const _block: Block = queue.shift();
-                if (!_block?.isValid() || !isLogIncluded(_block?.typeId)) continue;
-                if (_block.typeId !== blockTypeId) continue;
-                const pos: string = JSON.stringify(_block.location);
-                if (_visited.has(pos)) continue;
-                _visited.add(pos);
-                _blockOutlines.push(dimension.spawnEntity('yn:block_outline', {x: _block.x + 0.5, y: _block.y, z: _block.z + 0.5}));
+
+                // Dequeue the block and check if it's valid and not already visited
+                const block: Block = queue.shift();
+                // if (!block?.isValid() || !isLogIncluded(block?.typeId)) continue;
+                // if (block.typeId !== blockTypeId) continue;
+
+                const pos = block.location;
+
+                // Add the block as a new node in the graph
+                const node = graph.getNode(pos);
+                if(!node) continue;
+
+                // Spawn the block outline for visualization (optional)
+                blockOutlines.push(dimension.spawnEntity('yn:block_outline', { x: pos.x + 0.5, y: pos.y, z: pos.z + 0.5 }));
+
                 yield;
-                for(const block of getBlockNear(dimension, _block.location)) {
-                    queue.push(block);
+
+                // Get the neighbors and connect to main node.
+                for (const neighborBlock of getBlockNear(dimension, block.location)) {
+                    // Check if the neighbor is already in the graph
+                    if (!neighborBlock?.isValid() || !isLogIncluded(neighborBlock?.typeId)) continue;
+                    if (neighborBlock.typeId !== blockTypeId) continue;
+                    if (graph.getNode(neighborBlock.location)) continue;
+                    const neighborNode = graph.addNode(neighborBlock.location);
+                    node.addNeighbor(neighborNode);
+                    neighborNode.addNeighbor(node);
+                    
+
+                    // Get the neighbor's neighbor, and add to queue.
+
+                    // Add the neighbor to the queue for further processing
+                    queue.push(neighborBlock);
                     yield;
                 }
+
                 yield;
             }
+
+            // Clear the queue and finish
             queue = [];
             system.clearJob(traversingTreeInterval);
-            resolve({visited: _visited, blockOutlines: _blockOutlines});
+            resolve({ graph, blockOutlines });
         }());
     });
 }
@@ -110,10 +153,10 @@ function* getBlockNear(dimension: Dimension, location: Vector3, radius: number =
     for (let x = centerX - radius; x <= centerX + radius; x++) {
         for (let y = centerY - radius; y <= centerY + radius; y++) {
             for (let z = centerZ - radius; z <= centerZ + radius; z++) {
-                if(centerX === x && centerY === y && centerZ === z) continue;
+                if (centerX === x && centerY === y && centerZ === z) continue;
                 _block = dimension.getBlock({ x, y, z });
-                if(_block.isAir) continue;
-                yield _block
+                if (_block.isAir) continue;
+                yield _block;
             }
         }
     }
@@ -128,9 +171,9 @@ function getBlockNearInitialize(dimension: Dimension, location: Vector3, radius:
     for (let x = centerX - radius; x <= centerX + radius; x++) {
         for (let y = centerY - radius; y <= centerY + radius; y++) {
             for (let z = centerZ - radius; z <= centerZ + radius; z++) {
-                if(centerX === x && centerY === y && centerZ === z) continue;
+                if (centerX === x && centerY === y && centerZ === z) continue;
                 _block = dimension.getBlock({ x, y, z });
-                if(_block.isAir) continue;
+                if (_block.isAir) continue;
                 blocks.push(_block);
             }
         }
@@ -167,5 +210,66 @@ function groupAdjacentBlocks(visited: Set<string>): string[][] {
     }
     return groups;
 }
+
+class GraphNode {
+    public location: Vector3;
+    public neighbors: Set<GraphNode>;
+
+    constructor(location: Vector3) {
+        this.location = location;
+        this.neighbors = new Set<GraphNode>();
+    }
+
+    addNeighbor(node: GraphNode) {
+        this.neighbors.add(node);
+    }
+
+    removeNeighbor(node: GraphNode) {
+        this.neighbors.delete(node);
+    }
+}
+
+class Graph {
+    private nodes: Map<string, GraphNode>;
+
+    constructor() {
+        this.nodes = new Map<string, GraphNode>();
+    }
+
+    getNode(location: Vector3): GraphNode | undefined {
+        return this.nodes.get(this.serializeLocation(location));
+    }
+
+    addNode(location: Vector3): GraphNode {
+        const key = this.serializeLocation(location);
+        let node = this.nodes.get(key);
+        if (!node) {
+            node = new GraphNode(location);
+            this.nodes.set(key, node);
+        }
+        return node;
+    }
+
+    removeNode(location: Vector3) {
+        const key = this.serializeLocation(location);
+        const node = this.nodes.get(key);
+        if (node) {
+            // Remove the node from its neighbors' adjacency lists
+            node.neighbors.forEach(neighbor => {
+                neighbor.removeNeighbor(node);
+            });
+            this.nodes.delete(key);
+        }
+    }
+
+    serializeLocation(location: Vector3): string {
+        return JSON.stringify(location);
+    }
+
+    getSize(): number {
+        return this.nodes.size;
+    }
+}
+
 
 export {treeCut, isLogIncluded, getTreeLogs}
