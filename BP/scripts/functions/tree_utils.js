@@ -6,8 +6,6 @@ function treeCut(player, dimension, location, blockTypeId) {
     const currentHeldAxe = equipment.getEquipment(EquipmentSlot.Mainhand);
     if (!axeEquipments.includes(currentHeldAxe?.typeId))
         return;
-    if (!player.isSurvival())
-        return;
     if (player.isSurvival())
         currentHeldAxe.lockMode = ItemLockMode.slot;
     const itemDurability = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId);
@@ -68,9 +66,8 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
                 if (_visited.has(pos))
                     continue;
                 _visited.add(pos);
-                const block = dimension.spawnEntity('outlined_entities:example', { x: _block.x + 0.5, y: _block.y, z: _block.z + 0.5 });
-                block.triggerEvent("status.active.set");
-                _blockOutlines.push(block);
+                _blockOutlines.push(dimension.spawnEntity('yn:block_outline', { x: _block.x + 0.5, y: _block.y, z: _block.z + 0.5 }));
+                yield;
                 for (const block of getBlockNear(dimension, _block.location)) {
                     queue.push(block);
                     yield;

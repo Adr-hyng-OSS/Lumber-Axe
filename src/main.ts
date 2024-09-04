@@ -1,7 +1,8 @@
 import { world, PlayerLeaveAfterEvent, ItemTypes, ScriptEventCommandMessageAfterEvent, system, ScriptEventSource, Player } from '@minecraft/server';
 import { ADDON_IDENTIFIER, playerInteractionMap, SendMessageTo, serverConfigurationCopy} from "./index"
-import './items/axes';
 import { Logger } from 'utils/logger';
+import { MinecraftEffectTypes } from 'modules/vanilla-types/index';
+import './items/axes';
 
 // system.beforeEvents.watchdogTerminate.subscribe((e: WatchdogTerminateBeforeEvent) => {
 //     e.cancel = true;
@@ -18,6 +19,18 @@ import { Logger } from 'utils/logger';
 //         if(disableWatchDogTerminateLog) console.warn(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
 //     }
 //     console.warn(`Watchdog Error: ${(e.terminateReason as WatchdogTerminateReason)}`)
+// });
+
+// world.beforeEvents.playerBreakBlock.subscribe((e) => {
+//   const player = e.player;
+//   const blockInteracted = e.block;
+//   const blockOutlines = player.dimension.getEntities({closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter()});
+//   if(blockOutlines.length && blockOutlines[0]?.isValid()) {
+//     system.runTimeout(() => {
+//       blockOutlines[0].addEffect(MinecraftEffectTypes.Invisibility, 2);
+//       blockOutlines[0].triggerEvent('despawn');
+//     }, 0);
+//   }
 // });
 
 world.afterEvents.playerSpawn.subscribe((e) => {

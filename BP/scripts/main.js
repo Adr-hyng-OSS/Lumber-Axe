@@ -1,7 +1,7 @@
 import { world, system, ScriptEventSource, Player } from '@minecraft/server';
 import { ADDON_IDENTIFIER, playerInteractionMap, SendMessageTo, serverConfigurationCopy } from "./index";
-import './items/axes';
 import { Logger } from 'utils/logger';
+import './items/axes';
 world.afterEvents.playerSpawn.subscribe((e) => {
     if (!e.initialSpawn)
         return;

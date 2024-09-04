@@ -8,8 +8,6 @@ function treeCut(player: Player, dimension: Dimension, location: Vector3, blockT
     const equipment = player.getComponent(EntityEquippableComponent.componentId) as EntityEquippableComponent;
     const currentHeldAxe = equipment.getEquipment(EquipmentSlot.Mainhand);
     if (!axeEquipments.includes(currentHeldAxe?.typeId)) return;
-
-    if (!player.isSurvival()) return;
     if (player.isSurvival()) currentHeldAxe.lockMode = ItemLockMode.slot;
 
     const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
@@ -89,9 +87,8 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
                 const pos: string = JSON.stringify(_block.location);
                 if (_visited.has(pos)) continue;
                 _visited.add(pos);
-                const block = dimension.spawnEntity('outlined_entities:example', {x: _block.x + 0.5, y: _block.y, z: _block.z + 0.5});
-                block.triggerEvent("status.active.set");
-                _blockOutlines.push(block);
+                _blockOutlines.push(dimension.spawnEntity('yn:block_outline', {x: _block.x + 0.5, y: _block.y, z: _block.z + 0.5}));
+                yield;
                 for(const block of getBlockNear(dimension, _block.location)) {
                     queue.push(block);
                     yield;
@@ -105,7 +102,7 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
     });
 }
 
-function* getBlockNear(dimension: Dimension, location: Vector3, radius: number = 1): Generator< Block, any, unknown> {
+function* getBlockNear(dimension: Dimension, location: Vector3, radius: number = 1): Generator<Block, any, unknown> {
     const centerX: number = location.x;
     const centerY: number = location.y;
     const centerZ: number = location.z;

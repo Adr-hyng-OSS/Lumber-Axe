@@ -1,0 +1,39 @@
+{
+	"format_version": "1.10.0",
+	"minecraft:client_entity": {
+		"description": {
+			"identifier": "yn:block_outline",
+			"materials": {
+				"base": "block_outline.base",
+				"outline": "block_outline.outline"
+			},
+			"textures": {
+				"default": "textures/entity/example"
+			},
+			"geometry": {
+				"default": "geometry.block_outline"
+			},
+			"render_controllers": [
+				"controller.render.block_outline.base",
+				{"controller.render.block_outline.outline": "query.variant"}
+			],
+			
+			"scripts": {
+				"initialize": [
+					"temp.red = 1;",
+					"temp.green = 1;",
+					"temp.blue = 1;"
+				],
+				"pre_animation": [
+					"temp.red = 1;",
+					"temp.green = 1;",
+					"temp.blue = 1;"
+				],
+				"animate": ["render"]
+			},
+			"animations": {
+				"render": "animation.block_outline.render_scale"
+			}
+		}
+	}
+}

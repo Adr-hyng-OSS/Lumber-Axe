@@ -2,7 +2,7 @@
 	"materials": {
 		"version": "1.0.0",
 
-		"example.base:entity_alphatest": {
+		"block_outline.base:entity_alphatest": {
 			"+states": [
 				"EnableStencilTest",
 				"StencilWrite"
@@ -24,7 +24,7 @@
 			"stencilRef": 3
 		},
 
-		"example.outline:entity_alphatest": {
+		"block_outline.outline:entity_alphatest": {
 			"+states": [
 				"EnableStencilTest",
 				"InvertCulling"

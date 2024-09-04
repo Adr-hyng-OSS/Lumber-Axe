@@ -1,0 +1,82 @@
+{
+	"format_version": "1.18.0",
+	
+	"minecraft:entity": {
+		"description": {
+			"identifier": "yn:block_outline",
+			"runtime_identifier": "minecraft:armor_stand",
+			"is_spawnable": true,
+			"is_summonable": true
+		},
+		
+		"components": {
+			"minecraft:collision_box": {
+				"width": 0,
+				"height": 0
+			},
+			"minecraft:health": {
+        "value": 1,
+        "max": 1
+      },
+      
+      "minecraft:physics": {
+        "has_collision": true,
+        "has_gravity": false
+      },
+			"minecraft:damage_sensor": {
+        "triggers": [
+					{
+						"cause": "all",
+						"deals_damage": false
+					}
+				]
+      },
+      "minecraft:knockback_resistance": {
+        "value": 100
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": false
+      },
+			"minecraft:variant": {
+				"value": 1
+			},
+			"minecraft:timer": {
+				"looping": false,
+				"time": 5,
+				"time_down_event": {
+					"event": "despawn"
+				}
+			},
+			"minecraft:environment_sensor": {
+				"triggers": [
+					{
+						"event": "despawn",
+						"target": "self",
+						"filters": [
+							{
+								"all_of": [
+									{
+										"test": "in_block",
+										"value": "minecraft:air"
+									}
+								]
+							}
+						]
+					}
+				]
+			}
+		},
+		"component_groups": {
+			"despawn": {
+        "minecraft:instant_despawn": {}
+      }
+		},
+		
+		"events": {
+			"despawn": {
+				"add": { "component_groups": [ "despawn" ] }
+      }
+		}
+	}
+}

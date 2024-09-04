@@ -1,7 +1,7 @@
 {
 	"format_version": "1.8.0",
 	"animations": {
-		"animation.example.spin": {
+		"animation.block_outline.render_scale": {
 			"loop": true,
 			"bones": {
 				"root": {

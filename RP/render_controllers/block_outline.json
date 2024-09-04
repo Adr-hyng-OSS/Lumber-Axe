@@ -2,7 +2,7 @@
 	"format_version": "1.10.0",
 	
 	"render_controllers": {
-		"controller.render.example.base": {
+		"controller.render.block_outline.base": {
 			"geometry": "geometry.default",
 			"materials": [{"base": "material.base"}],
 			"textures": ["texture.default"],
@@ -14,7 +14,7 @@
 				}
 			]
 		},
-		"controller.render.example.outline": {
+		"controller.render.block_outline.outline": {
 			"geometry": "geometry.default",
 			"materials": [{"outline": "material.outline"}],
 			"textures": ["texture.default"],

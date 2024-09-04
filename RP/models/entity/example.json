@@ -1,9 +1,9 @@
 {
-	"format_version": "1.16",
+	"format_version": "1.16.0",
 	"minecraft:geometry": [
 		{
 			"description": {
-				"identifier": "geometry.example",
+				"identifier": "geometry.block_outline",
 				"texture_width": 1,
 				"texture_height": 1,
 				"visible_bounds_width": 3,
