@@ -37,7 +37,7 @@ function treeCut(player: Player, dimension: Dimension, location: Vector3, blockT
             equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
         }
         
-        //! Use this when fillBlocks is in stable.
+        //! Use this when fillBlocks is in stable. (Not applicable but can be good to be refactored to graph-based)
         // for (const group of groupAdjacentBlocks(visited)) {
         //     const firstElement = JSON.parse(group[0]);
         //     const lastElement = JSON.parse(group[group.length - 1]);
@@ -49,22 +49,15 @@ function treeCut(player: Player, dimension: Dimension, location: Vector3, blockT
         //     }
         // }
 
+        visited.bfs(location, (node) => {
+            system.run(() => dimension.setBlockType(node.location, MinecraftBlockTypes.Air));
+        });
 
-        // const visitedNodes = visited.getConnectedComponents();  // Get all connected components (all nodes)
-
-        // for (const node of visitedNodes) {
-        //     const blockLocation = node.location;  // Extract the location (Vector3) from the node
- 
-        //     system.run(() => {
-        //         dimension.setBlockType(blockLocation, MinecraftBlockTypes.Air);
-        //     });
-        // }
-        
-        // system.runTimeout( () => {
-        //     for (const group of stackDistribution(size)) {
-        //         system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
-        //     }
-        // }, 5);
+        system.runTimeout( () => {
+            for (const group of stackDistribution(size)) {
+                system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
+            }
+        }, 5);
     });
 }
 
@@ -268,6 +261,32 @@ class Graph {
 
     getSize(): number {
         return this.nodes.size;
+    }
+
+    bfs(startLocation: Vector3, visit: (node: GraphNode) => void) {
+        const startNode = this.getNode(startLocation);
+        if (!startNode) {
+            return;
+        }
+
+        const visited = new Set<GraphNode>();
+        const queue: GraphNode[] = [startNode];
+
+        while (queue.length > 0) {
+            const node = queue.shift()!; // Get the first element in the queue
+
+            if (!visited.has(node)) {
+                visit(node); // Perform some action on the node (e.g., print or collect data)
+                visited.add(node);
+
+                // Add neighbors to the queue if they haven't been visited
+                node.neighbors.forEach(neighbor => {
+                    if (!visited.has(neighbor)) {
+                        queue.push(neighbor);
+                    }
+                });
+            }
+        }
     }
 }
 

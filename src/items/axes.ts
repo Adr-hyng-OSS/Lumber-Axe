@@ -132,9 +132,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 // if(playerInteractionMap.get(player.id)) return;
                 // playerInteractionMap.set(player.id, true);
                 const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
-                console.warn(treeCollectedResult.graph.getSize(), treeCollectedResult.blockOutlines.length);
                 visitedLogs.push(treeCollectedResult.blockOutlines);
-                // playerInteractionMap.set(player.id, false);
                 system.runTimeout(() => {
                     visitedLogs.splice(visitedLogs.indexOf(treeCollectedResult.blockOutlines));
                     console.warn("RESET");

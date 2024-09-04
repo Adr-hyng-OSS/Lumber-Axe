@@ -1,6 +1,6 @@
-import { EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, system } from "@minecraft/server";
-import { MinecraftEnchantmentTypes } from "../modules/vanilla-types/index";
-import { validLogBlocks, axeEquipments, serverConfigurationCopy } from "../index";
+import { EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, system } from "@minecraft/server";
+import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "../modules/vanilla-types/index";
+import { validLogBlocks, axeEquipments, stackDistribution, serverConfigurationCopy } from "../index";
 function treeCut(player, dimension, location, blockTypeId) {
     const equipment = player.getComponent(EntityEquippableComponent.componentId);
     const currentHeldAxe = equipment.getEquipment(EquipmentSlot.Mainhand);
@@ -30,6 +30,14 @@ function treeCut(player, dimension, location, blockTypeId) {
             currentHeldAxe.lockMode = ItemLockMode.none;
             equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
         }
+        visited.bfs(location, (node) => {
+            system.run(() => dimension.setBlockType(node.location, MinecraftBlockTypes.Air));
+        });
+        system.runTimeout(() => {
+            for (const group of stackDistribution(size)) {
+                system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
+            }
+        }, 5);
     });
 }
 function isLogIncluded(blockTypeId) {
@@ -183,6 +191,26 @@ class Graph {
     }
     getSize() {
         return this.nodes.size;
+    }
+    bfs(startLocation, visit) {
+        const startNode = this.getNode(startLocation);
+        if (!startNode) {
+            return;
+        }
+        const visited = new Set();
+        const queue = [startNode];
+        while (queue.length > 0) {
+            const node = queue.shift();
+            if (!visited.has(node)) {
+                visit(node);
+                visited.add(node);
+                node.neighbors.forEach(neighbor => {
+                    if (!visited.has(neighbor)) {
+                        queue.push(neighbor);
+                    }
+                });
+            }
+        }
     }
 }
 export { treeCut, isLogIncluded, getTreeLogs };
