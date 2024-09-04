@@ -70,7 +70,6 @@ export class Configuration {
       return;
     });
   }
-
   showGeneralOptions() {
     const form: ModalFormData = new ModalFormData().title({rawtext: [
       {translate: "LumberAxe.configuration.general"}
@@ -123,7 +122,6 @@ export class Configuration {
       return this.showServerScreen();
     });
   }
-
   showIncludeManager() {
     this.loadServer();
     const preResultFlags: Array<number | boolean | string> = [];
