@@ -1,4 +1,4 @@
-import { EntityEquippableComponent, ItemDurabilityComponent, ItemEnchantableComponent, Player, world } from "@minecraft/server";
+import { EntityEquippableComponent, ItemDurabilityComponent, ItemEnchantableComponent, Player, system, world } from "@minecraft/server";
 import { ActionFormData, FormCancelationReason } from "@minecraft/server-ui";
 import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, playerInteractionMap, serverConfigurationCopy, treeCut } from "index";
 import { MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
@@ -44,10 +44,11 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             const unbreakingMultiplier = (100 / (level + 1)) / 100;
             const unbreakingDamage = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
             const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
-            getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1).then((treeCollected) => {
-                const totalDamage = (treeCollected.size) * unbreakingDamage;
+            getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1).then((treeCollectedResult) => {
+                const totalDamage = (treeCollectedResult.visited.size) * unbreakingDamage;
                 const totalDurabilityConsumed = currentDurability + totalDamage;
                 const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
+                const size = treeCollectedResult.visited.size;
                 const inspectionForm = new ActionFormData()
                     .title({
                     rawtext: [
@@ -62,7 +63,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             translate: `LumberAxe.form.treeSizeAbrev.text`
                         },
                         {
-                            text: ` ${treeCollected.size !== 0 ? treeCollected.size : 1}${canBeChopped ? "" : "+"} `
+                            text: ` ${size !== 0 ? size : 1}${canBeChopped ? "" : "+"} `
                         },
                         {
                             translate: `LumberAxe.form.treeSizeAbrevLogs.text`
@@ -101,8 +102,12 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 }, "textures/InfoUI/canBeCut.png");
                 forceShow(player, inspectionForm).then((response) => {
                     playerInteractionMap.set(player.id, false);
-                    if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed)
+                    if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
+                        for (const blockOutline of treeCollectedResult.blockOutlines) {
+                            system.run(() => blockOutline.triggerEvent('despawn'));
+                        }
                         return;
+                    }
                 }).catch((error) => {
                     Logger.error("Form Error: ", error, error.stack);
                 });

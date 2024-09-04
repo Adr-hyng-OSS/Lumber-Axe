@@ -1,0 +1,96 @@
+{
+	"format_version": "1.18",
+	
+	"minecraft:entity": {
+		"description": {
+			"identifier": "outlined_entities:example",
+			
+			"is_spawnable": true,
+			"is_summonable": true
+		},
+		
+		"components": {
+			"minecraft:collision_box": {
+				"width": 0,
+				"height": 0
+			},
+			"minecraft:health": {
+        "value": 20,
+        "max": 20
+      },
+      "minecraft:damage_sensor": {
+        "triggers": {
+          "cause": "all",
+          "deals_damage": false
+        }
+      },
+      "minecraft:physics": {
+        "has_collision": true,
+        "has_gravity": false
+      },
+      "minecraft:knockback_resistance": {
+        "value": 100
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": false
+      }
+		},
+		"component_groups": {
+			"despawn": {
+        "minecraft:instant_despawn": {}
+      },
+			"status.inactive": {
+				"minecraft:variant": {"value": 0}
+			},
+			"status.active": {
+				"minecraft:variant": {"value": 1}
+			},
+			
+			"type.red": {
+				"minecraft:mark_variant": {"value": 0}
+			},
+			"type.blue": {
+				"minecraft:mark_variant": {"value": 1}
+			},
+			"type.yellow": {
+				"minecraft:mark_variant": {"value": 2}
+			},
+			"type.green": {
+				"minecraft:mark_variant": {"value": 3}
+			}
+		},
+		
+		"events": {
+			"despawn": {
+        "add": { "component_groups": [ "despawn" ] }
+      },
+			"minecraft:entity_spawned": {
+				"sequence": [
+					{"trigger": "status.inactive.set"},
+					{"trigger": "type.red.set"}
+				]
+			},
+			
+			"status.inactive.set": {
+				"add": {"component_groups": ["status.inactive"]}
+			},
+			"status.active.set": {
+				"add": {"component_groups": ["status.active"]}
+			},
+			
+			"type.red.set": {
+				"add": {"component_groups": ["type.red"]}
+			},
+			"type.blue.set": {
+				"add": {"component_groups": ["type.blue"]}
+			},
+			"type.yellow.set": {
+				"add": {"component_groups": ["type.yellow"]}
+			},
+			"type.green.set": {
+				"add": {"component_groups": ["type.green"]}
+			}
+		}
+	}
+}

@@ -1,4 +1,4 @@
-import { Block, Dimension, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, System, Vector3, system } from "@minecraft/server";
+import { Block, Dimension, Entity, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, System, Vector3, system } from "@minecraft/server";
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes} from "../modules/vanilla-types/index";
 
 import { validLogBlocks, axeEquipments, stackDistribution, serverConfigurationCopy } from "../index";
@@ -20,8 +20,7 @@ function treeCut(player: Player, dimension: Dimension, location: Vector3, blockT
     
     system.run(async () => {
 
-        const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
-        
+        const visited: Set<string> = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage) as VisitedBlockResult).visited;
         const totalDamage: number = visited.size * unbreakingDamage;
         const postDamagedDurability: number = itemDurability.damage + totalDamage;
     
@@ -68,22 +67,31 @@ function isLogIncluded(blockTypeId: string): boolean {
     return false;
 }
 
-function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Promise<Set<string>> {
-    return new Promise<Set<string>>((resolve) => {
+export type VisitedBlockResult = {
+    visited: Set<string>;
+    blockOutlines: Entity[];
+}
+
+function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Promise<VisitedBlockResult> {
+    return new Promise<VisitedBlockResult>((resolve) => {
         const traversingTreeInterval: number = system.runJob(function*(){
-            const visited: Set<string> = new Set<string>();
+            const _visited: Set<string> = new Set<string>();
+            const _blockOutlines: Entity[] = [];
             let queue: Block[] = getBlockNearInitialize(dimension, location);
             while (queue.length > 0) {
-                if(visited.size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || visited.size >= maxNeeded) {
+                if(_visited.size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || _visited.size >= maxNeeded) {
                     system.clearJob(traversingTreeInterval);
-                    resolve(visited);
+                    resolve({visited: _visited, blockOutlines: _blockOutlines});
                 }
                 const _block: Block = queue.shift();
                 if (!_block?.isValid() || !isLogIncluded(_block?.typeId)) continue;
                 if (_block.typeId !== blockTypeId) continue;
                 const pos: string = JSON.stringify(_block.location);
-                if (visited.has(pos)) continue;
-                visited.add(pos);
+                if (_visited.has(pos)) continue;
+                _visited.add(pos);
+                const block = dimension.spawnEntity('outlined_entities:example', {x: _block.x + 0.5, y: _block.y, z: _block.z + 0.5});
+                block.triggerEvent("status.active.set");
+                _blockOutlines.push(block);
                 for(const block of getBlockNear(dimension, _block.location)) {
                     queue.push(block);
                     yield;
@@ -92,7 +100,7 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
             }
             queue = [];
             system.clearJob(traversingTreeInterval);
-            resolve(visited);
+            resolve({visited: _visited, blockOutlines: _blockOutlines});
         }());
     });
 }

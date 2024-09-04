@@ -16,7 +16,7 @@ function treeCut(player, dimension, location, blockTypeId) {
     const unbreakingMultiplier = (100 / (level + 1)) / 100;
     const unbreakingDamage = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
     system.run(async () => {
-        const visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
+        const visited = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage)).visited;
         const totalDamage = visited.size * unbreakingDamage;
         const postDamagedDurability = itemDurability.damage + totalDamage;
         if (postDamagedDurability + 1 === itemDurability.maxDurability) {
@@ -51,12 +51,13 @@ function isLogIncluded(blockTypeId) {
 function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
     return new Promise((resolve) => {
         const traversingTreeInterval = system.runJob(function* () {
-            const visited = new Set();
+            const _visited = new Set();
+            const _blockOutlines = [];
             let queue = getBlockNearInitialize(dimension, location);
             while (queue.length > 0) {
-                if (visited.size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || visited.size >= maxNeeded) {
+                if (_visited.size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || _visited.size >= maxNeeded) {
                     system.clearJob(traversingTreeInterval);
-                    resolve(visited);
+                    resolve({ visited: _visited, blockOutlines: _blockOutlines });
                 }
                 const _block = queue.shift();
                 if (!_block?.isValid() || !isLogIncluded(_block?.typeId))
@@ -64,9 +65,12 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
                 if (_block.typeId !== blockTypeId)
                     continue;
                 const pos = JSON.stringify(_block.location);
-                if (visited.has(pos))
+                if (_visited.has(pos))
                     continue;
-                visited.add(pos);
+                _visited.add(pos);
+                const block = dimension.spawnEntity('outlined_entities:example', { x: _block.x + 0.5, y: _block.y, z: _block.z + 0.5 });
+                block.triggerEvent("status.active.set");
+                _blockOutlines.push(block);
                 for (const block of getBlockNear(dimension, _block.location)) {
                     queue.push(block);
                     yield;
@@ -75,7 +79,7 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
             }
             queue = [];
             system.clearJob(traversingTreeInterval);
-            resolve(visited);
+            resolve({ visited: _visited, blockOutlines: _blockOutlines });
         }());
     });
 }

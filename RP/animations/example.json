@@ -1,0 +1,16 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"animation.example.spin": {
+			"loop": true,
+			"bones": {
+				"root": {
+					"rotation": [0, 0, 0]
+				},
+				"outline": {
+					"scale": "1.04 + math.sqrt(query.distance_from_camera) / 64"
+				}
+			}
+		}
+	}
+}

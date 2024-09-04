@@ -27,12 +27,10 @@ export class Configuration {
     }
     else throw new Error("Database not found");
   }
-
   saveServer() {
     setServerConfiguration(serverConfigurationCopy);
     if (db.isValid()) db.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
   }
-
   loadServer() {
     if (db.isValid()) {
       if (db.has(this.SERVER_CONFIGURATION_DB)) {
@@ -42,7 +40,6 @@ export class Configuration {
       }
     }
   }
-
   showServerScreen() {
     const parsedAddonTitle = ADDON_NAME.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
     const form = new ActionFormData()
