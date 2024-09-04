@@ -1,6 +1,10 @@
-import { Block, BlockPermutation, EntityEquippableComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemStack, Player, system, world } from "@minecraft/server";
-import { axeEquipments, getTreeLogs, isLogIncluded, playerInteractedTimeLogMap, serverConfigurationCopy, treeCut } from "index"
-import { MinecraftEffectTypes, MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
+import { Block, BlockPermutation, Entity, EntityEquippableComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemStack, Player, system, TicksPerSecond, world } from "@minecraft/server";
+import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
+import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, serverConfigurationCopy, treeCut } from "index"
+import { MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
+import { Logger } from "utils/logger";
+
+const visitedLogs: Entity[][] = [];
 
 world.beforeEvents.worldInitialize.subscribe((registry) => {
   registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
@@ -35,97 +39,109 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
     playerInteractedTimeLogMap.set(player.id, system.currentTick);
     if ((oldLog + 20) >= Date.now()) return;
     const blockOutlines = player.dimension.getEntities({closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter()});
+
+    const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
+    const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
+    const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
+    const currentDurability = itemDurability.damage;
+    const maxDurability = itemDurability.maxDurability;
+    const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
+    const unbreakingDamage: number = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
+    const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
+    
     if(blockOutlines.length && blockOutlines[0]?.isValid()) {
         console.warn("HAS BLOCK OUITLINE");
+        let inspectedTree: Entity[];
+        //! What happens if that visited logs are destroyed for some reason?
+        for(const c_blockOutline of visitedLogs) {
+            const index = c_blockOutline.indexOf(blockOutlines[0]);
+            if(index === -1) continue;
+            inspectedTree = visitedLogs[visitedLogs.indexOf(c_blockOutline)];
+            break;
+        }
+
+
+        const size = inspectedTree.length;
+        const totalDamage: number = size * unbreakingDamage;
+        const totalDurabilityConsumed: number = currentDurability + totalDamage;
+        const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
+        const inspectionForm: ActionFormData = new ActionFormData()
+        .title({
+            rawtext: [
+            {
+                translate: "LumberAxe.form.title.text"
+            }
+            ]})
+        .button(
+            {
+                rawtext: [
+                {
+                    translate: `LumberAxe.form.treeSizeAbrev.text`
+                },
+                {
+                    text: ` ${size !== 0 ? size : 1}${canBeChopped ? "" : "+" } `
+                },
+                {
+                    translate: `LumberAxe.form.treeSizeAbrevLogs.text`
+                }
+            ]}, "textures/InfoUI/blocks.png")
+        .button(
+            {
+                rawtext: [
+                {
+                    translate: `LumberAxe.form.durabilityAbrev.text`
+                },
+                {
+                    text: ` ${currentDurability}`
+                }
+            ]}, "textures/InfoUI/axe_durability.png")
+        .button(
+            {
+                rawtext: [
+                {
+                    translate: `LumberAxe.form.maxDurabilityAbrev.text`
+                },
+                {
+                    text: ` ${maxDurability}`
+                }
+            ]}, "textures/InfoUI/required_durability.png")
+        .button(
+            {
+                rawtext: [
+                {
+                    text: "§l"
+                },
+                {
+                    translate: `${canBeChopped ? "LumberAxe.form.canBeChopped.text": "LumberAxe.form.cannotBeChopped.text"}`
+                }
+            ]}, "textures/InfoUI/canBeCut.png");
+
+        forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
+            // playerInteractionMap.set(player.id, false);
+            if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
+            for(const _blockOutline of inspectedTree) {
+                if(!_blockOutline?.isValid()) continue;
+                system.run(() => _blockOutline.triggerEvent('despawn'));
+            }
+            return;
+        }
+        }).catch((error: Error) => {
+            Logger.error("Form Error: ", error, error.stack);
+        });
     } else {
         console.warn("DOESNT HAVE BLOCK OUITLINE");
-        const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
-        const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
-        const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
-        const currentDurability = itemDurability.damage;
-        const maxDurability = itemDurability.maxDurability;
-        const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
-        const unbreakingDamage: number = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
-        const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
-
         system.run(async () => {
             // if(playerInteractionMap.get(player.id)) return;
             // playerInteractionMap.set(player.id, true);
             const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
-            const size = treeCollectedResult.visited.size;
-            const totalDamage: number = size * unbreakingDamage;
-            const totalDurabilityConsumed: number = currentDurability + totalDamage;
-            const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
+            visitedLogs.push(treeCollectedResult.blockOutlines);
             // playerInteractionMap.set(player.id, false);
-            console.warn("RESET");
-            // system.runTimeout(() => {
-            // }, 5 * TicksPerSecond);
+            system.runTimeout(() => {
+                visitedLogs.splice(visitedLogs.indexOf(treeCollectedResult.blockOutlines));
+                console.warn("RESET");
+            }, 5 * TicksPerSecond);
         });
     }
-    
-    // const inspectionForm: ActionFormData = new ActionFormData()
-    //     .title({
-    //         rawtext: [
-    //         {
-    //             translate: "LumberAxe.form.title.text"
-    //         }
-    //         ]})
-    //     .button(
-    //         {
-    //             rawtext: [
-    //             {
-    //                 translate: `LumberAxe.form.treeSizeAbrev.text`
-    //             },
-    //             {
-    //                 text: ` ${size !== 0 ? size : 1}${canBeChopped ? "" : "+" } `
-    //             },
-    //             {
-    //                 translate: `LumberAxe.form.treeSizeAbrevLogs.text`
-    //             }
-    //         ]}, "textures/InfoUI/blocks.png")
-    //     .button(
-    //         {
-    //             rawtext: [
-    //             {
-    //                 translate: `LumberAxe.form.durabilityAbrev.text`
-    //             },
-    //             {
-    //                 text: ` ${currentDurability}`
-    //             }
-    //         ]}, "textures/InfoUI/axe_durability.png")
-    //     .button(
-    //         {
-    //             rawtext: [
-    //             {
-    //                 translate: `LumberAxe.form.maxDurabilityAbrev.text`
-    //             },
-    //             {
-    //                 text: ` ${maxDurability}`
-    //             }
-    //         ]}, "textures/InfoUI/required_durability.png")
-    //     .button(
-    //         {
-    //             rawtext: [
-    //             {
-    //                 text: "§l"
-    //             },
-    //             {
-    //                 translate: `${canBeChopped ? "LumberAxe.form.canBeChopped.text": "LumberAxe.form.cannotBeChopped.text"}`
-    //             }
-    //         ]}, "textures/InfoUI/canBeCut.png");
-
-    // forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
-    //     playerInteractionMap.set(player.id, false);
-    //     if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
-    //     for(const blockOutline of treeCollectedResult.blockOutlines) {
-    //         if(!blockOutline?.isValid()) continue;
-    //         system.run(() => blockOutline.triggerEvent('despawn'));
-    //     }
-    //     return;
-    // }
-    // }).catch((error: Error) => {
-    //     Logger.error("Form Error: ", error, error.stack);
-    // });
     },
   })
 })
