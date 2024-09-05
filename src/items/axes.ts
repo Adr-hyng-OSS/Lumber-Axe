@@ -1,10 +1,11 @@
 import { Block, BlockPermutation, Entity, EntityEquippableComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemStack, Player, system, TicksPerSecond, world } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
-import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, serverConfigurationCopy, treeCut } from "index"
+import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, serverConfigurationCopy, treeCut, VisitedBlockResult } from "index"
 import { MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
+import { Graph } from "utils/graph";
 import { Logger } from "utils/logger";
 
-const visitedLogs: Entity[][] = [];
+const visitedLogs: VisitedBlockResult[] = [];
 
 world.beforeEvents.worldInitialize.subscribe((registry) => {
   registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
@@ -39,7 +40,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         playerInteractedTimeLogMap.set(player.id, system.currentTick);
         if ((oldLog + 20) >= Date.now()) return;
         const blockOutlines = player.dimension.getEntities({closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter()});
-
         const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
         const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
         const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
@@ -50,16 +50,34 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
         
         if(blockOutlines.length && blockOutlines[0]?.isValid()) {
-            console.warn("HAS BLOCK OUITLINE");
-            let inspectedTree: Entity[];
-            for(const c_blockOutline of visitedLogs) {
-                const index = c_blockOutline.indexOf(blockOutlines[0]);
-                if(index === -1) continue;
-                inspectedTree = visitedLogs[visitedLogs.indexOf(c_blockOutline)];
+            let inspectedTree: VisitedBlockResult;
+            for(const visitedLogsGraph of visitedLogs) {
+                const interactedNode = visitedLogsGraph.graph.getNode(blockInteracted.location);
+                // const interactedNode = visitedLogsGraph.graph.getNode(blockOutlines[0].location);
+                if(!interactedNode) continue; 
+                const index = visitedLogs.indexOf(visitedLogsGraph);
+                // if(index === -1) continue;
+                inspectedTree = visitedLogs[index];
                 break;
             }
+            // Traverse again to final check what branch should be included.
+            console.warn("PRE: ", inspectedTree.graph.getSize());
+            // Already removed
+            for(const _blockOutline of inspectedTree.blockOutlines) {
+                if(_blockOutline?.isValid()) continue;
+                const {x, y, z} = _blockOutline.lastLocation;
+                inspectedTree.graph.removeNode({x: x - 0.5, y: y, z: z - 0.5});
+            }
 
-            const size = inspectedTree.length;
+            // After the node has been removed, it should get only the neigbors
+            let tsize = 0;
+            // inspectedTree.graph.bfs({x: -3255, y: 69, z: 1759}, (node) => {
+            inspectedTree.graph.dfsIterative(blockInteracted.location, (node) => {
+                if(node) tsize++;
+            });
+            console.warn("POST: ", tsize);
+
+            const size = inspectedTree.graph.getSize();
             const totalDamage: number = size * unbreakingDamage;
             const totalDurabilityConsumed: number = currentDurability + totalDamage;
             const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
@@ -117,10 +135,15 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
                 // playerInteractionMap.set(player.id, false);
                 if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
-                for(const _blockOutline of inspectedTree) {
-                    if(!_blockOutline?.isValid()) continue;
-                    system.run(() => _blockOutline.triggerEvent('despawn'));
-                }
+
+                // Despawn all the block outlnies
+                // inspectedTree.graph.bfs(blockOutlines[0].location, (node) => {
+
+                // });
+                // for(const _blockOutline of ) {
+                //     if(!_blockOutline?.isValid()) continue;
+                //     system.run(() => _blockOutline.triggerEvent('despawn'));
+                // }
                 return;
             }
             }).catch((error: Error) => {
@@ -132,9 +155,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 // if(playerInteractionMap.get(player.id)) return;
                 // playerInteractionMap.set(player.id, true);
                 const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
-                visitedLogs.push(treeCollectedResult.blockOutlines);
+                visitedLogs.push(treeCollectedResult);
                 system.runTimeout(() => {
-                    visitedLogs.splice(visitedLogs.indexOf(treeCollectedResult.blockOutlines));
+                    visitedLogs.splice(visitedLogs.indexOf(treeCollectedResult));
                     console.warn("RESET");
                 }, 5 * TicksPerSecond);
             });

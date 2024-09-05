@@ -2,6 +2,7 @@ import { Block, Dimension, Entity, EntityEquippableComponent, EquipmentSlot, Ite
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes} from "../modules/vanilla-types/index";
 
 import { validLogBlocks, axeEquipments, stackDistribution, serverConfigurationCopy } from "../index";
+import { Graph } from "utils/graph";
 
 
 function treeCut(player: Player, dimension: Dimension, location: Vector3, blockTypeId: string): void {
@@ -105,7 +106,9 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
                 if(!node) continue;
 
                 // Spawn the block outline for visualization (optional)
-                blockOutlines.push(dimension.spawnEntity('yn:block_outline', { x: pos.x + 0.5, y: pos.y, z: pos.z + 0.5 }));
+                const outline = dimension.spawnEntity('yn:block_outline', { x: pos.x + 0.5, y: pos.y, z: pos.z + 0.5 });
+                outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
+                blockOutlines.push(outline);
 
                 yield;
 
@@ -204,91 +207,6 @@ function groupAdjacentBlocks(visited: Set<string>): string[][] {
     return groups;
 }
 
-class GraphNode {
-    public location: Vector3;
-    public neighbors: Set<GraphNode>;
-
-    constructor(location: Vector3) {
-        this.location = location;
-        this.neighbors = new Set<GraphNode>();
-    }
-
-    addNeighbor(node: GraphNode) {
-        this.neighbors.add(node);
-    }
-
-    removeNeighbor(node: GraphNode) {
-        this.neighbors.delete(node);
-    }
-}
-
-class Graph {
-    private nodes: Map<string, GraphNode>;
-
-    constructor() {
-        this.nodes = new Map<string, GraphNode>();
-    }
-
-    getNode(location: Vector3): GraphNode | undefined {
-        return this.nodes.get(this.serializeLocation(location));
-    }
-
-    addNode(location: Vector3): GraphNode {
-        const key = this.serializeLocation(location);
-        let node = this.nodes.get(key);
-        if (!node) {
-            node = new GraphNode(location);
-            this.nodes.set(key, node);
-        }
-        return node;
-    }
-
-    removeNode(location: Vector3) {
-        const key = this.serializeLocation(location);
-        const node = this.nodes.get(key);
-        if (node) {
-            // Remove the node from its neighbors' adjacency lists
-            node.neighbors.forEach(neighbor => {
-                neighbor.removeNeighbor(node);
-            });
-            this.nodes.delete(key);
-        }
-    }
-
-    serializeLocation(location: Vector3): string {
-        return JSON.stringify(location);
-    }
-
-    getSize(): number {
-        return this.nodes.size;
-    }
-
-    bfs(startLocation: Vector3, visit: (node: GraphNode) => void) {
-        const startNode = this.getNode(startLocation);
-        if (!startNode) {
-            return;
-        }
-
-        const visited = new Set<GraphNode>();
-        const queue: GraphNode[] = [startNode];
-
-        while (queue.length > 0) {
-            const node = queue.shift()!; // Get the first element in the queue
-
-            if (!visited.has(node)) {
-                visit(node); // Perform some action on the node (e.g., print or collect data)
-                visited.add(node);
-
-                // Add neighbors to the queue if they haven't been visited
-                node.neighbors.forEach(neighbor => {
-                    if (!visited.has(neighbor)) {
-                        queue.push(neighbor);
-                    }
-                });
-            }
-        }
-    }
-}
 
 
 export {treeCut, isLogIncluded, getTreeLogs}

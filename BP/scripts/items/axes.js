@@ -52,16 +52,29 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             const unbreakingDamage = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
             const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
             if (blockOutlines.length && blockOutlines[0]?.isValid()) {
-                console.warn("HAS BLOCK OUITLINE");
                 let inspectedTree;
-                for (const c_blockOutline of visitedLogs) {
-                    const index = c_blockOutline.indexOf(blockOutlines[0]);
-                    if (index === -1)
+                for (const visitedLogsGraph of visitedLogs) {
+                    const interactedNode = visitedLogsGraph.graph.getNode(blockInteracted.location);
+                    if (!interactedNode)
                         continue;
-                    inspectedTree = visitedLogs[visitedLogs.indexOf(c_blockOutline)];
+                    const index = visitedLogs.indexOf(visitedLogsGraph);
+                    inspectedTree = visitedLogs[index];
                     break;
                 }
-                const size = inspectedTree.length;
+                console.warn("PRE: ", inspectedTree.graph.getSize());
+                for (const _blockOutline of inspectedTree.blockOutlines) {
+                    if (_blockOutline?.isValid())
+                        continue;
+                    const { x, y, z } = _blockOutline.lastLocation;
+                    inspectedTree.graph.removeNode({ x: x - 0.5, y: y, z: z - 0.5 });
+                }
+                let tsize = 0;
+                inspectedTree.graph.dfsIterative(blockInteracted.location, (node) => {
+                    if (node)
+                        tsize++;
+                });
+                console.warn("POST: ", tsize);
+                const size = inspectedTree.graph.getSize();
                 const totalDamage = size * unbreakingDamage;
                 const totalDurabilityConsumed = currentDurability + totalDamage;
                 const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
@@ -118,11 +131,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 }, "textures/InfoUI/canBeCut.png");
                 forceShow(player, inspectionForm).then((response) => {
                     if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
-                        for (const _blockOutline of inspectedTree) {
-                            if (!_blockOutline?.isValid())
-                                continue;
-                            system.run(() => _blockOutline.triggerEvent('despawn'));
-                        }
                         return;
                     }
                 }).catch((error) => {
@@ -133,9 +141,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 console.warn("DOESNT HAVE BLOCK OUITLINE");
                 system.run(async () => {
                     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
-                    visitedLogs.push(treeCollectedResult.blockOutlines);
+                    visitedLogs.push(treeCollectedResult);
                     system.runTimeout(() => {
-                        visitedLogs.splice(visitedLogs.indexOf(treeCollectedResult.blockOutlines));
+                        visitedLogs.splice(visitedLogs.indexOf(treeCollectedResult));
                         console.warn("RESET");
                     }, 5 * TicksPerSecond);
                 });
