@@ -34,7 +34,6 @@ const command = {
                     },
                 ]
             });
-        let fishingRod;
         switch (selectedReqParam) {
             case REQUIRED_PARAMETER.GET:
                 for (const axe of axeEquipments) {
@@ -42,6 +41,14 @@ const command = {
                 }
                 break;
             case REQUIRED_PARAMETER.TEST:
+                let inspectedTree;
+                let blockInteracted = player.getBlockFromViewDirection({ maxDistance: 50 }).block;
+                const outline = player.dimension.getEntities({ closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter() })[0];
+                console.warn("PRE': ", outline.getProperty("yn:stay_persistent"));
+                outline.setProperty("yn:stay_persistent", !outline.getProperty("yn:stay_persistent"));
+                console.warn("POST: ", outline.getProperty("yn:stay_persistent"));
+                if (!inspectedTree)
+                    return;
                 break;
             default:
                 break;

@@ -1,66 +1,7 @@
-import { Block, Dimension, Entity, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, System, Vector3, system } from "@minecraft/server";
-import { MinecraftBlockTypes, MinecraftEnchantmentTypes} from "../modules/vanilla-types/index";
+import { Block, Dimension, Entity, Vector3, system } from "@minecraft/server";
 
-import { validLogBlocks, axeEquipments, stackDistribution, serverConfigurationCopy } from "../index";
+import { validLogBlocks, serverConfigurationCopy, VisitedBlockResult } from "../index";
 import { Graph } from "utils/graph";
-
-
-function treeCut(player: Player, dimension: Dimension, location: Vector3, blockTypeId: string): void {
-    const equipment = player.getComponent(EntityEquippableComponent.componentId) as EntityEquippableComponent;
-    const currentHeldAxe = equipment.getEquipment(EquipmentSlot.Mainhand);
-    if (!axeEquipments.includes(currentHeldAxe?.typeId)) return;
-    if (player.isSurvival()) currentHeldAxe.lockMode = ItemLockMode.slot;
-
-    const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
-    const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
-    const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
-    const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
-    const unbreakingDamage: number = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
-    
-    system.run(async () => {
-
-        const visited: Graph = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage) as VisitedBlockResult).graph;
-        const size = visited.getSize();
-        const totalDamage: number = size * unbreakingDamage;
-        const postDamagedDurability: number = itemDurability.damage + totalDamage;
-    
-        // Check if durabiliy is exact that can chop the tree but broke the axe, then broke it.
-        if (postDamagedDurability + 1 === itemDurability.maxDurability) {
-            equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
-        // Check if the durability is not enough to chop the tree. Then don't apply the 3 damage.
-        } else if (postDamagedDurability > itemDurability.maxDurability) {
-            currentHeldAxe.lockMode = ItemLockMode.none;
-            return;
-        // Check if total durability will consume is still enough and not near the max durability
-        } else if (postDamagedDurability < itemDurability.maxDurability){
-            itemDurability.damage = itemDurability.damage +  totalDamage;
-            currentHeldAxe.lockMode = ItemLockMode.none;
-            equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
-        }
-        
-        //! Use this when fillBlocks is in stable. (Not applicable but can be good to be refactored to graph-based)
-        // for (const group of groupAdjacentBlocks(visited)) {
-        //     const firstElement = JSON.parse(group[0]);
-        //     const lastElement = JSON.parse(group[group.length - 1]);
-        //     if (firstElement === lastElement) {
-        //         dimension.getBlock(firstElement).setType(MinecraftBlockTypes.Air);
-        //         continue;
-        //     } else {
-        //         dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.Air);
-        //     }
-        // }
-
-        visited.bfs(location, (node) => {
-            system.run(() => dimension.setBlockType(node.location, MinecraftBlockTypes.Air));
-        });
-
-        system.runTimeout( () => {
-            for (const group of stackDistribution(size)) {
-                system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
-            }
-        }, 5);
-    });
-}
 
 function isLogIncluded(blockTypeId: string): boolean {
     if(serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
@@ -68,19 +9,17 @@ function isLogIncluded(blockTypeId: string): boolean {
     return false;
 }
 
-export type VisitedBlockResult = {
-    graph: Graph;
-    blockOutlines: Entity[];
-}
 
-function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Promise<VisitedBlockResult> {
+function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number, shouldSpawnOutline: boolean = true): Promise<VisitedBlockResult> {
     return new Promise<VisitedBlockResult>((resolve) => {
         const graph = new Graph();
         const blockOutlines: Entity[] = [];
-        let queue: Block[] = []; // Solid Blocks (There's still non-logs)
+        let queue: Block[] = [];
         const firstBlock = dimension.getBlock(location);
         queue.push(firstBlock);
         graph.addNode(firstBlock.location);
+
+        console.warn("ASDASD");
 
         const traversingTreeInterval: number = system.runJob(function* () {
             while (queue.length > 0) {
@@ -90,7 +29,7 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
                 // Check termination conditions
                 if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || size >= maxNeeded) {
                     system.clearJob(traversingTreeInterval);
-                    resolve({ graph, blockOutlines });
+                    resolve({ source: graph, blockOutlines });
                     return;
                 }
 
@@ -106,15 +45,16 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
                 if(!node) continue;
 
                 // Spawn the block outline for visualization (optional)
-                const outline = dimension.spawnEntity('yn:block_outline', { x: pos.x + 0.5, y: pos.y, z: pos.z + 0.5 });
-                outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
-                blockOutlines.push(outline);
+                if(shouldSpawnOutline) {
+                    const outline = dimension.spawnEntity('yn:block_outline', { x: pos.x + 0.5, y: pos.y, z: pos.z + 0.5 });
+                    outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
+                    blockOutlines.push(outline);
+                }
 
                 yield;
 
                 // Get the neighbors and connect to main node.
                 for (const neighborBlock of getBlockNear(dimension, block.location)) {
-                    // Check if the neighbor is already in the graph
                     if (!neighborBlock?.isValid() || !isLogIncluded(neighborBlock?.typeId)) continue;
                     if (neighborBlock.typeId !== blockTypeId) continue;
                     if (graph.getNode(neighborBlock.location)) continue;
@@ -136,7 +76,7 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
             // Clear the queue and finish
             queue = [];
             system.clearJob(traversingTreeInterval);
-            resolve({ graph, blockOutlines });
+            resolve({ source: graph, blockOutlines });
         }());
     });
 }
@@ -156,25 +96,6 @@ function* getBlockNear(dimension: Dimension, location: Vector3, radius: number =
             }
         }
     }
-}
-
-function getBlockNearInitialize(dimension: Dimension, location: Vector3, radius: number = 1): Block[] {
-    const centerX: number = location.x;
-    const centerY: number = location.y;
-    const centerZ: number = location.z;
-    const blocks: Block[] = [];
-    let _block: Block;
-    for (let x = centerX - radius; x <= centerX + radius; x++) {
-        for (let y = centerY - radius; y <= centerY + radius; y++) {
-            for (let z = centerZ - radius; z <= centerZ + radius; z++) {
-                if (centerX === x && centerY === y && centerZ === z) continue;
-                _block = dimension.getBlock({ x, y, z });
-                if (_block.isAir) continue;
-                blocks.push(_block);
-            }
-        }
-    }
-    return blocks;
 }
 
 // Gets all the visited blocks and groups them together.
@@ -209,4 +130,4 @@ function groupAdjacentBlocks(visited: Set<string>): string[][] {
 
 
 
-export {treeCut, isLogIncluded, getTreeLogs}
+export {isLogIncluded, getTreeLogs}

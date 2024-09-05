@@ -29,12 +29,12 @@ export class Graph {
     removeNode(location) {
         const key = this.serializeLocation(location);
         const node = this.nodes.get(key);
-        if (node) {
-            node.neighbors.forEach(neighbor => {
-                neighbor.removeNeighbor(node);
-            });
-            this.nodes.delete(key);
-        }
+        if (!node)
+            return;
+        node.neighbors.forEach(neighbor => {
+            node.removeNeighbor(neighbor);
+        });
+        this.nodes.delete(key);
     }
     serializeLocation(location) {
         return JSON.stringify(location);

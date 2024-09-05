@@ -6,7 +6,14 @@
 			"identifier": "yn:block_outline",
 			"runtime_identifier": "minecraft:armor_stand",
 			"is_spawnable": true,
-			"is_summonable": true
+			"is_summonable": true,
+			"properties": {
+        "yn:stay_persistent": {
+          "type": "bool",
+          "client_sync": true,
+          "default": false
+        }
+      }
 		},
 		
 		"components": {
@@ -40,43 +47,78 @@
       },
 			"minecraft:variant": {
 				"value": 1
-			},
-			"minecraft:timer": {
-				"looping": false,
-				"time": 5,
-				"time_down_event": {
-					"event": "despawn"
-				}
-			},
-			"minecraft:environment_sensor": {
-				"triggers": [
-					{
-						"event": "despawn",
-						"target": "self",
-						"filters": [
-							{
-								"all_of": [
-									{
-										"test": "in_block",
-										"value": "minecraft:air"
-									}
-								]
-							}
-						]
-					}
-				]
 			}
 		},
 		"component_groups": {
 			"despawn": {
         "minecraft:instant_despawn": {}
-      }
+      },
+			"not_persistent": {
+				"minecraft:timer": {
+					"looping": true,
+					"time": 10,
+					"time_down_event": {
+						"event": "despawn"
+					}
+				},
+				"minecraft:environment_sensor": {
+					"triggers": [
+						{
+							"event": "despawn",
+							"filters": {
+								"test": "in_block",
+								"value": "minecraft:air"
+							}
+						},
+						{
+							"event": "stay_persistent",
+							"filters": {
+								"test": "bool_property",
+								"domain": "yn:stay_persistent",
+								"value": true
+							}
+						}
+					]
+				}
+			},
+			"stay_persistent": {
+				"minecraft:environment_sensor": {
+					"triggers": [
+						{
+							"event": "despawn",
+							"filters": {
+								"test": "in_block",
+								"value": "minecraft:air"
+							}
+						},
+						{
+							"event": "not_persistent",
+							"filters": {
+								"test": "bool_property",
+								"domain": "yn:stay_persistent",
+								"value": false
+							}
+						}
+					]
+				}
+			}
 		},
 		
 		"events": {
+			"minecraft:entity_spawned": {
+				"trigger": "not_persistent"
+			},
 			"despawn": {
 				"add": { "component_groups": [ "despawn" ] }
-      }
+      },
+			"not_persistent": {
+				"remove": { "component_groups": [ "stay_persistent" ]},
+				"add": { "component_groups": [ "not_persistent" ]}
+			},
+			"stay_persistent": {
+				"remove": { "component_groups": [ "not_persistent" ]},
+				"add": { "component_groups": [ "stay_persistent" ]}
+			}
 		}
 	}
 }

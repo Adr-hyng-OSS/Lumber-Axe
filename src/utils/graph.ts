@@ -40,15 +40,15 @@ export class Graph {
   }
 
   removeNode(location: Vector3) {
-      const key = this.serializeLocation(location);
-      const node = this.nodes.get(key);
-      if (node) {
-          // Remove the node from its neighbors' adjacency lists
-          node.neighbors.forEach(neighbor => {
-              neighbor.removeNeighbor(node);
-          });
-          this.nodes.delete(key);
-      }
+    const key = this.serializeLocation(location);
+    const node = this.nodes.get(key);
+    if (!node) return;
+    // Remove the node from its neighbors' adjacency lists
+    node.neighbors.forEach(neighbor => {
+        // neighbor.removeNeighbor(node);
+        node.removeNeighbor(neighbor);
+    });
+    this.nodes.delete(key);
   }
 
   serializeLocation(location: Vector3): string {
