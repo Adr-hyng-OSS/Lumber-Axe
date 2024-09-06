@@ -1,6 +1,6 @@
 import { Vector3 } from "@minecraft/server";
 
-class GraphNode {
+export class GraphNode {
   public location: Vector3;
   public neighbors: Set<GraphNode>;
 
@@ -45,7 +45,7 @@ export class Graph {
     if (!node) return;
     // Remove the node from its neighbors' adjacency lists
     node.neighbors.forEach(neighbor => {
-        // neighbor.removeNeighbor(node);
+        neighbor.removeNeighbor(node);
         node.removeNeighbor(neighbor);
     });
     this.nodes.delete(key);

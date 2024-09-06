@@ -150,15 +150,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             if (node)
                                 size++;
                         });
-                        if (!isInSameNeighbor) {
-                            const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs, false);
-                            const result = { initialInteraction: blockInteracted.location, visitedLogs: treeCollectedResult, isBeingInspected: false };
-                            player.visitedLogs.push(result);
-                            system.runTimeout(() => {
-                                resetOutlinedTrees(player, result);
-                            }, blockOutlinesDespawnTimer * TicksPerSecond);
-                            size = treeCollectedResult.source.getSize();
-                        }
+                        console.warn(inspectedTree.visitedLogs.source.getSize());
                         const totalDamage = size * unbreakingDamage;
                         const totalDurabilityConsumed = currentDurability + totalDamage;
                         const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);

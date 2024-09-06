@@ -1,7 +1,6 @@
 import { world, PlayerLeaveAfterEvent, ItemTypes, ScriptEventCommandMessageAfterEvent, system, ScriptEventSource, Player } from '@minecraft/server';
 import { ADDON_IDENTIFIER, playerInteractionMap, SendMessageTo, serverConfigurationCopy} from "./index"
 import { Logger } from 'utils/logger';
-import { MinecraftEffectTypes } from 'modules/vanilla-types/index';
 import './items/axes';
 
 // system.beforeEvents.watchdogTerminate.subscribe((e: WatchdogTerminateBeforeEvent) => {

@@ -1,4 +1,4 @@
-class GraphNode {
+export class GraphNode {
     constructor(location) {
         this.location = location;
         this.neighbors = new Set();
@@ -32,6 +32,7 @@ export class Graph {
         if (!node)
             return;
         node.neighbors.forEach(neighbor => {
+            neighbor.removeNeighbor(node);
             node.removeNeighbor(neighbor);
         });
         this.nodes.delete(key);

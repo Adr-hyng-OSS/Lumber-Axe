@@ -1,7 +1,7 @@
 import { Block, Dimension, Entity, Vector3, system } from "@minecraft/server";
 
 import { validLogBlocks, serverConfigurationCopy, VisitedBlockResult } from "../index";
-import { Graph } from "utils/graph";
+import { Graph, GraphNode } from "utils/graph";
 
 function isLogIncluded(blockTypeId: string): boolean {
     if(serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
@@ -15,15 +15,14 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
         const graph = new Graph();
         const blockOutlines: Entity[] = [];
         let queue: Block[] = [];
+        const visited = new Set<string>(); // To track visited locations
         const firstBlock = dimension.getBlock(location);
         queue.push(firstBlock);
         graph.addNode(firstBlock.location);
-
-        console.warn("ASDASD");
+        visited.add(JSON.stringify(firstBlock.location)); // Mark as visited
 
         const traversingTreeInterval: number = system.runJob(function* () {
             while (queue.length > 0) {
-                // Get the graph size
                 const size = graph.getSize();
 
                 // Check termination conditions
@@ -33,19 +32,13 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
                     return;
                 }
 
-                // Dequeue the block and check if it's valid and not already visited
                 const block: Block = queue.shift();
-                // if (!block?.isValid() || !isLogIncluded(block?.typeId)) continue;
-                // if (block.typeId !== blockTypeId) continue;
-
                 const pos = block.location;
 
-                // Add the block as a new node in the graph
                 const node = graph.getNode(pos);
-                if(!node) continue;
+                if (!node) continue;
 
-                // Spawn the block outline for visualization (optional)
-                if(shouldSpawnOutline) {
+                if (shouldSpawnOutline) {
                     const outline = dimension.spawnEntity('yn:block_outline', { x: pos.x + 0.5, y: pos.y, z: pos.z + 0.5 });
                     outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
                     blockOutlines.push(outline);
@@ -53,33 +46,62 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
 
                 yield;
 
-                // Get the neighbors and connect to main node.
+                // First, gather all valid neighbors
+                const neighborNodes: GraphNode[] = [];
                 for (const neighborBlock of getBlockNear(dimension, block.location)) {
                     if (!neighborBlock?.isValid() || !isLogIncluded(neighborBlock?.typeId)) continue;
                     if (neighborBlock.typeId !== blockTypeId) continue;
-                    if (graph.getNode(neighborBlock.location)) continue;
-                    const neighborNode = graph.addNode(neighborBlock.location);
+
+                    const serializedLocation = JSON.stringify(neighborBlock.location);
+
+                    // Check if the neighbor node has already been visited
+                    if (visited.has(serializedLocation)) continue;
+
+                    let neighborNode = graph.getNode(neighborBlock.location);
+                    if (!neighborNode) {
+                        neighborNode = graph.addNode(neighborBlock.location);
+                    }
+
+                    // Connect the current node to its neighbor
                     node.addNeighbor(neighborNode);
                     neighborNode.addNeighbor(node);
-                    
 
-                    // Get the neighbor's neighbor, and add to queue.
+                    neighborNodes.push(neighborNode);  // Store the valid neighbor nodes
 
-                    // Add the neighbor to the queue for further processing
+                    // Mark this neighbor as visited and add to the queue for further processing
+                    visited.add(serializedLocation);
                     queue.push(neighborBlock);
                     yield;
                 }
 
+                // Now, connect all the neighbors of this node to each other
+                for (let i = 0; i < neighborNodes.length; i++) {
+                    for (let j = i + 1; j < neighborNodes.length; j++) {
+                        const nodeA = neighborNodes[i];
+                        const nodeB = neighborNodes[j];
+                        // Ensure they are connected to each other
+                        nodeA.addNeighbor(nodeB);
+                        nodeB.addNeighbor(nodeA);
+                    }
+                }
+
+                // Logging node and neighbor details
+                // node.neighbors.forEach((n) => {
+                //     console.info(`${JSON.stringify(node.location)} ${node.neighbors.size} -> 
+                //         ${JSON.stringify(n.location)}: ${n.neighbors.size}`);
+                // });
+
                 yield;
             }
 
-            // Clear the queue and finish
             queue = [];
             system.clearJob(traversingTreeInterval);
             resolve({ source: graph, blockOutlines });
         }());
     });
 }
+
+
 
 function* getBlockNear(dimension: Dimension, location: Vector3, radius: number = 1): Generator<Block, any, unknown> {
     const centerX: number = location.x;
