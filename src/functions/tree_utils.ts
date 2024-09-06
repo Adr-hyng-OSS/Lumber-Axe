@@ -85,12 +85,6 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
                     }
                 }
 
-                // Logging node and neighbor details
-                // node.neighbors.forEach((n) => {
-                //     console.info(`${JSON.stringify(node.location)} ${node.neighbors.size} -> 
-                //         ${JSON.stringify(n.location)}: ${n.neighbors.size}`);
-                // });
-
                 yield;
             }
 

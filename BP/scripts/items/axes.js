@@ -4,6 +4,7 @@ import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, playerInteractedT
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
 import { Logger } from "utils/logger";
 import "classes/player";
+import { Graph } from "utils/graph";
 const blockOutlinesDespawnTimer = 10;
 world.beforeEvents.worldInitialize.subscribe((registry) => {
     registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
@@ -85,7 +86,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             }
             if (inspectedTree)
                 player.visitedLogs.splice(player.visitedLogs.indexOf(inspectedTree));
-            visited.bfs(location, (node) => {
+            visited.traverse(location, "BFS", (node) => {
                 system.run(() => dimension.setBlockType(node.location, MinecraftBlockTypes.Air));
             });
             system.runTimeout(() => {
@@ -116,13 +117,14 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             try {
                 system.run(async () => {
                     if (blockOutline?.isValid()) {
-                        let size = 0;
                         let inspectedTree;
+                        let index = 0;
                         for (const visitedLogsGraph of player.visitedLogs) {
                             const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
                             if (!interactedNode)
                                 continue;
-                            const index = player.visitedLogs.indexOf(visitedLogsGraph);
+                            index = player.visitedLogs.indexOf(visitedLogsGraph);
+                            console.warn(index);
                             if (index === -1)
                                 continue;
                             inspectedTree = player.visitedLogs[index];
@@ -130,6 +132,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         }
                         if (!inspectedTree)
                             return;
+                        console.warn("BEOFRE: ", inspectedTree.visitedLogs.source.getSize());
                         for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
                             if (blockOutline?.isValid()) {
                                 blockOutline.setProperty('yn:stay_persistent', true);
@@ -140,17 +143,23 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             z -= 0.5;
                             inspectedTree.visitedLogs.source.removeNode({ x, y, z });
                         }
-                        let isInSameNeighbor = false;
-                        inspectedTree.visitedLogs.source.dfsIterative(blockInteracted.location, (node) => {
-                            const inspectedNode = inspectedTree.visitedLogs.source.getNode(inspectedTree.initialInteraction);
-                            if (inspectedNode) {
-                                if (node.neighbors.has(inspectedNode))
-                                    isInSameNeighbor = true;
-                            }
-                            if (node)
+                        const tempResult = { blockOutlines: [], source: new Graph() };
+                        let size = 0;
+                        inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
+                            if (node) {
+                                tempResult.source.addNode(node);
                                 size++;
+                            }
                         });
-                        console.warn(inspectedTree.visitedLogs.source.getSize());
+                        player.visitedLogs.push({
+                            initialInteraction: blockInteracted.location,
+                            isBeingInspected: false,
+                            visitedLogs: {
+                                source: tempResult.source,
+                                blockOutlines: inspectedTree.visitedLogs.blockOutlines
+                            }
+                        });
+                        console.warn(inspectedTree.visitedLogs.source.getSize(), tempResult.source.getSize(), size);
                         const totalDamage = size * unbreakingDamage;
                         const totalDurabilityConsumed = currentDurability + totalDamage;
                         const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);

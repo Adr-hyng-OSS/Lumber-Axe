@@ -18,114 +18,85 @@ export class GraphNode {
   }
 }
 
+type GraphTraversalType = "DFS" | "BFS";
+
 export class Graph {
-  private nodes: Map<string, GraphNode>;
+    private nodes: Map<string, GraphNode>;
 
-  constructor() {
-      this.nodes = new Map<string, GraphNode>();
-  }
+    constructor() {
+        this.nodes = new Map<string, GraphNode>();
+    }
 
-  getNode(location: Vector3): GraphNode | undefined {
-      return this.nodes.get(this.serializeLocation(location));
-  }
+    getNode(location: Vector3): GraphNode | undefined {
+        return this.nodes.get(this.serializeLocation(location));
+    }
 
-  addNode(location: Vector3): GraphNode {
-      const key = this.serializeLocation(location);
-      let node = this.nodes.get(key);
-      if (!node) {
-          node = new GraphNode(location);
-          this.nodes.set(key, node);
-      }
-      return node;
-  }
+    addNode(location: Vector3): GraphNode;
+    addNode(node: GraphNode): void;
 
-  removeNode(location: Vector3) {
-    const key = this.serializeLocation(location);
-    const node = this.nodes.get(key);
-    if (!node) return;
-    // Remove the node from its neighbors' adjacency lists
-    node.neighbors.forEach(neighbor => {
-        neighbor.removeNeighbor(node);
-        node.removeNeighbor(neighbor);
-    });
-    this.nodes.delete(key);
-  }
+    addNode(param: Vector3 | GraphNode): GraphNode | void {
+        if (param instanceof GraphNode) {
+            const key = this.serializeLocation(param.location);
+            this.nodes.set(key, param);
+            return; // Since it's a GraphNode, you don't return anything
+        } else {
+            const key = this.serializeLocation(param);
+            let node = this.nodes.get(key);
+            if (!node) {
+                node = new GraphNode(param);
+                this.nodes.set(key, node);
+            }
+            return node; // Return the newly created or retrieved node
+        }
+    }
 
-  serializeLocation(location: Vector3): string {
-      return JSON.stringify(location);
-  }
 
-  getSize(): number {
-      return this.nodes.size;
-  }
+    removeNode(location: Vector3) {
+        const key = this.serializeLocation(location);
+        const node = this.nodes.get(key);
+        if (!node) return;
+        // Remove the node from its neighbors' adjacency lists
+        node.neighbors.forEach(neighbor => {
+            neighbor.removeNeighbor(node);
+            node.removeNeighbor(neighbor);
+        });
+        this.nodes.delete(key);
+    }
 
-  bfs(startLocation: Vector3, visit: (node: GraphNode) => void) {
-      const startNode = this.getNode(startLocation);
-      if (!startNode) {
-          return;
-      }
+    serializeLocation(location: Vector3): string {
+        return JSON.stringify(location);
+    }
 
-      const visited = new Set<GraphNode>();
-      const queue: GraphNode[] = [startNode];
+    getSize(): number {
+        return this.nodes.size;
+    } 
 
-      while (queue.length > 0) {
-          const node = queue.shift()!; // Get the first element in the queue
+    traverse(startLocation: Vector3, traversalType: GraphTraversalType = "DFS", visit: (node: GraphNode) => void) {
+        const startNode = this.getNode(startLocation);
+        if (!startNode) {
+            return;
+        }
 
-          if (!visited.has(node)) {
-              visit(node); // Perform some action on the node (e.g., print or collect data)
-              visited.add(node);
+        const visited = new Set<GraphNode>();
 
-              // Add neighbors to the queue if they haven't been visited
-              node.neighbors.forEach(neighbor => {
-                  if (!visited.has(neighbor)) {
-                      queue.push(neighbor);
-                  }
-              });
-          }
-      }
-  }
+        // Choose a data structure based on traversal type
+        const toVisit: GraphNode[] = [startNode]; // This will act as both the stack for DFS and queue for BFS
 
-  // Recursive DFS traversal
-  dfsRecursive(startLocation: Vector3, visit: (node: GraphNode) => void, visited = new Set<GraphNode>()) {
-      const startNode = this.getNode(startLocation);
-      if (!startNode || visited.has(startNode)) {
-          return;
-      }
+        while (toVisit.length > 0) {
+            // For DFS, we pop from the end of the array (LIFO). For BFS, we shift from the start (FIFO).
+            const node = traversalType === "DFS" ? toVisit.pop()! : toVisit.shift()!; // Remove from end for DFS, from start for BFS
 
-      visit(startNode); // Perform some action on the node (e.g., print or collect data)
-      visited.add(startNode);
+            if (!visited.has(node)) {
+                visit(node); // Perform some action on the node (e.g., print or collect data)
+                visited.add(node);
 
-      // Visit all neighbors recursively
-      startNode.neighbors.forEach(neighbor => {
-          if (!visited.has(neighbor)) {
-              this.dfsRecursive(neighbor.location, visit, visited);
-          }
-      });
-  }
-
-  dfsIterative(startLocation: Vector3, visit: (node: GraphNode) => void) {
-      const startNode = this.getNode(startLocation);
-      if (!startNode) {
-          return;
-      }
-
-      const visited = new Set<GraphNode>();
-      const stack: GraphNode[] = [startNode];
-
-      while (stack.length > 0) {
-          const node = stack.pop()!; // Get the last element in the stack
-
-          if (!visited.has(node)) {
-              visit(node); // Perform some action on the node (e.g., print or collect data)
-              visited.add(node);
-
-              // Add neighbors to the stack if they haven't been visited
-              node.neighbors.forEach(neighbor => {
-                  if (!visited.has(neighbor)) {
-                      stack.push(neighbor);
-                  }
-              });
-          }
-      }
-  }
+                // Add neighbors to the toVisit structure if they haven't been visited
+                node.neighbors.forEach(neighbor => {
+                    if (!visited.has(neighbor)) {
+                        toVisit.push(neighbor); // For both DFS and BFS, we add neighbors to the end
+                    }
+                });
+            }
+        }
+    }
 }

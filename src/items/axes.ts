@@ -9,13 +9,6 @@ import { Graph } from "utils/graph";
 
 // Caching for Cutted Inspected Logs should be for next update.
 // Currently Graph is not storing its references to other branches of their neighbors.
-
-// To improve:
-// Currently the approach, i have used is when it's not in the same neighbor from the blockLocation of initial inspection, then just run FloodFillSearch
-// Just make it like since it is a graph, whenever a portion of branch is being chopped, you can see still view the graph, and it's possible connections or branches
-// meanwhile the untracked branches should like if it's being reset, just run the FloodFillSearch. 
-// This approach, makes that it just uses 1 FloodFillSearch for each tree, either small or big.
-// Like when it is big, then somehow, it is being cutted by chunks, you can still have the reference on the branches this specific point has.
 const blockOutlinesDespawnTimer = 10;
 
 world.beforeEvents.worldInitialize.subscribe((registry) => {
@@ -102,7 +95,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         //     }
         // }
 
-        visited.bfs(location, (node) => {
+        visited.traverse(location, "BFS", (node) => {
             system.run(() => dimension.setBlockType(node.location, MinecraftBlockTypes.Air));
         });
 
@@ -134,17 +127,19 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         try {
             system.run(async () => {
                 if(blockOutline?.isValid()) {
-                    let size = 0;
                     let inspectedTree: InteractedTreeResult;
+                    let index = 0;
                     for(const visitedLogsGraph of player.visitedLogs) {
                         const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
                         if(!interactedNode) continue; 
-                        const index = player.visitedLogs.indexOf(visitedLogsGraph);
+                        index = player.visitedLogs.indexOf(visitedLogsGraph);
+                        console.warn(index);
                         if(index === -1) continue;
                         inspectedTree = player.visitedLogs[index];
                         break;
                     }
                     if(!inspectedTree) return;
+                    console.warn("BEOFRE: ", inspectedTree.visitedLogs.source.getSize());
                     for(const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
                         if(blockOutline?.isValid()) {
                             blockOutline.setProperty('yn:stay_persistent', true);
@@ -155,25 +150,29 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         z -= 0.5;
                         inspectedTree.visitedLogs.source.removeNode({x, y, z});
                     }
-        
-                    let isInSameNeighbor = false;
-                    inspectedTree.visitedLogs.source.dfsIterative(blockInteracted.location, (node) => {
-                        const inspectedNode = inspectedTree.visitedLogs.source.getNode(inspectedTree.initialInteraction);
-                        if(inspectedNode){
-                            if(node.neighbors.has(inspectedNode)) isInSameNeighbor = true;
+
+                    const tempResult: VisitedBlockResult = {blockOutlines: [], source: new Graph()};
+                    let size = 0;
+
+                    // It doesn't work when you inspect from a specific location, and break the location, and inspect to others.
+
+                    // Traverse the first node in graeph
+                    inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
+                        if(node) {
+                            tempResult.source.addNode(node);
+                            size++;
                         }
-                        if(node) size++;
                     });
-                    console.warn(inspectedTree.visitedLogs.source.getSize());
-                    // if(!isInSameNeighbor) {
-                    //     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs, false);
-                    //     const result: InteractedTreeResult = {initialInteraction: blockInteracted.location, visitedLogs: treeCollectedResult, isBeingInspected: false};
-                    //     player.visitedLogs.push(result);
-                    //     system.runTimeout(() => {
-                    //         resetOutlinedTrees(player, result);
-                    //     }, blockOutlinesDespawnTimer * TicksPerSecond);
-                    //     size = treeCollectedResult.source.getSize();
-                    // }
+                    player.visitedLogs.push({
+                        initialInteraction: blockInteracted.location, 
+                        isBeingInspected: false, 
+                        visitedLogs: {
+                            source: tempResult.source,
+                            blockOutlines: inspectedTree.visitedLogs.blockOutlines
+                        }
+                    });
+
+                    console.warn(inspectedTree.visitedLogs.source.getSize(), tempResult.source.getSize(), size);
                     const totalDamage: number = size * unbreakingDamage;
                     const totalDurabilityConsumed: number = currentDurability + totalDamage;
                     const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
@@ -256,7 +255,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
 });
 
 function resetOutlinedTrees(player: Player, result: InteractedTreeResult) {
-    // Shoud check if "this" tree is being inspected or not.
+    // Shoud check if "this" tree is being inspected or not. 
+    // So, it should continue despawning those that aren't inspected.
     let shouldDespawn = false;
     for(const blockOutline of result.visitedLogs.blockOutlines) {
         if(!blockOutline?.isValid()) continue;

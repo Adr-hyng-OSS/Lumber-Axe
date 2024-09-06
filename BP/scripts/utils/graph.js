@@ -17,14 +17,21 @@ export class Graph {
     getNode(location) {
         return this.nodes.get(this.serializeLocation(location));
     }
-    addNode(location) {
-        const key = this.serializeLocation(location);
-        let node = this.nodes.get(key);
-        if (!node) {
-            node = new GraphNode(location);
-            this.nodes.set(key, node);
+    addNode(param) {
+        if (param instanceof GraphNode) {
+            const key = this.serializeLocation(param.location);
+            this.nodes.set(key, param);
+            return;
         }
-        return node;
+        else {
+            const key = this.serializeLocation(param);
+            let node = this.nodes.get(key);
+            if (!node) {
+                node = new GraphNode(param);
+                this.nodes.set(key, node);
+            }
+            return node;
+        }
     }
     removeNode(location) {
         const key = this.serializeLocation(location);
@@ -43,54 +50,21 @@ export class Graph {
     getSize() {
         return this.nodes.size;
     }
-    bfs(startLocation, visit) {
+    traverse(startLocation, traversalType = "DFS", visit) {
         const startNode = this.getNode(startLocation);
         if (!startNode) {
             return;
         }
         const visited = new Set();
-        const queue = [startNode];
-        while (queue.length > 0) {
-            const node = queue.shift();
+        const toVisit = [startNode];
+        while (toVisit.length > 0) {
+            const node = traversalType === "DFS" ? toVisit.pop() : toVisit.shift();
             if (!visited.has(node)) {
                 visit(node);
                 visited.add(node);
                 node.neighbors.forEach(neighbor => {
                     if (!visited.has(neighbor)) {
-                        queue.push(neighbor);
-                    }
-                });
-            }
-        }
-    }
-    dfsRecursive(startLocation, visit, visited = new Set()) {
-        const startNode = this.getNode(startLocation);
-        if (!startNode || visited.has(startNode)) {
-            return;
-        }
-        visit(startNode);
-        visited.add(startNode);
-        startNode.neighbors.forEach(neighbor => {
-            if (!visited.has(neighbor)) {
-                this.dfsRecursive(neighbor.location, visit, visited);
-            }
-        });
-    }
-    dfsIterative(startLocation, visit) {
-        const startNode = this.getNode(startLocation);
-        if (!startNode) {
-            return;
-        }
-        const visited = new Set();
-        const stack = [startNode];
-        while (stack.length > 0) {
-            const node = stack.pop();
-            if (!visited.has(node)) {
-                visit(node);
-                visited.add(node);
-                node.neighbors.forEach(neighbor => {
-                    if (!visited.has(neighbor)) {
-                        stack.push(neighbor);
+                        toVisit.push(neighbor);
                     }
                 });
             }
