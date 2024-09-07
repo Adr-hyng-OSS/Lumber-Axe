@@ -35,8 +35,8 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
                 const block: Block = queue.shift();
                 const pos = block.location;
 
-                const node = graph.getNode(pos);
-                if (!node) continue;
+                const mainNode = graph.getNode(pos);
+                if (!mainNode) continue;
 
                 if (shouldSpawnOutline) {
                     const outline = dimension.spawnEntity('yn:block_outline', { x: pos.x + 0.5, y: pos.y, z: pos.z + 0.5 });
@@ -47,44 +47,33 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
                 yield;
 
                 // First, gather all valid neighbors
-                const neighborNodes: GraphNode[] = [];
                 for (const neighborBlock of getBlockNear(dimension, block.location)) {
                     if (!neighborBlock?.isValid() || !isLogIncluded(neighborBlock?.typeId)) continue;
                     if (neighborBlock.typeId !== blockTypeId) continue;
 
                     const serializedLocation = JSON.stringify(neighborBlock.location);
-
-                    // Check if the neighbor node has already been visited
-                    if (visited.has(serializedLocation)) continue;
-
+                    
                     let neighborNode = graph.getNode(neighborBlock.location);
                     if (!neighborNode) {
                         neighborNode = graph.addNode(neighborBlock.location);
                     }
-
+                    
+                    // It should check if this neighbor of main node is already a neighbor, if yes, then continue.
+                    if(mainNode.neighbors.has(neighborNode)) continue;
+                    
                     // Connect the current node to its neighbor
-                    node.addNeighbor(neighborNode);
-                    neighborNode.addNeighbor(node);
+                    mainNode.addNeighbor(neighborNode);
+                    neighborNode.addNeighbor(mainNode);
 
-                    neighborNodes.push(neighborNode);  // Store the valid neighbor nodes
+                    // Check if the neighbor node has already been visited
+                    if (visited.has(serializedLocation)) continue;
 
+                    
                     // Mark this neighbor as visited and add to the queue for further processing
                     visited.add(serializedLocation);
                     queue.push(neighborBlock);
                     yield;
                 }
-
-                // Now, connect all the neighbors of this node to each other
-                for (let i = 0; i < neighborNodes.length; i++) {
-                    for (let j = i + 1; j < neighborNodes.length; j++) {
-                        const nodeA = neighborNodes[i];
-                        const nodeB = neighborNodes[j];
-                        // Ensure they are connected to each other
-                        nodeA.addNeighbor(nodeB);
-                        nodeB.addNeighbor(nodeA);
-                    }
-                }
-
                 yield;
             }
 

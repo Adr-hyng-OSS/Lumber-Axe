@@ -28,8 +28,8 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
                 }
                 const block = queue.shift();
                 const pos = block.location;
-                const node = graph.getNode(pos);
-                if (!node)
+                const mainNode = graph.getNode(pos);
+                if (!mainNode)
                     continue;
                 if (shouldSpawnOutline) {
                     const outline = dimension.spawnEntity('yn:block_outline', { x: pos.x + 0.5, y: pos.y, z: pos.z + 0.5 });
@@ -37,33 +37,25 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
                     blockOutlines.push(outline);
                 }
                 yield;
-                const neighborNodes = [];
                 for (const neighborBlock of getBlockNear(dimension, block.location)) {
                     if (!neighborBlock?.isValid() || !isLogIncluded(neighborBlock?.typeId))
                         continue;
                     if (neighborBlock.typeId !== blockTypeId)
                         continue;
                     const serializedLocation = JSON.stringify(neighborBlock.location);
-                    if (visited.has(serializedLocation))
-                        continue;
                     let neighborNode = graph.getNode(neighborBlock.location);
                     if (!neighborNode) {
                         neighborNode = graph.addNode(neighborBlock.location);
                     }
-                    node.addNeighbor(neighborNode);
-                    neighborNode.addNeighbor(node);
-                    neighborNodes.push(neighborNode);
+                    if (mainNode.neighbors.has(neighborNode))
+                        continue;
+                    mainNode.addNeighbor(neighborNode);
+                    neighborNode.addNeighbor(mainNode);
+                    if (visited.has(serializedLocation))
+                        continue;
                     visited.add(serializedLocation);
                     queue.push(neighborBlock);
                     yield;
-                }
-                for (let i = 0; i < neighborNodes.length; i++) {
-                    for (let j = i + 1; j < neighborNodes.length; j++) {
-                        const nodeA = neighborNodes[i];
-                        const nodeB = neighborNodes[j];
-                        nodeA.addNeighbor(nodeB);
-                        nodeB.addNeighbor(nodeA);
-                    }
                 }
                 yield;
             }

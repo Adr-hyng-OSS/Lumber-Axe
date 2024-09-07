@@ -2,6 +2,7 @@ import { EntityComponentTypes, ItemStack } from "@minecraft/server";
 import { CommandHandler } from "commands/command_handler";
 import { SendMessageTo } from "utils/utilities";
 import { axeEquipments } from "constant";
+import { Vec3 } from "utils/VectorUtils";
 var REQUIRED_PARAMETER;
 (function (REQUIRED_PARAMETER) {
     REQUIRED_PARAMETER["GET"] = "get";
@@ -43,12 +44,29 @@ const command = {
             case REQUIRED_PARAMETER.TEST:
                 let inspectedTree;
                 let blockInteracted = player.getBlockFromViewDirection({ maxDistance: 50 }).block;
-                const outline = player.dimension.getEntities({ closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter() })[0];
-                console.warn("PRE': ", outline.getProperty("yn:stay_persistent"));
-                outline.setProperty("yn:stay_persistent", !outline.getProperty("yn:stay_persistent"));
-                console.warn("POST: ", outline.getProperty("yn:stay_persistent"));
+                if (!player.visitedLogs.length)
+                    return;
+                for (const visitedLogsGraph of player.visitedLogs) {
+                    const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
+                    if (!interactedNode)
+                        continue;
+                    const index = player.visitedLogs.indexOf(visitedLogsGraph);
+                    console.warn(index);
+                    if (index === -1)
+                        continue;
+                    inspectedTree = player.visitedLogs[index];
+                    break;
+                }
                 if (!inspectedTree)
                     return;
+                inspectedTree.visitedLogs.source.traverse((blockInteracted.location), "BFS", (node) => {
+                    console.info(`Root: ${(JSON.stringify(node.location))} ->`);
+                    node.neighbors.forEach((n) => {
+                        const d = Vec3.distance(node.location, n.location);
+                        console.info(`Neigbor: ${(JSON.stringify(n.location))}`);
+                    });
+                    console.info("\n");
+                });
                 break;
             default:
                 break;

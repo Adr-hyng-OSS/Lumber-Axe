@@ -33,49 +33,6 @@ import { Graph } from 'utils/graph';
 //   }
 // });
 
-world.beforeEvents.playerBreakBlock.subscribe((e) => {
-  const player = e.player;
-  const blockInteracted = e.block;
-  const location = JSON.parse(JSON.stringify(e.block.location));
-  let inspectedTree: InteractedTreeResult;
-  let index = 0;
-  console.warn(JSON.stringify(blockInteracted.bottomCenter()));
-  for(const visitedLogsGraph of player.visitedLogs) {
-      const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
-      if(!interactedNode) continue; 
-      index = player.visitedLogs.indexOf(visitedLogsGraph);
-      if(index === -1) continue;
-      inspectedTree = player.visitedLogs[index];
-      break;
-  }
-  if(!inspectedTree) return;
-  // for(const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
-  //   if(blockOutline?.isValid()) continue;
-  //   let {x, y, z} = blockOutline.lastLocation;
-  //   x -= 0.5;
-  //   z -= 0.5;
-  //   console.warn(JSON.stringify({x, y, z}));
-  //   console.warn(JSON.stringify(inspectedTree.visitedLogs.source.getNode({x, y, z}).location))
-  //   inspectedTree.visitedLogs.source.removeNode({x, y, z});
-  // }
-
-  // const tempResult: VisitedBlockResult = {blockOutlines: [], source: new Graph()};
-
-  //! It doesn't work when you inspect from a specific location, and break the location, and inspect to others.
-
-  // Traverse the interacted block to validate the remaining nodes, if something was removed.
-  console.warn("BEFORE: ", inspectedTree.visitedLogs.source.getSize());
-  inspectedTree.visitedLogs.source.removeNode(location); // with 0.5 deducted
-  console.warn("AFTER: ", inspectedTree.visitedLogs.source.getSize(), player.visitedLogs[index].visitedLogs.source.getSize());
-  inspectedTree.visitedLogs.source.traverse({x: -3124, y: 63, z: 1750}, "BFS", (node) => {
-      if(node) {
-          console.warn(JSON.stringify(node.location));
-      } 
-  });
-  // system.runTimeout(() => {
-  // }, 10);
-});
-
 world.afterEvents.playerSpawn.subscribe((e) => {
     if(!e.initialSpawn) return;
     if(!serverConfigurationCopy.ShowMessageUponJoin.defaultValue) return; 
