@@ -135,6 +135,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             });
         });
 
+        if(size-1 < 0) return;
         system.runTimeout( () => {
             for (const group of stackDistribution(size-1)) {
                 system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
@@ -148,7 +149,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         if (!axeEquipments.includes(currentHeldAxe.typeId) || !isLogIncluded(blockInteracted.typeId)) return;
         const oldLog = playerInteractedTimeLogMap.get(player.id);
         playerInteractedTimeLogMap.set(player.id, system.currentTick);
-        if ((oldLog + 2) >= system.currentTick) return;
+        if ((oldLog + 5) >= system.currentTick) return;
         const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
         const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
         const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
@@ -169,13 +170,11 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
                         if(!interactedNode) continue; 
                         index = player.visitedLogs.indexOf(visitedLogsGraph);
-                        console.warn(index);
                         if(index === -1) continue;
                         inspectedTree = player.visitedLogs[index];
                         break;
                     }
                     if(!inspectedTree) return;
-                    console.warn("BEOFRE: ", inspectedTree.visitedLogs.source.getSize());
                     for(const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
                         if(blockOutline?.isValid()) {
                             blockOutline.setProperty('yn:stay_persistent', true);
@@ -188,16 +187,14 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     }
 
                     const tempResult: VisitedBlockResult = {blockOutlines: [], source: new Graph()};
-                    let size = 0;
 
                     //! It doesn't work when you inspect from a specific location, and break the location, and inspect to others.
 
-                    // Traverse the first node in graeph
+                    // Traverse the interacted block to validate the remaining nodes, if something was removed.
                     inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
                         if(node) {
                             tempResult.source.addNode(node);
-                            size++;
-                        }
+                        } 
                     });
                     player.visitedLogs.push({
                         initialInteraction: blockInteracted.location, 
@@ -208,7 +205,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         }
                     });
 
-                    console.warn(inspectedTree.visitedLogs.source.getSize(), tempResult.source.getSize(), size);
+                    const size = tempResult.source.getSize();
                     const totalDamage: number = size * unbreakingDamage;
                     const totalDurabilityConsumed: number = currentDurability + totalDamage;
                     const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);

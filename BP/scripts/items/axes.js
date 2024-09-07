@@ -111,6 +111,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
                 });
             });
+            if (size - 1 < 0)
+                return;
             system.runTimeout(() => {
                 for (const group of stackDistribution(size - 1)) {
                     system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
@@ -125,7 +127,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 return;
             const oldLog = playerInteractedTimeLogMap.get(player.id);
             playerInteractedTimeLogMap.set(player.id, system.currentTick);
-            if ((oldLog + 2) >= system.currentTick)
+            if ((oldLog + 5) >= system.currentTick)
                 return;
             const itemDurability = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId);
             const enchantments = currentHeldAxe.getComponent(ItemEnchantableComponent.componentId);
@@ -146,7 +148,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             if (!interactedNode)
                                 continue;
                             index = player.visitedLogs.indexOf(visitedLogsGraph);
-                            console.warn(index);
                             if (index === -1)
                                 continue;
                             inspectedTree = player.visitedLogs[index];
@@ -154,7 +155,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         }
                         if (!inspectedTree)
                             return;
-                        console.warn("BEOFRE: ", inspectedTree.visitedLogs.source.getSize());
                         for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
                             if (blockOutline?.isValid()) {
                                 blockOutline.setProperty('yn:stay_persistent', true);
@@ -166,11 +166,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             inspectedTree.visitedLogs.source.removeNode({ x, y, z });
                         }
                         const tempResult = { blockOutlines: [], source: new Graph() };
-                        let size = 0;
                         inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
                             if (node) {
                                 tempResult.source.addNode(node);
-                                size++;
                             }
                         });
                         player.visitedLogs.push({
@@ -181,7 +179,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                                 blockOutlines: inspectedTree.visitedLogs.blockOutlines
                             }
                         });
-                        console.warn(inspectedTree.visitedLogs.source.getSize(), tempResult.source.getSize(), size);
+                        const size = tempResult.source.getSize();
                         const totalDamage = size * unbreakingDamage;
                         const totalDurabilityConsumed = currentDurability + totalDamage;
                         const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
