@@ -48,13 +48,15 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 location: blockInteracted.bottomCenter()
             })[0];
             let visited;
-            let inspectedTree;
+            let destroyedTree = { initialInteraction: blockInteracted.location, isBeingInspected: false, visitedLogs: { blockOutlines: [], source: new Graph() } };
             if (blockOutline) {
+                let inspectedTree;
+                let index = 0;
                 for (const visitedLogsGraph of player.visitedLogs) {
                     const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
                     if (!interactedNode)
                         continue;
-                    const index = player.visitedLogs.indexOf(visitedLogsGraph);
+                    index = player.visitedLogs.indexOf(visitedLogsGraph);
                     if (index === -1)
                         continue;
                     inspectedTree = player.visitedLogs[index];
@@ -62,7 +64,26 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 }
                 if (!inspectedTree)
                     return;
-                visited = inspectedTree.visitedLogs.source;
+                destroyedTree.visitedLogs.blockOutlines = inspectedTree.visitedLogs.blockOutlines;
+                inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
+                    destroyedTree.visitedLogs.source.addNode(node);
+                });
+                for (const blockOutline of destroyedTree.visitedLogs.blockOutlines) {
+                    if (blockOutline?.isValid())
+                        continue;
+                    let { x, y, z } = blockOutline.lastLocation;
+                    x -= 0.5;
+                    z -= 0.5;
+                    destroyedTree.visitedLogs.source.removeNode({ x, y, z });
+                }
+                const tempResult = { blockOutlines: [], source: new Graph() };
+                destroyedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
+                    if (node)
+                        tempResult.source.addNode(node);
+                });
+                tempResult.source.removeNode(blockOutline.lastLocation);
+                destroyedTree.visitedLogs = tempResult;
+                visited = tempResult.source;
             }
             else {
                 visited = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, true)).source;
@@ -84,13 +105,14 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 currentHeldAxe.lockMode = ItemLockMode.none;
                 equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
             }
-            if (inspectedTree)
-                player.visitedLogs.splice(player.visitedLogs.indexOf(inspectedTree));
             visited.traverse(location, "BFS", (node) => {
-                system.run(() => dimension.setBlockType(node.location, MinecraftBlockTypes.Air));
+                system.run(() => {
+                    if (node)
+                        dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
+                });
             });
             system.runTimeout(() => {
-                for (const group of stackDistribution(size)) {
+                for (const group of stackDistribution(size - 1)) {
                     system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
                 }
             }, 5);

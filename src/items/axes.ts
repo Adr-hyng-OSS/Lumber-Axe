@@ -1,4 +1,4 @@
-import { Block, BlockPermutation, Entity, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, system, TicksPerSecond, world } from "@minecraft/server";
+import { Block, BlockPermutation, Entity, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, PlayerBreakBlockAfterEvent, system, TicksPerSecond, world } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
 import { axeEquipments, forceShow, getTreeLogs, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, serverConfigurationCopy, stackDistribution, VisitedBlockResult } from "index"
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
@@ -51,18 +51,53 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             location: blockInteracted.bottomCenter()
         })[0];
         let visited: Graph;
-        let inspectedTree: InteractedTreeResult;
+        
+        // This should be the temporary container where it doesn't copy the reference from the original player's visitedNodes.
+        let destroyedTree :InteractedTreeResult = {initialInteraction: blockInteracted.location, isBeingInspected: false, visitedLogs: {blockOutlines: [], source: new Graph()}};
         if(blockOutline) {
+            // It copies the reference from the array. So, if you change something
+            // It changes the array's content also.
+            let inspectedTree: InteractedTreeResult; 
+            let index = 0;
             for(const visitedLogsGraph of player.visitedLogs) {
                 const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
                 if(!interactedNode) continue; 
-                const index = player.visitedLogs.indexOf(visitedLogsGraph);
+                index = player.visitedLogs.indexOf(visitedLogsGraph);
                 if(index === -1) continue;
                 inspectedTree = player.visitedLogs[index];
                 break;
             }
+
+            
             if(!inspectedTree) return;
-            visited = inspectedTree.visitedLogs.source;
+            
+            // Copy the inspected trees's content, so it doesn't copy it's reference.
+            destroyedTree.visitedLogs.blockOutlines = inspectedTree.visitedLogs.blockOutlines;
+            inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
+                destroyedTree.visitedLogs.source.addNode(node);
+            });
+
+            // Remove some invalid nodes, and just keep the remaining ones.
+            for(const blockOutline of destroyedTree.visitedLogs.blockOutlines) {
+                if(blockOutline?.isValid()) continue;
+                let {x, y, z} = blockOutline.lastLocation;
+                x -= 0.5;
+                z -= 0.5;
+                destroyedTree.visitedLogs.source.removeNode({x, y, z});
+            }
+
+            // Instead of just making it the existing or selected, just traverse first if there's some invalid branch connections.
+            const tempResult: VisitedBlockResult = {blockOutlines: [], source: new Graph()};
+
+            // Traverse the first node in graph, for final checking what's the valid ones, and what's remaining.
+            destroyedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
+                if(node) tempResult.source.addNode(node);
+            });
+            
+            // Remove the already broken block. Don't count that.
+            tempResult.source.removeNode(blockOutline.lastLocation);
+            destroyedTree.visitedLogs = tempResult;
+            visited = tempResult.source;
         } else {
             visited = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, true) as VisitedBlockResult).source;
         }
@@ -82,7 +117,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
         }
 
-        if(inspectedTree) player.visitedLogs.splice(player.visitedLogs.indexOf(inspectedTree));
         //! Use this when fillBlocks is in stable. (Not applicable but can be good to be refactored to graph-based)
         // for (const group of groupAdjacentBlocks(visited)) {
         //     const firstElement = JSON.parse(group[0]);
@@ -96,11 +130,13 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         // }
 
         visited.traverse(location, "BFS", (node) => {
-            system.run(() => dimension.setBlockType(node.location, MinecraftBlockTypes.Air));
+            system.run(() => {
+                if(node) dimension.setBlockType(node.location, MinecraftBlockTypes.Air)
+            });
         });
 
         system.runTimeout( () => {
-            for (const group of stackDistribution(size)) {
+            for (const group of stackDistribution(size-1)) {
                 system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
             }
         }, 5);
@@ -154,7 +190,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const tempResult: VisitedBlockResult = {blockOutlines: [], source: new Graph()};
                     let size = 0;
 
-                    // It doesn't work when you inspect from a specific location, and break the location, and inspect to others.
+                    //! It doesn't work when you inspect from a specific location, and break the location, and inspect to others.
 
                     // Traverse the first node in graeph
                     inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {

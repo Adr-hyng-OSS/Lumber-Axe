@@ -1,5 +1,11 @@
 import { Vector3 } from "@minecraft/server";
 
+/**
+ * Reminder:
+ * - Make this generic or for block or entity class, instead of just storing vectors only.
+ * 
+*/
+
 export class GraphNode {
   public location: Vector3;
   public neighbors: Set<GraphNode>;
