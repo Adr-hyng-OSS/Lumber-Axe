@@ -1,4 +1,4 @@
-import { Block, BlockPermutation, Entity, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, PlayerBreakBlockAfterEvent, system, TicksPerSecond, world } from "@minecraft/server";
+import { Block, BlockPermutation, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, system, TicksPerSecond, world } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
 import { axeEquipments, forceShow, getTreeLogs, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, serverConfigurationCopy, stackDistribution, VisitedBlockResult } from "index"
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
@@ -53,7 +53,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         let visited: Graph;
         
         // This should be the temporary container where it doesn't copy the reference from the original player's visitedNodes.
-        let destroyedTree :InteractedTreeResult = {initialInteraction: blockInteracted.location, isBeingInspected: false, visitedLogs: {blockOutlines: [], source: new Graph()}};
+        let destroyedTree :InteractedTreeResult = {initialInteraction: blockInteracted.location, isDoneTraversing: false, visitedLogs: {blockOutlines: [], source: new Graph()}};
         if(blockOutline) {
             // It copies the reference from the array. So, if you change something
             // It changes the array's content also.
@@ -166,6 +166,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 if(blockOutline?.isValid()) {
                     let inspectedTree: InteractedTreeResult;
                     let index = 0;
+                    if(!player.visitedLogs) return;
                     for(const visitedLogsGraph of player.visitedLogs) {
                         const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
                         if(!interactedNode) continue; 
@@ -174,7 +175,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         inspectedTree = player.visitedLogs[index];
                         break;
                     }
-                    if(!inspectedTree) return;
+                    if(!inspectedTree || !inspectedTree?.isDoneTraversing) {
+                        console.warn("Not done yet");
+                        return;
+                    }
                     for(const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
                         if(blockOutline?.isValid()) {
                             blockOutline.setProperty('yn:stay_persistent', true);
@@ -198,7 +202,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     });
                     player.visitedLogs.push({
                         initialInteraction: blockInteracted.location, 
-                        isBeingInspected: false, 
+                        isDoneTraversing: true, 
                         visitedLogs: {
                             source: tempResult.source,
                             blockOutlines: inspectedTree.visitedLogs.blockOutlines
@@ -273,7 +277,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 } else {
                     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                     player.visitedLogs = player.visitedLogs ?? [];
-                    const result: InteractedTreeResult = {initialInteraction: blockInteracted.location, visitedLogs: treeCollectedResult, isBeingInspected: false};
+                    const result: InteractedTreeResult = {initialInteraction: blockInteracted.location, visitedLogs: treeCollectedResult, isDoneTraversing: true};
                     player.visitedLogs.push(result);
                     system.runTimeout(() => {
                         resetOutlinedTrees(player, result);

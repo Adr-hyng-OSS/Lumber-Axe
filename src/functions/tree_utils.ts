@@ -14,12 +14,14 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
     return new Promise<VisitedBlockResult>((resolve) => {
         const graph = new Graph();
         const blockOutlines: Entity[] = [];
+
         let queue: Block[] = [];
         const visited = new Set<string>(); // To track visited locations
+
         const firstBlock = dimension.getBlock(location);
         queue.push(firstBlock);
         graph.addNode(firstBlock.location);
-        visited.add(JSON.stringify(firstBlock.location)); // Mark as visited
+        visited.add(JSON.stringify(firstBlock.location)); // Mark a+s visited
 
         const traversingTreeInterval: number = system.runJob(function* () {
             while (queue.length > 0) {
@@ -39,11 +41,10 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
                 if (!mainNode) continue;
 
                 if (shouldSpawnOutline) {
-                    const outline = dimension.spawnEntity('yn:block_outline', { x: pos.x + 0.5, y: pos.y, z: pos.z + 0.5 });
+                    const outline = dimension.spawnEntity('yn:block_outline', { x: block.location.x + 0.5, y: block.location.y, z: block.location.z + 0.5 });
                     outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
                     blockOutlines.push(outline);
                 }
-
                 yield;
 
                 // First, gather all valid neighbors
@@ -67,7 +68,6 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
 
                     // Check if the neighbor node has already been visited
                     if (visited.has(serializedLocation)) continue;
-
                     
                     // Mark this neighbor as visited and add to the queue for further processing
                     visited.add(serializedLocation);

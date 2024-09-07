@@ -32,7 +32,7 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
                 if (!mainNode)
                     continue;
                 if (shouldSpawnOutline) {
-                    const outline = dimension.spawnEntity('yn:block_outline', { x: pos.x + 0.5, y: pos.y, z: pos.z + 0.5 });
+                    const outline = dimension.spawnEntity('yn:block_outline', { x: block.location.x + 0.5, y: block.location.y, z: block.location.z + 0.5 });
                     outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
                     blockOutlines.push(outline);
                 }

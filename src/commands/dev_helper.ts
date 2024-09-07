@@ -71,7 +71,6 @@ const command: ICommandBase = {
                 inspectedTree.visitedLogs.source.traverse((blockInteracted.location), "BFS", (node) =>{
                     console.info(`Root: ${(JSON.stringify(node.location))} ->`);
                     node.neighbors.forEach((n) => {
-                        const d = Vec3.distance(node.location, n.location);
                         console.info(`Neigbor: ${(JSON.stringify(n.location))}`);
                     });
                     console.info("\n");

@@ -1,37 +1,7 @@
-import { world, PlayerLeaveAfterEvent, ItemTypes, ScriptEventCommandMessageAfterEvent, system, ScriptEventSource, Player } from '@minecraft/server';
-import { ADDON_IDENTIFIER, InteractedTreeResult, playerInteractionMap, SendMessageTo, serverConfigurationCopy, VisitedBlockResult} from "./index"
+import { world, PlayerLeaveAfterEvent, ScriptEventCommandMessageAfterEvent, system, ScriptEventSource, Player } from '@minecraft/server';
+import { ADDON_IDENTIFIER, playerInteractionMap, SendMessageTo, serverConfigurationCopy} from "./index"
 import { Logger } from 'utils/logger';
 import './items/axes';
-import { Graph } from 'utils/graph';
-
-// system.beforeEvents.watchdogTerminate.subscribe((e: WatchdogTerminateBeforeEvent) => {
-//     e.cancel = true;
-//     if(e.terminateReason === WatchdogTerminateReason.Hang){
-//         for(const key of playerInteractionMap.keys()) {
-//             playerInteractionMap.set(key, false);
-//         }
-//         if(!disableWatchDogTerminateLog) world.sendMessage({
-//             rawtext: [
-//             {
-//                 translate: "LumberAxe.watchdogError.hang.text"
-//             }
-//         ]});
-//         if(disableWatchDogTerminateLog) console.warn(`Scripting Error: Try chopping or inspecting smaller trees or different angle.`);
-//     }
-//     console.warn(`Watchdog Error: ${(e.terminateReason as WatchdogTerminateReason)}`)
-// });
-
-// world.beforeEvents.playerBreakBlock.subscribe((e) => {
-//   const player = e.player;
-//   const blockInteracted = e.block;
-//   const blockOutlines = player.dimension.getEntities({closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter()});
-//   if(blockOutlines.length && blockOutlines[0]?.isValid()) {
-//     system.runTimeout(() => {
-//       blockOutlines[0].addEffect(MinecraftEffectTypes.Invisibility, 2);
-//       blockOutlines[0].triggerEvent('despawn');
-//     }, 0);
-//   }
-// });
 
 world.afterEvents.playerSpawn.subscribe((e) => {
     if(!e.initialSpawn) return;

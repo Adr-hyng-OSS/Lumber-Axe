@@ -65,10 +65,20 @@
 					"triggers": [
 						{
 							"event": "despawn",
-							"filters": {
-								"test": "in_block",
-								"value": "minecraft:air"
-							}
+							"filters": [
+								{
+									"all_of": [
+										{
+											"test": "in_block",
+											"value": "minecraft:air"
+										}
+										// {
+										// 	"test": "inactivity_timer",
+										// 	"value": 1
+										// }
+									]
+								}
+							]
 						},
 						{
 							"event": "stay_persistent",

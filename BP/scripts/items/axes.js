@@ -48,7 +48,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 location: blockInteracted.bottomCenter()
             })[0];
             let visited;
-            let destroyedTree = { initialInteraction: blockInteracted.location, isBeingInspected: false, visitedLogs: { blockOutlines: [], source: new Graph() } };
+            let destroyedTree = { initialInteraction: blockInteracted.location, isDoneTraversing: false, visitedLogs: { blockOutlines: [], source: new Graph() } };
             if (blockOutline) {
                 let inspectedTree;
                 let index = 0;
@@ -143,6 +143,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     if (blockOutline?.isValid()) {
                         let inspectedTree;
                         let index = 0;
+                        if (!player.visitedLogs)
+                            return;
                         for (const visitedLogsGraph of player.visitedLogs) {
                             const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
                             if (!interactedNode)
@@ -153,8 +155,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             inspectedTree = player.visitedLogs[index];
                             break;
                         }
-                        if (!inspectedTree)
+                        if (!inspectedTree || !inspectedTree?.isDoneTraversing) {
+                            console.warn("Not done yet");
                             return;
+                        }
                         for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
                             if (blockOutline?.isValid()) {
                                 blockOutline.setProperty('yn:stay_persistent', true);
@@ -173,7 +177,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         });
                         player.visitedLogs.push({
                             initialInteraction: blockInteracted.location,
-                            isBeingInspected: false,
+                            isDoneTraversing: true,
                             visitedLogs: {
                                 source: tempResult.source,
                                 blockOutlines: inspectedTree.visitedLogs.blockOutlines
@@ -250,7 +254,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     else {
                         const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                         player.visitedLogs = player.visitedLogs ?? [];
-                        const result = { initialInteraction: blockInteracted.location, visitedLogs: treeCollectedResult, isBeingInspected: false };
+                        const result = { initialInteraction: blockInteracted.location, visitedLogs: treeCollectedResult, isDoneTraversing: true };
                         player.visitedLogs.push(result);
                         system.runTimeout(() => {
                             resetOutlinedTrees(player, result);

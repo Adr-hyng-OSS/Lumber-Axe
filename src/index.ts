@@ -19,5 +19,5 @@ export type VisitedBlockResult = {
 export type InteractedTreeResult = {
   initialInteraction: Vector3;
   visitedLogs: VisitedBlockResult;
-  isBeingInspected: boolean;
+  isDoneTraversing: boolean;
 }
