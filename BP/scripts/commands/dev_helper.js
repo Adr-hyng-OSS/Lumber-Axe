@@ -43,28 +43,6 @@ const command = {
             case REQUIRED_PARAMETER.TEST:
                 let inspectedTree;
                 let blockInteracted = player.getBlockFromViewDirection({ maxDistance: 50 }).block;
-                if (!player.visitedLogs.length)
-                    return;
-                for (const visitedLogsGraph of player.visitedLogs) {
-                    const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
-                    if (!interactedNode)
-                        continue;
-                    const index = player.visitedLogs.indexOf(visitedLogsGraph);
-                    console.warn(index);
-                    if (index === -1)
-                        continue;
-                    inspectedTree = player.visitedLogs[index];
-                    break;
-                }
-                if (!inspectedTree)
-                    return;
-                inspectedTree.visitedLogs.source.traverse((blockInteracted.location), "BFS", (node) => {
-                    console.info(`Root: ${(JSON.stringify(node.location))} ->`);
-                    node.neighbors.forEach((n) => {
-                        console.info(`Neigbor: ${(JSON.stringify(n.location))}`);
-                    });
-                    console.info("\n");
-                });
                 break;
             default:
                 break;

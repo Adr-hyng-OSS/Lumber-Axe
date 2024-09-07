@@ -70,4 +70,41 @@ export class Graph {
             }
         }
     }
+    isEqual(otherGraph) {
+        if (this.getSize() !== otherGraph.getSize()) {
+            return false;
+        }
+        for (const [locationKey, node] of this.nodes) {
+            const otherNode = otherGraph.nodes.get(locationKey);
+            if (!otherNode) {
+                return false;
+            }
+            if (node.neighbors.size !== otherNode.neighbors.size) {
+                return false;
+            }
+            for (const neighbor of node.neighbors) {
+                const otherNeighbor = otherGraph.getNode(neighbor.location);
+                if (!otherNeighbor || !otherNode.neighbors.has(otherNeighbor)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    toJSON() {
+        const serializedNodes = {};
+        const sortedNodeEntries = Array.from(this.nodes.entries()).sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
+        sortedNodeEntries.forEach(([key, node]) => {
+            const sortedNeighbors = Array.from(node.neighbors)
+                .map(neighbor => this.serializeLocation(neighbor.location))
+                .sort((a, b) => a.localeCompare(b));
+            serializedNodes[key] = {
+                location: node.location,
+                neighbors: sortedNeighbors
+            };
+        });
+        return {
+            nodes: serializedNodes
+        };
+    }
 }

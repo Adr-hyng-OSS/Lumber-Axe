@@ -5,7 +5,7 @@ import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-
 import { Logger } from "utils/logger";
 import "classes/player";
 import { Graph } from "utils/graph";
-const blockOutlinesDespawnTimer = 10;
+const blockOutlinesDespawnTimer = 5;
 world.beforeEvents.worldInitialize.subscribe((registry) => {
     registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
         onHitEntity(arg) {
@@ -48,7 +48,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 location: blockInteracted.bottomCenter()
             })[0];
             let visited;
-            let destroyedTree = { initialInteraction: blockInteracted.location, isDoneTraversing: false, visitedLogs: { blockOutlines: [], source: new Graph() } };
+            let destroyedTree = { isDoneTraversing: false, visitedLogs: { blockOutlines: [], source: new Graph() } };
             if (blockOutline) {
                 let inspectedTree;
                 let index = 0;
@@ -161,7 +161,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         }
                         for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
                             if (blockOutline?.isValid()) {
-                                blockOutline.setProperty('yn:stay_persistent', true);
                                 continue;
                             }
                             let { x, y, z } = blockOutline.lastLocation;
@@ -175,14 +174,20 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                                 tempResult.source.addNode(node);
                             }
                         });
-                        player.visitedLogs.push({
-                            initialInteraction: blockInteracted.location,
+                        const newResult = {
                             isDoneTraversing: true,
                             visitedLogs: {
                                 source: tempResult.source,
                                 blockOutlines: inspectedTree.visitedLogs.blockOutlines
                             }
-                        });
+                        };
+                        const alreadyExists = player.visitedLogs.findIndex((result) => JSON.stringify(result) === JSON.stringify(newResult));
+                        if (alreadyExists === -1) {
+                            player.visitedLogs.push(newResult);
+                        }
+                        else {
+                            player.visitedLogs[alreadyExists] = newResult;
+                        }
                         const size = tempResult.source.getSize();
                         const totalDamage = size * unbreakingDamage;
                         const totalDurabilityConsumed = currentDurability + totalDamage;
@@ -240,11 +245,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         }, "textures/InfoUI/canBeCut.png");
                         forceShow(player, inspectionForm).then((response) => {
                             if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
-                                for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
-                                    if (!blockOutline?.isValid())
-                                        continue;
-                                    blockOutline.setProperty('yn:stay_persistent', false);
-                                }
+                                system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond).then((_) => resetOutlinedTrees(player, inspectedTree));
                                 return;
                             }
                         }).catch((error) => {
@@ -254,7 +255,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     else {
                         const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                         player.visitedLogs = player.visitedLogs ?? [];
-                        const result = { initialInteraction: blockInteracted.location, visitedLogs: treeCollectedResult, isDoneTraversing: true };
+                        const result = { visitedLogs: treeCollectedResult, isDoneTraversing: true };
                         player.visitedLogs.push(result);
                         system.runTimeout(() => {
                             resetOutlinedTrees(player, result);
@@ -279,6 +280,13 @@ function resetOutlinedTrees(player, result) {
         shouldDespawn = true;
         blockOutline.triggerEvent('despawn');
     }
-    if (shouldDespawn)
-        player.visitedLogs.splice(player.visitedLogs.indexOf(result));
+    if (shouldDespawn) {
+        console.warn("RESET");
+        for (const _ of player.visitedLogs) {
+            const index = player.visitedLogs.lastIndexOf(result);
+            if (index === -1)
+                break;
+            player.visitedLogs.splice(index);
+        }
+    }
 }

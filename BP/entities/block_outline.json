@@ -54,13 +54,13 @@
         "minecraft:instant_despawn": {}
       },
 			"not_persistent": {
-				"minecraft:timer": {
-					"looping": true,
-					"time": 10,
-					"time_down_event": {
-						"event": "despawn"
-					}
-				},
+				// "minecraft:timer": {
+				// 	"looping": true,
+				// 	"time": 10,
+				// 	"time_down_event": {
+				// 		"event": "despawn"
+				// 	}
+				// },
 				"minecraft:environment_sensor": {
 					"triggers": [
 						{
@@ -72,10 +72,6 @@
 											"test": "in_block",
 											"value": "minecraft:air"
 										}
-										// {
-										// 	"test": "inactivity_timer",
-										// 	"value": 1
-										// }
 									]
 								}
 							]

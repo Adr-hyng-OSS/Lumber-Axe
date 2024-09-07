@@ -9,7 +9,7 @@ import { Graph } from "utils/graph";
 
 // Caching for Cutted Inspected Logs should be for next update.
 // Currently Graph is not storing its references to other branches of their neighbors.
-const blockOutlinesDespawnTimer = 10;
+const blockOutlinesDespawnTimer = 5;
 
 world.beforeEvents.worldInitialize.subscribe((registry) => {
   registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
@@ -53,7 +53,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         let visited: Graph;
         
         // This should be the temporary container where it doesn't copy the reference from the original player's visitedNodes.
-        let destroyedTree :InteractedTreeResult = {initialInteraction: blockInteracted.location, isDoneTraversing: false, visitedLogs: {blockOutlines: [], source: new Graph()}};
+        let destroyedTree :InteractedTreeResult = {isDoneTraversing: false, visitedLogs: {blockOutlines: [], source: new Graph()}};
         if(blockOutline) {
             // It copies the reference from the array. So, if you change something
             // It changes the array's content also.
@@ -181,7 +181,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     }
                     for(const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
                         if(blockOutline?.isValid()) {
-                            blockOutline.setProperty('yn:stay_persistent', true);
                             continue;
                         }
                         let {x, y, z} = blockOutline.lastLocation;
@@ -192,23 +191,27 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
 
                     const tempResult: VisitedBlockResult = {blockOutlines: [], source: new Graph()};
 
-                    //! It doesn't work when you inspect from a specific location, and break the location, and inspect to others.
-
                     // Traverse the interacted block to validate the remaining nodes, if something was removed.
                     inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
                         if(node) {
                             tempResult.source.addNode(node);
                         } 
                     });
-                    player.visitedLogs.push({
-                        initialInteraction: blockInteracted.location, 
+                    const newResult: InteractedTreeResult = {
                         isDoneTraversing: true, 
                         visitedLogs: {
                             source: tempResult.source,
                             blockOutlines: inspectedTree.visitedLogs.blockOutlines
                         }
-                    });
+                    };
+                    const alreadyExists = player.visitedLogs.findIndex((result) => JSON.stringify(result) === JSON.stringify(newResult));
 
+                    if(alreadyExists === -1) {
+                        player.visitedLogs.push(newResult);
+                    } else {
+                        player.visitedLogs[alreadyExists] = newResult;
+                    }
+                    
                     const size = tempResult.source.getSize();
                     const totalDamage: number = size * unbreakingDamage;
                     const totalDurabilityConsumed: number = currentDurability + totalDamage;
@@ -265,10 +268,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         ]}, "textures/InfoUI/canBeCut.png");
                     forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
                         if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
-                        for(const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
-                            if(!blockOutline?.isValid()) continue;
-                            blockOutline.setProperty('yn:stay_persistent', false);
-                        }
+                        system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond). then((_) => resetOutlinedTrees(player, inspectedTree));
                         return;
                     }
                     }).catch((error: Error) => {
@@ -277,7 +277,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 } else {
                     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                     player.visitedLogs = player.visitedLogs ?? [];
-                    const result: InteractedTreeResult = {initialInteraction: blockInteracted.location, visitedLogs: treeCollectedResult, isDoneTraversing: true};
+                    const result: InteractedTreeResult = {visitedLogs: treeCollectedResult, isDoneTraversing: true};
                     player.visitedLogs.push(result);
                     system.runTimeout(() => {
                         resetOutlinedTrees(player, result);
@@ -292,17 +292,20 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
 });
 
 function resetOutlinedTrees(player: Player, result: InteractedTreeResult) {
-    // Shoud check if "this" tree is being inspected or not. 
-    // So, it should continue despawning those that aren't inspected.
     let shouldDespawn = false;
     for(const blockOutline of result.visitedLogs.blockOutlines) {
         if(!blockOutline?.isValid()) continue;
-        // It should despawn only blockOutlines, when "stay_persistent" property of blockOutline, is false.
-        // Else just don't despawn it. Wait when 
         const isPersistent = blockOutline.getProperty('yn:stay_persistent');
         if(isPersistent) continue;
         shouldDespawn = true;
         blockOutline.triggerEvent('despawn');
     }
-    if(shouldDespawn) player.visitedLogs.splice(player.visitedLogs.indexOf(result));
+    if(shouldDespawn) {
+        console.warn("RESET");
+        for(const _ of player.visitedLogs) {
+            const index = player.visitedLogs.lastIndexOf(result);
+            if(index === -1) break;
+            player.visitedLogs.splice(index);
+        }
+    }
 }

@@ -105,4 +105,62 @@ export class Graph {
             }
         }
     }
+
+    isEqual(otherGraph: Graph): boolean {
+        // Step 1: Check if both graphs have the same number of nodes
+        if (this.getSize() !== otherGraph.getSize()) {
+            return false;
+        }
+
+        // Step 2: Compare each node and its neighbors
+        for (const [locationKey, node] of this.nodes) {
+            const otherNode = otherGraph.nodes.get(locationKey);
+
+            if (!otherNode) {
+            // If the node doesn't exist in the other graph, return false
+            return false;
+            }
+
+            // Step 3: Compare neighbors of the current node with the other node
+            if (node.neighbors.size !== otherNode.neighbors.size) {
+            return false; // Different number of neighbors
+            }
+
+            // Check if all neighbors are the same
+            for (const neighbor of node.neighbors) {
+            const otherNeighbor = otherGraph.getNode(neighbor.location);
+
+            if (!otherNeighbor || !otherNode.neighbors.has(otherNeighbor)) {
+                return false; // If any neighbor is missing or different
+            }
+            }
+        }
+
+        // If all nodes and neighbors match, return true
+        return true;
+    }
+
+    toJSON(): object {
+        const serializedNodes: Record<string, { location: Vector3, neighbors: string[] }> = {};
+    
+        // Convert and sort each node and its neighbors into a plain object
+        const sortedNodeEntries = Array.from(this.nodes.entries()).sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
+    
+        sortedNodeEntries.forEach(([key, node]) => {
+            // Sort neighbors by serialized location
+            const sortedNeighbors = Array.from(node.neighbors)
+                .map(neighbor => this.serializeLocation(neighbor.location))
+                .sort((a, b) => a.localeCompare(b));
+    
+            serializedNodes[key] = {
+                location: node.location,
+                neighbors: sortedNeighbors
+            };
+        });
+    
+        return {
+            nodes: serializedNodes
+        };
+    }
+    
 }
