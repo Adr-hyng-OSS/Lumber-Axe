@@ -9,6 +9,7 @@ import { Vector3 } from "@minecraft/server";
 export class GraphNode {
   public location: Vector3;
   public neighbors: Set<GraphNode>;
+  public index: number = 0;
 
   constructor(location: Vector3) {
       this.location = location;
@@ -39,10 +40,10 @@ export class Graph {
 
     addNode(location: Vector3): GraphNode;
     addNode(node: GraphNode): void;
-
     addNode(param: Vector3 | GraphNode): GraphNode | void {
         if (param instanceof GraphNode) {
             const key = this.serializeLocation(param.location);
+            param.index = this.nodes.size;
             this.nodes.set(key, param);
             return; // Since it's a GraphNode, you don't return anything
         } else {
@@ -52,6 +53,7 @@ export class Graph {
                 node = new GraphNode(param);
                 this.nodes.set(key, node);
             }
+            node.index = this.nodes.size - 1;
             return node; // Return the newly created or retrieved node
         }
     }

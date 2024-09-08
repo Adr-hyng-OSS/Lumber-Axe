@@ -50,17 +50,27 @@
 			}
 		},
 		"component_groups": {
+			"active_outline": {
+				"minecraft:variant": {
+					"value": 1
+				}
+			},
+			"inactive_outline": {
+				"minecraft:variant": {
+					"value": 0
+				}
+			},
 			"despawn": {
         "minecraft:instant_despawn": {}
       },
 			"not_persistent": {
-				// "minecraft:timer": {
-				// 	"looping": true,
-				// 	"time": 10,
-				// 	"time_down_event": {
-				// 		"event": "despawn"
-				// 	}
-				// },
+				"minecraft:timer": {
+					"looping": false,
+					"time": 30,
+					"time_down_event": {
+						"event": "despawn"
+					}
+				},
 				"minecraft:environment_sensor": {
 					"triggers": [
 						{
@@ -71,6 +81,10 @@
 										{
 											"test": "in_block",
 											"value": "minecraft:air"
+										},
+										{
+											"test": "inactivity_timer",
+											"value": 1
 										}
 									]
 								}
@@ -112,10 +126,20 @@
 		
 		"events": {
 			"minecraft:entity_spawned": {
-				"trigger": "not_persistent"
+				"trigger": "not_persistent",
+				"remove": { "component_groups": [ "active_outline" ] },
+				"add": { "component_groups": [ "inactive_outline" ] }
 			},
 			"despawn": {
 				"add": { "component_groups": [ "despawn" ] }
+      },
+			"active_outline": {
+				"remove": { "component_groups": [ "inactive_outline" ] },
+				"add": { "component_groups": [ "active_outline" ] }
+      },
+			"inactive_outline": {
+				"remove": { "component_groups": [ "active_outline" ] },
+				"add": { "component_groups": [ "inactive_outline" ] }
       },
 			"not_persistent": {
 				"remove": { "component_groups": [ "stay_persistent" ]},

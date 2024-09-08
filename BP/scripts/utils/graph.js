@@ -1,5 +1,6 @@
 export class GraphNode {
     constructor(location) {
+        this.index = 0;
         this.location = location;
         this.neighbors = new Set();
     }
@@ -20,6 +21,7 @@ export class Graph {
     addNode(param) {
         if (param instanceof GraphNode) {
             const key = this.serializeLocation(param.location);
+            param.index = this.nodes.size;
             this.nodes.set(key, param);
             return;
         }
@@ -30,6 +32,7 @@ export class Graph {
                 node = new GraphNode(param);
                 this.nodes.set(key, node);
             }
+            node.index = this.nodes.size - 1;
             return node;
         }
     }

@@ -48,23 +48,36 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 location: blockInteracted.bottomCenter()
             })[0];
             let visited;
-            let destroyedTree = { isDoneTraversing: false, visitedLogs: { blockOutlines: [], source: new Graph() } };
+            let destroyedTree = {
+                isDone: false,
+                visitedLogs: {
+                    blockOutlines: [],
+                    source: new Graph()
+                }
+            };
+            let size = 0;
             if (blockOutline) {
                 let inspectedTree;
-                let index = 0;
+                let index = -1;
                 for (const visitedLogsGraph of player.visitedLogs) {
+                    index++;
                     const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
                     if (!interactedNode)
                         continue;
-                    index = player.visitedLogs.indexOf(visitedLogsGraph);
-                    if (index === -1)
+                    if (visitedLogsGraph.isDone)
                         continue;
+                    const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
+                    if (lastIndexOccurence === -1)
+                        continue;
+                    if (index !== lastIndexOccurence)
+                        continue;
+                    index = lastIndexOccurence;
                     inspectedTree = player.visitedLogs[index];
                     break;
                 }
                 if (!inspectedTree)
                     return;
-                destroyedTree.visitedLogs.blockOutlines = inspectedTree.visitedLogs.blockOutlines;
+                destroyedTree.visitedLogs.blockOutlines = [...inspectedTree.visitedLogs.blockOutlines];
                 inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
                     destroyedTree.visitedLogs.source.addNode(node);
                 });
@@ -78,19 +91,28 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 }
                 const tempResult = { blockOutlines: [], source: new Graph() };
                 destroyedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
-                    if (node)
+                    if (node) {
+                        tempResult.blockOutlines.push(destroyedTree.visitedLogs.blockOutlines[node.index]);
                         tempResult.source.addNode(node);
+                    }
                 });
                 tempResult.source.removeNode(blockOutline.lastLocation);
                 destroyedTree.visitedLogs = tempResult;
                 visited = tempResult.source;
+                size = visited.getSize();
             }
             else {
-                visited = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, true)).source;
+                const choppedTree = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false);
+                destroyedTree.visitedLogs.source = choppedTree.source;
+                destroyedTree.visitedLogs.blockOutlines = choppedTree.blockOutlines;
+                visited = choppedTree.source;
+                size = visited.getSize() - 1;
             }
             if (!visited)
                 return;
-            const size = visited.getSize();
+            if (visited.getSize() <= 1)
+                return;
+            console.warn(size);
             const totalDamage = size * unbreakingDamage;
             const postDamagedDurability = itemDurability.damage + totalDamage;
             if (postDamagedDurability + 1 === itemDurability.maxDurability) {
@@ -105,19 +127,23 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 currentHeldAxe.lockMode = ItemLockMode.none;
                 equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
             }
-            visited.traverse(location, "BFS", (node) => {
-                system.run(() => {
-                    if (node)
-                        dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
-                });
-            });
-            if (size - 1 < 0)
-                return;
-            system.runTimeout(() => {
-                for (const group of stackDistribution(size - 1)) {
+            await (new Promise((resolve) => {
+                console.warn("TEST");
+                for (const entityBlock of destroyedTree.visitedLogs.blockOutlines) {
+                    if (!entityBlock?.isValid())
+                        throw "Entity is undefined";
+                    system.run(() => {
+                        entityBlock.playAnimation('animation.block_outline.spawn_particle');
+                        dimension.setBlockType(entityBlock.lastLocation, MinecraftBlockTypes.Air);
+                    });
+                }
+                resolve();
+            })).then(() => {
+                resetOutlinedTrees(player, destroyedTree);
+                for (const group of stackDistribution(size)) {
                     system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
                 }
-            }, 5);
+            }).catch((e) => console.warn(e, e.stack));
         },
         onUseOn(arg) {
             const currentHeldAxe = arg.itemStack;
@@ -142,27 +168,30 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 system.run(async () => {
                     if (blockOutline?.isValid()) {
                         let inspectedTree;
-                        let index = 0;
+                        let index = -1;
                         if (!player.visitedLogs)
                             return;
                         for (const visitedLogsGraph of player.visitedLogs) {
+                            index++;
                             const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
                             if (!interactedNode)
                                 continue;
-                            index = player.visitedLogs.indexOf(visitedLogsGraph);
-                            if (index === -1)
+                            if (visitedLogsGraph.isDone)
                                 continue;
+                            const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
+                            if (lastIndexOccurence === -1)
+                                continue;
+                            if (index !== lastIndexOccurence)
+                                continue;
+                            index = lastIndexOccurence;
                             inspectedTree = player.visitedLogs[index];
                             break;
                         }
-                        if (!inspectedTree || !inspectedTree?.isDoneTraversing) {
-                            console.warn("Not done yet");
+                        if (!inspectedTree)
                             return;
-                        }
                         for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
-                            if (blockOutline?.isValid()) {
+                            if (blockOutline?.isValid())
                                 continue;
-                            }
                             let { x, y, z } = blockOutline.lastLocation;
                             x -= 0.5;
                             z -= 0.5;
@@ -171,22 +200,26 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         const tempResult = { blockOutlines: [], source: new Graph() };
                         inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
                             if (node) {
+                                tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
                                 tempResult.source.addNode(node);
                             }
                         });
                         const newResult = {
-                            isDoneTraversing: true,
-                            visitedLogs: {
-                                source: tempResult.source,
-                                blockOutlines: inspectedTree.visitedLogs.blockOutlines
-                            }
+                            isDone: false,
+                            visitedLogs: tempResult
                         };
-                        const alreadyExists = player.visitedLogs.findIndex((result) => JSON.stringify(result) === JSON.stringify(newResult));
-                        if (alreadyExists === -1) {
+                        const currentChangedIndex = player.visitedLogs.findIndex((result) => JSON.stringify(newResult.visitedLogs.source) === JSON.stringify(inspectedTree.visitedLogs.source) && !result.isDone);
+                        if (currentChangedIndex === -1) {
                             player.visitedLogs.push(newResult);
+                            system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond).then((_) => {
+                                if (!player.visitedLogs[index])
+                                    return;
+                                if (!player.visitedLogs[index].isDone)
+                                    resetOutlinedTrees(player, newResult);
+                            });
                         }
                         else {
-                            player.visitedLogs[alreadyExists] = newResult;
+                            player.visitedLogs[currentChangedIndex] = newResult;
                         }
                         const size = tempResult.source.getSize();
                         const totalDamage = size * unbreakingDamage;
@@ -245,7 +278,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         }, "textures/InfoUI/canBeCut.png");
                         forceShow(player, inspectionForm).then((response) => {
                             if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
-                                system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond).then((_) => resetOutlinedTrees(player, inspectedTree));
                                 return;
                             }
                         }).catch((error) => {
@@ -255,7 +287,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     else {
                         const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                         player.visitedLogs = player.visitedLogs ?? [];
-                        const result = { visitedLogs: treeCollectedResult, isDoneTraversing: true };
+                        const result = {
+                            visitedLogs: treeCollectedResult,
+                            isDone: false,
+                        };
                         player.visitedLogs.push(result);
                         system.runTimeout(() => {
                             resetOutlinedTrees(player, result);
@@ -270,23 +305,15 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
     });
 });
 function resetOutlinedTrees(player, result) {
-    let shouldDespawn = false;
+    result.isDone = true;
     for (const blockOutline of result.visitedLogs.blockOutlines) {
         if (!blockOutline?.isValid())
             continue;
         const isPersistent = blockOutline.getProperty('yn:stay_persistent');
         if (isPersistent)
             continue;
-        shouldDespawn = true;
         blockOutline.triggerEvent('despawn');
     }
-    if (shouldDespawn) {
-        console.warn("RESET");
-        for (const _ of player.visitedLogs) {
-            const index = player.visitedLogs.lastIndexOf(result);
-            if (index === -1)
-                break;
-            player.visitedLogs.splice(index);
-        }
-    }
+    player.visitedLogs.shift();
+    console.warn("RESET", player.visitedLogs?.length);
 }

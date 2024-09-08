@@ -14,6 +14,7 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
         const blockOutlines = [];
         let queue = [];
         const visited = new Set();
+        console.warn("RUNNED?");
         const firstBlock = dimension.getBlock(location);
         queue.push(firstBlock);
         graph.addNode(firstBlock.location);
@@ -31,11 +32,12 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
                 const mainNode = graph.getNode(pos);
                 if (!mainNode)
                     continue;
+                const outline = dimension.spawnEntity('yn:block_outline', { x: block.location.x + 0.5, y: block.location.y, z: block.location.z + 0.5 });
+                outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
                 if (shouldSpawnOutline) {
-                    const outline = dimension.spawnEntity('yn:block_outline', { x: block.location.x + 0.5, y: block.location.y, z: block.location.z + 0.5 });
-                    outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
-                    blockOutlines.push(outline);
+                    outline.triggerEvent('active_outline');
                 }
+                blockOutlines.push(outline);
                 yield;
                 for (const neighborBlock of getBlockNear(dimension, block.location)) {
                     if (!neighborBlock?.isValid() || !isLogIncluded(neighborBlock?.typeId))

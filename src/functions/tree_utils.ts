@@ -2,6 +2,8 @@ import { Block, Dimension, Entity, Vector3, system } from "@minecraft/server";
 
 import { validLogBlocks, serverConfigurationCopy, VisitedBlockResult } from "../index";
 import { Graph, GraphNode } from "utils/graph";
+import { world } from "@minecraft/server";
+import { MinecraftEffectTypes } from "modules/vanilla-types/index";
 
 function isLogIncluded(blockTypeId: string): boolean {
     if(serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
@@ -17,6 +19,8 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
 
         let queue: Block[] = [];
         const visited = new Set<string>(); // To track visited locations
+
+        console.warn("RUNNED?");
 
         const firstBlock = dimension.getBlock(location);
         queue.push(firstBlock);
@@ -40,11 +44,12 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
                 const mainNode = graph.getNode(pos);
                 if (!mainNode) continue;
 
+                const outline = dimension.spawnEntity('yn:block_outline', { x: block.location.x + 0.5, y: block.location.y, z: block.location.z + 0.5 });
+                outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
                 if (shouldSpawnOutline) {
-                    const outline = dimension.spawnEntity('yn:block_outline', { x: block.location.x + 0.5, y: block.location.y, z: block.location.z + 0.5 });
-                    outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
-                    blockOutlines.push(outline);
+                    outline.triggerEvent('active_outline');
                 }
+                blockOutlines.push(outline);
                 yield;
 
                 // First, gather all valid neighbors

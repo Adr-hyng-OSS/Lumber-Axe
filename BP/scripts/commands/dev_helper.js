@@ -43,6 +43,10 @@ const command = {
             case REQUIRED_PARAMETER.TEST:
                 let inspectedTree;
                 let blockInteracted = player.getBlockFromViewDirection({ maxDistance: 50 }).block;
+                const outline = player.dimension.getEntities({ closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter() })[0];
+                if (!outline?.isValid())
+                    return;
+                outline.playAnimation('animation.block_outline.spawn_particle');
                 break;
             default:
                 break;

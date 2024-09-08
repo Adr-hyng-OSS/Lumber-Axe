@@ -11,6 +11,16 @@
 					"scale": "1.04 + math.sqrt(query.distance_from_camera) / 64"
 				}
 			}
+		},
+		"animation.block_outline.spawn_particle": {
+			"loop": false,
+			"animation_length": 0.2,
+			"particle_effects": {
+				"0.1": {
+					"effect": "destroy_block",
+					"pre_effect_script": "variable.dig_particle_texture_coordinate = query.surface_particle_texture_coordinate; variable.dig_particle_texture_size = query.surface_particle_texture_size; variable.dig_particle_color = query.surface_particle_color;"
+				}
+			}
 		}
 	}
 }
