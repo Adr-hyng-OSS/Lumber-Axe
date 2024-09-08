@@ -96,8 +96,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             if(!inspectedTree) return;
             
             // Copy the inspected trees's content, so it doesn't copy it's reference.
-            destroyedTree.visitedLogs.blockOutlines = [...inspectedTree.visitedLogs.blockOutlines];
             inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
+                destroyedTree.visitedLogs.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index])
                 destroyedTree.visitedLogs.source.addNode(node);
             });
 
@@ -114,6 +114,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             const tempResult: VisitedBlockResult = {blockOutlines: [], source: new Graph()};
 
             // Traverse the first node in graph, for final checking what's the valid ones, and what's remaining.
+            console.warn("Destroyed: ", destroyedTree.visitedLogs.source.getSize(), destroyedTree.visitedLogs.blockOutlines.length);
+            console.warn("Inspected: ", inspectedTree.visitedLogs.source.getSize(), inspectedTree.visitedLogs.blockOutlines.length);
             destroyedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
                 if(node) {
                     tempResult.blockOutlines.push(destroyedTree.visitedLogs.blockOutlines[node.index]);
@@ -125,31 +127,21 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             tempResult.source.removeNode(blockOutline.lastLocation);
             destroyedTree.visitedLogs = tempResult;
             visited = tempResult.source;
-            size = visited.getSize();
+            size = visited.getSize() - 1;
         } else {
-            const choppedTree = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false) as VisitedBlockResult);
+            const choppedTree = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, true) as VisitedBlockResult);
             destroyedTree.visitedLogs.source = choppedTree.source;
             destroyedTree.visitedLogs.blockOutlines = choppedTree.blockOutlines;
+            
             visited = choppedTree.source;
             size = visited.getSize() - 1;
         }
         if(!visited) return;
-        if(visited.getSize() <= 1) return;
-        
-        const totalDamage: number = size * unbreakingDamage;
-        const postDamagedDurability: number = itemDurability.damage + totalDamage;
-    
-        if (postDamagedDurability + 1 === itemDurability.maxDurability) {
-            equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
-        } else if (postDamagedDurability > itemDurability.maxDurability) {
-            currentHeldAxe.lockMode = ItemLockMode.none;
-            return;
-        } else if (postDamagedDurability < itemDurability.maxDurability){
-            itemDurability.damage = itemDurability.damage +  totalDamage;
-            currentHeldAxe.lockMode = ItemLockMode.none;
-            equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
-        }
-
+        if(size <= 0) return;
+        system.runTimeout(() => { 
+            resetOutlinedTrees(player, destroyedTree);
+        }, blockOutlinesDespawnTimer * TicksPerSecond);
+        console.warn(size);
         //! Use this when fillBlocks is in stable. (Not applicable but can be good to be refactored to graph-based)
         // for (const group of groupAdjacentBlocks(visited)) {
         //     const firstElement = JSON.parse(group[0]);
@@ -164,8 +156,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
 
         await (new Promise<void>((resolve) => {
             for (const entityBlock of destroyedTree.visitedLogs.blockOutlines) {
-                if(!entityBlock?.isValid()) throw "Entity is undefined";
+                if(!entityBlock?.isValid()) continue;
                 system.run(() => {
+                    system.waitTicks(1);
                     entityBlock.playAnimation('animation.block_outline.spawn_particle');
                     dimension.setBlockType(entityBlock.lastLocation, MinecraftBlockTypes.Air);
                 });
@@ -173,6 +166,18 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             resolve();
         })).then(() => {
             resetOutlinedTrees(player, destroyedTree);
+            const totalDamage: number = size * unbreakingDamage;
+            const postDamagedDurability: number = itemDurability.damage + totalDamage;
+            if (postDamagedDurability + 1 === itemDurability.maxDurability) {
+                equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
+            } else if (postDamagedDurability > itemDurability.maxDurability) {
+                currentHeldAxe.lockMode = ItemLockMode.none;
+                return;
+            } else if (postDamagedDurability < itemDurability.maxDurability){
+                itemDurability.damage = itemDurability.damage +  totalDamage;
+                currentHeldAxe.lockMode = ItemLockMode.none;
+                equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
+            }
             for (const group of stackDistribution(size)) {
                 system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
             }
@@ -381,6 +386,6 @@ function resetOutlinedTrees(player: Player, result: InteractedTreeResult) {
         if(isPersistent) continue;
         blockOutline.triggerEvent('despawn');
     }
-    player.visitedLogs.shift();
+    player.visitedLogs?.shift();
     console.warn("RESET", player.visitedLogs?.length);
 }
