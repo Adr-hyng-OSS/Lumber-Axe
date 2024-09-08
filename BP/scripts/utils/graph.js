@@ -73,6 +73,26 @@ export class Graph {
             }
         }
     }
+    *traverseIterative(startLocation, traversalType = "DFS") {
+        const startNode = this.getNode(startLocation);
+        if (!startNode) {
+            return;
+        }
+        const visited = new Set();
+        const toVisit = [startNode];
+        while (toVisit.length > 0) {
+            const node = traversalType === "DFS" ? toVisit.pop() : toVisit.shift();
+            if (!visited.has(node)) {
+                yield node;
+                visited.add(node);
+                node.neighbors.forEach(neighbor => {
+                    if (!visited.has(neighbor)) {
+                        toVisit.push(neighbor);
+                    }
+                });
+            }
+        }
+    }
     isEqual(otherGraph) {
         if (this.getSize() !== otherGraph.getSize()) {
             return false;

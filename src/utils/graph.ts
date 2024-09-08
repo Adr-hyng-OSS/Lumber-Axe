@@ -108,6 +108,36 @@ export class Graph {
         }
     }
 
+    *traverseIterative(startLocation: Vector3, traversalType: GraphTraversalType = "DFS"): Generator<GraphNode> {
+        const startNode = this.getNode(startLocation);
+        if (!startNode) {
+            return;
+        }
+
+        const visited = new Set<GraphNode>();
+
+        // Choose a data structure based on traversal type
+        const toVisit: GraphNode[] = [startNode]; // Stack for DFS, queue for BFS
+
+        while (toVisit.length > 0) {
+            // For DFS, pop from the end (LIFO). For BFS, shift from the start (FIFO).
+            const node = traversalType === "DFS" ? toVisit.pop()! : toVisit.shift()!;
+
+            if (!visited.has(node)) {
+                yield node; // Yield node instead of visiting it
+                visited.add(node);
+
+                // Add neighbors to the toVisit stack/queue
+                node.neighbors.forEach(neighbor => {
+                    if (!visited.has(neighbor)) {
+                        toVisit.push(neighbor);
+                    }
+                });
+            }
+        }
+    }
+
+
     isEqual(otherGraph: Graph): boolean {
         // Step 1: Check if both graphs have the same number of nodes
         if (this.getSize() !== otherGraph.getSize()) {

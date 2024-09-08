@@ -14,7 +14,6 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
         const blockOutlines = [];
         let queue = [];
         const visited = new Set();
-        console.warn("RUNNED?");
         const firstBlock = dimension.getBlock(location);
         queue.push(firstBlock);
         graph.addNode(firstBlock.location);

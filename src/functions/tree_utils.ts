@@ -20,8 +20,6 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
         let queue: Block[] = [];
         const visited = new Set<string>(); // To track visited locations
 
-        console.warn("RUNNED?");
-
         const firstBlock = dimension.getBlock(location);
         queue.push(firstBlock);
         graph.addNode(firstBlock.location);

@@ -17,6 +17,9 @@
 			}
 		},
 		"components": {
+			"minecraft:emitter_initialization": {
+				"creation_expression": "temp.start_texture_color_r = 0.11;temp.start_texture_color_g = 0.11;temp.start_texture_color_b = 0.11;temp.start_texture_color_a = 0.11;"
+			},
 			"minecraft:emitter_local_space": {
 				"position": true,
 				"rotation": false

@@ -49,8 +49,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             })[0];
             let visited;
             let destroyedTree = {
+                initialSize: 0,
                 isDone: false,
-                initialInteraction: location,
                 visitedLogs: {
                     blockOutlines: [],
                     source: new Graph()
@@ -78,6 +78,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 }
                 if (!inspectedTree)
                     return;
+                destroyedTree.initialSize = inspectedTree.initialSize;
                 inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
                     destroyedTree.visitedLogs.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
                     destroyedTree.visitedLogs.source.addNode(node);
@@ -91,8 +92,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     destroyedTree.visitedLogs.source.removeNode({ x, y, z });
                 }
                 const tempResult = { blockOutlines: [], source: new Graph() };
-                console.warn("Destroyed: ", destroyedTree.visitedLogs.source.getSize(), destroyedTree.visitedLogs.blockOutlines.length);
-                console.warn("Inspected: ", inspectedTree.visitedLogs.source.getSize(), inspectedTree.visitedLogs.blockOutlines.length);
                 destroyedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
                     if (node) {
                         tempResult.blockOutlines.push(destroyedTree.visitedLogs.blockOutlines[node.index]);
@@ -116,13 +115,16 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             if (size <= 0)
                 return;
             await (new Promise((resolve) => {
-                destroyedTree.visitedLogs.source.traverse(location, "BFS", (node) => {
-                    if (node) {
-                        const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
-                        dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
-                    }
-                });
-                resolve();
+                const t = system.runJob((function* () {
+                    destroyedTree.visitedLogs.source.traverse(location, "BFS", (node) => {
+                        if (node) {
+                            const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
+                            dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
+                        }
+                    });
+                    system.clearJob(t);
+                    resolve();
+                })());
             })).then(() => {
                 resetOutlinedTrees(player, destroyedTree);
                 const totalDamage = size * unbreakingDamage;
@@ -147,7 +149,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 console.warn(e, e.stack);
             });
         },
-        onUseOn(arg) {
+        async onUseOn(arg) {
             const currentHeldAxe = arg.itemStack;
             const blockInteracted = arg.block;
             const player = arg.source;
@@ -167,60 +169,24 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
             const blockOutline = player.dimension.getEntities({ closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter() })[0];
             try {
-                system.run(async () => {
-                    if (blockOutline?.isValid()) {
-                        let inspectedTree;
-                        let index = -1;
-                        if (!player.visitedLogs)
-                            return;
-                        for (const visitedLogsGraph of player.visitedLogs) {
-                            index++;
-                            const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
-                            if (!interactedNode)
-                                continue;
-                            if (visitedLogsGraph.isDone)
-                                continue;
-                            const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
-                            if (lastIndexOccurence === -1)
-                                continue;
-                            if (index !== lastIndexOccurence)
-                                continue;
-                            index = lastIndexOccurence;
-                            inspectedTree = player.visitedLogs[index];
-                            break;
-                        }
-                        if (!inspectedTree)
-                            return;
-                        for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
-                            if (blockOutline?.isValid()) {
-                                continue;
-                            }
-                            let { x, y, z } = blockOutline.lastLocation;
-                            x -= 0.5;
-                            z -= 0.5;
-                            inspectedTree.visitedLogs.source.removeNode({ x, y, z });
-                        }
-                        const tempResult = { blockOutlines: [], source: new Graph() };
-                        if (inspectedTree.visitedLogs.source.getSize() !== 0) {
-                            inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
-                                if (node) {
-                                    tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
-                                    tempResult.source.addNode(node);
-                                }
-                            });
-                        }
-                        else {
-                            index = -1;
+                if (blockOutline?.isValid()) {
+                    let inspectedTree;
+                    const tempResult = await new Promise((inspectTreePromiseResolve) => {
+                        const tMain = system.runJob((function* (inspectTreePromiseResolve) {
+                            let index = -1;
                             if (!player.visitedLogs)
-                                return;
+                                return system.clearJob(tMain);
                             for (const visitedLogsGraph of player.visitedLogs) {
                                 index++;
                                 const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
+                                yield;
                                 if (!interactedNode)
                                     continue;
+                                yield;
                                 if (visitedLogsGraph.isDone)
                                     continue;
                                 const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
+                                yield;
                                 if (lastIndexOccurence === -1)
                                     continue;
                                 if (index !== lastIndexOccurence)
@@ -230,120 +196,181 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                                 break;
                             }
                             if (!inspectedTree)
-                                return;
-                            inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
-                                if (node) {
-                                    tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
-                                    tempResult.source.addNode(node);
-                                }
-                            });
-                        }
-                        const newInspectedSubTree = {
-                            initialInteraction: blockInteracted.location,
-                            isDone: false,
-                            visitedLogs: tempResult
-                        };
-                        const currentChangedIndex = player.visitedLogs.findIndex((result) => JSON.stringify(newInspectedSubTree.visitedLogs.source) === JSON.stringify(inspectedTree.visitedLogs.source) && !result.isDone);
-                        if (currentChangedIndex === -1) {
-                            player.visitedLogs.push(newInspectedSubTree);
-                            system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond).then((_) => {
-                                if (!player.visitedLogs[index])
-                                    return;
-                                if (!player.visitedLogs[index].isDone)
-                                    resetOutlinedTrees(player, newInspectedSubTree);
-                            });
-                        }
-                        else {
-                            player.visitedLogs[currentChangedIndex] = newInspectedSubTree;
-                        }
-                        const size = tempResult.source.getSize();
-                        const totalDamage = size * unbreakingDamage;
-                        const totalDurabilityConsumed = currentDurability + totalDamage;
-                        const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
-                        for (const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines) {
-                            if (canBeChopped)
-                                blockOutline.triggerEvent('is_tree_choppable');
-                            else
-                                blockOutline.triggerEvent('unchoppable_tree');
-                        }
-                        const inspectionForm = new ActionFormData()
-                            .title({
-                            rawtext: [
-                                {
-                                    translate: "LumberAxe.form.title.text"
-                                }
-                            ]
-                        })
-                            .button({
-                            rawtext: [
-                                {
-                                    translate: `LumberAxe.form.treeSizeAbrev.text`
-                                },
-                                {
-                                    text: ` ${size !== 0 ? size : 1}${canBeChopped ? "" : "+"} `
-                                },
-                                {
-                                    translate: `LumberAxe.form.treeSizeAbrevLogs.text`
-                                }
-                            ]
-                        }, "textures/InfoUI/blocks.png")
-                            .button({
-                            rawtext: [
-                                {
-                                    translate: `LumberAxe.form.durabilityAbrev.text`
-                                },
-                                {
-                                    text: ` ${currentDurability}`
-                                }
-                            ]
-                        }, "textures/InfoUI/axe_durability.png")
-                            .button({
-                            rawtext: [
-                                {
-                                    translate: `LumberAxe.form.maxDurabilityAbrev.text`
-                                },
-                                {
-                                    text: ` ${maxDurability}`
-                                }
-                            ]
-                        }, "textures/InfoUI/required_durability.png")
-                            .button({
-                            rawtext: [
-                                {
-                                    text: "§l"
-                                },
-                                {
-                                    translate: `${canBeChopped ? "LumberAxe.form.canBeChopped.text" : "LumberAxe.form.cannotBeChopped.text"}`
-                                }
-                            ]
-                        }, "textures/InfoUI/canBeCut.png");
-                        forceShow(player, inspectionForm).then((response) => {
-                            if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
-                                for (const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines) {
-                                    if (!blockOutline?.isValid())
-                                        continue;
-                                    blockOutline.triggerEvent('go_default_outline');
-                                }
-                                return;
+                                return system.clearJob(tMain);
+                            if (inspectedTree.initialSize === inspectedTree.visitedLogs.source.getSize()) {
+                                system.clearJob(tMain);
+                                inspectTreePromiseResolve({ result: inspectedTree.visitedLogs, index: index });
                             }
-                        }).catch((error) => {
-                            Logger.error("Form Error: ", error, error.stack);
+                            for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
+                                if (!blockOutline?.isValid()) {
+                                    let { x, y, z } = blockOutline.lastLocation;
+                                    x -= 0.5;
+                                    z -= 0.5;
+                                    inspectedTree.visitedLogs.source.removeNode({ x, y, z });
+                                }
+                                yield;
+                            }
+                            const tempResult = { blockOutlines: [], source: new Graph() };
+                            if (inspectedTree.visitedLogs.source.getSize() !== 0) {
+                                for (const node of inspectedTree.visitedLogs.source.traverseIterative(blockInteracted.location, "BFS")) {
+                                    if (node) {
+                                        tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
+                                        tempResult.source.addNode(node);
+                                    }
+                                    yield;
+                                }
+                            }
+                            else {
+                                index = -1;
+                                if (!player.visitedLogs)
+                                    return;
+                                for (const visitedLogsGraph of player.visitedLogs) {
+                                    index++;
+                                    const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
+                                    yield;
+                                    if (!interactedNode)
+                                        continue;
+                                    yield;
+                                    if (visitedLogsGraph.isDone)
+                                        continue;
+                                    const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
+                                    yield;
+                                    if (lastIndexOccurence === -1)
+                                        continue;
+                                    if (index !== lastIndexOccurence)
+                                        continue;
+                                    index = lastIndexOccurence;
+                                    inspectedTree = player.visitedLogs[index];
+                                    break;
+                                }
+                                if (!inspectedTree)
+                                    return system.clearJob(tMain);
+                                for (const node of inspectedTree.visitedLogs.source.traverseIterative(blockInteracted.location, "BFS")) {
+                                    if (node) {
+                                        tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
+                                        tempResult.source.addNode(node);
+                                    }
+                                    yield;
+                                }
+                            }
+                            system.clearJob(tMain);
+                            inspectTreePromiseResolve({ result: tempResult, index: index });
+                        })(inspectTreePromiseResolve));
+                    });
+                    const newInspectedSubTree = {
+                        initialSize: tempResult.result.source.getSize(),
+                        isDone: false,
+                        visitedLogs: tempResult.result
+                    };
+                    const currentChangedIndex = player.visitedLogs.findIndex((result) => JSON.stringify(newInspectedSubTree.visitedLogs.source) === JSON.stringify(inspectedTree.visitedLogs.source) && !result.isDone);
+                    if (currentChangedIndex === -1) {
+                        player.visitedLogs.push(newInspectedSubTree);
+                        system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond).then((_) => {
+                            if (!player.visitedLogs[tempResult.index])
+                                return;
+                            if (!player.visitedLogs[tempResult.index].isDone)
+                                resetOutlinedTrees(player, newInspectedSubTree);
                         });
                     }
                     else {
-                        const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
-                        player.visitedLogs = player.visitedLogs ?? [];
-                        const result = {
-                            initialInteraction: blockInteracted.location,
-                            visitedLogs: treeCollectedResult,
-                            isDone: false,
-                        };
-                        player.visitedLogs.push(result);
-                        system.runTimeout(() => {
-                            resetOutlinedTrees(player, result);
-                        }, blockOutlinesDespawnTimer * TicksPerSecond);
+                        player.visitedLogs[currentChangedIndex] = newInspectedSubTree;
                     }
-                });
+                    const size = tempResult.result.source.getSize();
+                    const totalDamage = size * unbreakingDamage;
+                    const totalDurabilityConsumed = currentDurability + totalDamage;
+                    const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
+                    const t = system.runJob((function* () {
+                        for (const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines) {
+                            if (blockOutline?.isValid()) {
+                                if (canBeChopped)
+                                    blockOutline.triggerEvent('is_tree_choppable');
+                                else
+                                    blockOutline.triggerEvent('unchoppable_tree');
+                            }
+                            yield;
+                        }
+                        system.clearJob(t);
+                    })());
+                    const inspectionForm = new ActionFormData()
+                        .title({
+                        rawtext: [
+                            {
+                                translate: "LumberAxe.form.title.text"
+                            }
+                        ]
+                    })
+                        .button({
+                        rawtext: [
+                            {
+                                translate: `LumberAxe.form.treeSizeAbrev.text`
+                            },
+                            {
+                                text: ` ${size !== 0 ? size : 1}${canBeChopped ? "" : "+"} `
+                            },
+                            {
+                                translate: `LumberAxe.form.treeSizeAbrevLogs.text`
+                            }
+                        ]
+                    }, "textures/InfoUI/blocks.png")
+                        .button({
+                        rawtext: [
+                            {
+                                translate: `LumberAxe.form.durabilityAbrev.text`
+                            },
+                            {
+                                text: ` ${currentDurability}`
+                            }
+                        ]
+                    }, "textures/InfoUI/axe_durability.png")
+                        .button({
+                        rawtext: [
+                            {
+                                translate: `LumberAxe.form.maxDurabilityAbrev.text`
+                            },
+                            {
+                                text: ` ${maxDurability}`
+                            }
+                        ]
+                    }, "textures/InfoUI/required_durability.png")
+                        .button({
+                        rawtext: [
+                            {
+                                text: "§l"
+                            },
+                            {
+                                translate: `${canBeChopped ? "LumberAxe.form.canBeChopped.text" : "LumberAxe.form.cannotBeChopped.text"}`
+                            }
+                        ]
+                    }, "textures/InfoUI/canBeCut.png");
+                    forceShow(player, inspectionForm).then((response) => {
+                        if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
+                            const t = system.runJob((function* () {
+                                for (const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines) {
+                                    if (blockOutline?.isValid())
+                                        blockOutline.triggerEvent('go_default_outline');
+                                    yield;
+                                }
+                                system.clearJob(t);
+                            })());
+                            return;
+                        }
+                    }).catch((error) => {
+                        Logger.error("Form Error: ", error, error.stack);
+                    });
+                }
+                else {
+                    const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
+                    player.visitedLogs = player.visitedLogs ?? [];
+                    const result = {
+                        visitedLogs: treeCollectedResult,
+                        isDone: false,
+                        initialSize: treeCollectedResult.source.getSize(),
+                    };
+                    player.visitedLogs.push(result);
+                    system.runTimeout(() => {
+                        resetOutlinedTrees(player, result);
+                    }, blockOutlinesDespawnTimer * TicksPerSecond);
+                }
             }
             catch (e) {
                 console.warn(e, e.stack);
@@ -353,14 +380,18 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
 });
 function resetOutlinedTrees(player, result) {
     result.isDone = true;
-    for (const blockOutline of result.visitedLogs.blockOutlines) {
-        if (!blockOutline?.isValid())
-            continue;
-        const isPersistent = blockOutline.getProperty('yn:stay_persistent');
-        if (isPersistent)
-            continue;
-        blockOutline.triggerEvent('despawn');
-    }
+    const t = system.runJob((function* () {
+        for (const blockOutline of result.visitedLogs.blockOutlines) {
+            if (blockOutline?.isValid()) {
+                const isPersistent = blockOutline.getProperty('yn:stay_persistent');
+                yield;
+                if (isPersistent)
+                    continue;
+                blockOutline.triggerEvent('despawn');
+            }
+            yield;
+        }
+        system.clearJob(t);
+    })());
     player.visitedLogs?.shift();
-    console.warn("RESET", player.visitedLogs?.length);
 }

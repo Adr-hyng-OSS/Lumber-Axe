@@ -4,7 +4,7 @@
 	"minecraft:entity": {
 		"description": {
 			"identifier": "yn:block_outline",
-			"runtime_identifier": "minecraft:armor_stand",
+			"runtime_identifier": "minecraft:minecart",
 			"is_spawnable": true,
 			"is_summonable": true,
 			"properties": {
@@ -25,7 +25,6 @@
         "value": 1,
         "max": 1
       },
-      
       "minecraft:physics": {
         "has_collision": true,
         "has_gravity": false
@@ -44,10 +43,7 @@
       "minecraft:pushable": {
         "is_pushable": false,
         "is_pushable_by_piston": false
-      },
-			"minecraft:variant": {
-				"value": 1
-			}
+      }
 		},
 		"component_groups": {
 			"active_outline": {
