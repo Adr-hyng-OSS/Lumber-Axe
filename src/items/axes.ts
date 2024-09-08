@@ -55,7 +55,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         
         // This should be the temporary container where it doesn't copy the reference from the original player's visitedNodes.
         let destroyedTree :InteractedTreeResult = {
-            isDone: false, 
+            isDone: false,
+            initialInteraction: location,
             visitedLogs: {
                 blockOutlines: [], 
                 source: new Graph()
@@ -135,7 +136,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         if(!visited) return;
         if(visited.getSize() <= 1) return;
         
-        console.warn(size);
         const totalDamage: number = size * unbreakingDamage;
         const postDamagedDurability: number = itemDurability.damage + totalDamage;
     
@@ -163,7 +163,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         // }
 
         await (new Promise<void>((resolve) => {
-            console.warn("TEST");
             for (const entityBlock of destroyedTree.visitedLogs.blockOutlines) {
                 if(!entityBlock?.isValid()) throw "Entity is undefined";
                 system.run(() => {
@@ -229,7 +228,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         break;
                     }
                     if(!inspectedTree) return;
-                    console.warn("1 - ", inspectedTree.visitedLogs.source.getSize(), index, inspectedTree.isDone);
                     for(const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
                         if(blockOutline?.isValid()) {
                             continue;
@@ -243,50 +241,57 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const tempResult: VisitedBlockResult = {blockOutlines: [], source: new Graph()};
 
                     // Traverse the interacted block to validate the remaining nodes, if something was removed.
-                    console.warn("2 - ", inspectedTree.visitedLogs.source.getSize(), index, inspectedTree.isDone);
-                    
-                    if(inspectedTree.visitedLogs.source.getSize() !== 0){
+                    if(inspectedTree.visitedLogs.source.getSize() !== 0) {
                         inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
                             if(node) {
-                                console.warn(JSON.stringify(inspectedTree.visitedLogs.blockOutlines[node.index].location));
                                 tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
                                 tempResult.source.addNode(node);
                             } 
                         });
                     } else {
-                        for(const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
-                            if(!blockOutline.isValid()) {
-                                continue;
-                            }
-                            console.warn("BUG");
-                            tempResult.blockOutlines.push(blockOutline);
-                            let {x, y, z} = blockOutline.location;
-                            x -= 0.5;
-                            z -= 0.5;
-                            tempResult.source.addNode({x, y, z});
+                        // This is for main tree, and subtree conflict bug. :D Just refetch it all over again, but using the cache.
+                        index = -1;
+                        if(!player.visitedLogs) return;
+                        for(const visitedLogsGraph of player.visitedLogs) {
+                            index++;
+                            const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
+                            if(!interactedNode) continue; 
+                            if(visitedLogsGraph.isDone) continue;
+                            const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
+                            if(lastIndexOccurence === -1) continue;
+                            if(index !== lastIndexOccurence) continue;
+                            index = lastIndexOccurence;
+                            inspectedTree = player.visitedLogs[index];
+                            break;
                         }
+                        if(!inspectedTree) return;
+                        inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
+                            if(node) {
+                                tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
+                                tempResult.source.addNode(node);
+                            } 
+                        });
                     }
 
-                    const newResult: InteractedTreeResult = {
+                    const newInspectedSubTree: InteractedTreeResult = {
+                        initialInteraction: blockInteracted.location,
                         isDone: false, 
                         visitedLogs: tempResult
                     };
-
                     
                     // If it already exists, then just update, else add this new result, since it has changed.
-                    const currentChangedIndex = player.visitedLogs.findIndex((result) => JSON.stringify(newResult.visitedLogs.source) === JSON.stringify(inspectedTree.visitedLogs.source) && !result.isDone);
+                    const currentChangedIndex = player.visitedLogs.findIndex((result) => JSON.stringify(newInspectedSubTree.visitedLogs.source) === JSON.stringify(inspectedTree.visitedLogs.source) && !result.isDone);
                     if(currentChangedIndex === -1) {
-                        player.visitedLogs.push(newResult);
+                        player.visitedLogs.push(newInspectedSubTree);
                         system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond). then((_) => {
                             if(!player.visitedLogs[index]) return;
-                            if(!player.visitedLogs[index].isDone) resetOutlinedTrees(player, newResult);
+                            if(!player.visitedLogs[index].isDone) resetOutlinedTrees(player, newInspectedSubTree);
                         });
                     } else {
-                        player.visitedLogs[currentChangedIndex] = newResult;
+                        player.visitedLogs[currentChangedIndex] = newInspectedSubTree;
                     }
-                    
+
                     const size = tempResult.source.getSize();
-                    console.warn(currentChangedIndex, size, inspectedTree.visitedLogs.source.getSize(),inspectedTree.visitedLogs.blockOutlines.length);
                     const totalDamage: number = size * unbreakingDamage;
                     const totalDurabilityConsumed: number = currentDurability + totalDamage;
                     const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
@@ -351,12 +356,12 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                     player.visitedLogs = player.visitedLogs ?? [];
                     const result: InteractedTreeResult = {
+                        initialInteraction: blockInteracted.location,
                         visitedLogs: treeCollectedResult, 
                         isDone: false,
                     };
-                    console.warn("ORIGINAL: ", result.visitedLogs.source.getSize(), result.visitedLogs.blockOutlines.length);
                     player.visitedLogs.push(result);
-                    system.runTimeout(() => {
+                    system.runTimeout(() => { 
                         resetOutlinedTrees(player, result);
                     }, blockOutlinesDespawnTimer * TicksPerSecond);
                 }
