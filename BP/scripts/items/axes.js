@@ -189,21 +189,40 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         }
                         if (!inspectedTree)
                             return;
+                        console.warn("1 - ", inspectedTree.visitedLogs.source.getSize(), index, inspectedTree.isDone);
                         for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
-                            if (blockOutline?.isValid())
+                            if (blockOutline?.isValid()) {
                                 continue;
+                            }
                             let { x, y, z } = blockOutline.lastLocation;
                             x -= 0.5;
                             z -= 0.5;
                             inspectedTree.visitedLogs.source.removeNode({ x, y, z });
                         }
                         const tempResult = { blockOutlines: [], source: new Graph() };
-                        inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
-                            if (node) {
-                                tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
-                                tempResult.source.addNode(node);
+                        console.warn("2 - ", inspectedTree.visitedLogs.source.getSize(), index, inspectedTree.isDone);
+                        if (inspectedTree.visitedLogs.source.getSize() !== 0) {
+                            inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
+                                if (node) {
+                                    console.warn(JSON.stringify(inspectedTree.visitedLogs.blockOutlines[node.index].location));
+                                    tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
+                                    tempResult.source.addNode(node);
+                                }
+                            });
+                        }
+                        else {
+                            for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
+                                if (!blockOutline.isValid()) {
+                                    continue;
+                                }
+                                console.warn("BUG");
+                                tempResult.blockOutlines.push(blockOutline);
+                                let { x, y, z } = blockOutline.location;
+                                x -= 0.5;
+                                z -= 0.5;
+                                tempResult.source.addNode({ x, y, z });
                             }
-                        });
+                        }
                         const newResult = {
                             isDone: false,
                             visitedLogs: tempResult
@@ -222,6 +241,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             player.visitedLogs[currentChangedIndex] = newResult;
                         }
                         const size = tempResult.source.getSize();
+                        console.warn(currentChangedIndex, size, inspectedTree.visitedLogs.source.getSize(), inspectedTree.visitedLogs.blockOutlines.length);
                         const totalDamage = size * unbreakingDamage;
                         const totalDurabilityConsumed = currentDurability + totalDamage;
                         const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
@@ -291,6 +311,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             visitedLogs: treeCollectedResult,
                             isDone: false,
                         };
+                        console.warn("ORIGINAL: ", result.visitedLogs.source.getSize(), result.visitedLogs.blockOutlines.length);
                         player.visitedLogs.push(result);
                         system.runTimeout(() => {
                             resetOutlinedTrees(player, result);
