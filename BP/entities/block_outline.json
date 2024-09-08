@@ -4,7 +4,7 @@
 	"minecraft:entity": {
 		"description": {
 			"identifier": "yn:block_outline",
-			"runtime_identifier": "minecraft:minecart",
+			"runtime_identifier": "minecraft:armor_stand",
 			"is_spawnable": true,
 			"is_summonable": true,
 			"properties": {
@@ -92,11 +92,11 @@
 										{
 											"test": "in_block",
 											"value": "minecraft:air"
-										},
-										{
-											"test": "inactivity_timer",
-											"value": 3
 										}
+										// {
+										// 	"test": "inactivity_timer",
+										// 	"value": 1
+										// }
 									]
 								}
 							]

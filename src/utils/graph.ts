@@ -6,6 +6,23 @@ import { Vector3 } from "@minecraft/server";
  * 
 */
 
+function hashVector3(vec: Vector3): number {
+    const prime = 31;
+    let hash = 1;
+
+    // Convert the vector components to integers (assuming they might be floats) and apply the prime multiplier
+    hash = prime * hash + Math.imul(vec.x | 0, prime);
+    hash = prime * hash + Math.imul(vec.y | 0, prime);
+    hash = prime * hash + Math.imul(vec.z | 0, prime);
+
+    // Apply a bitwise shift to further mix the bits
+    hash ^= (hash << 13);
+    hash ^= (hash >> 7);
+    hash ^= (hash << 17);
+
+    return hash >>> 0; // Ensure it's an unsigned 32-bit integer
+}
+
 export class GraphNode {
   public location: Vector3;
   public neighbors: Set<GraphNode>;
@@ -29,9 +46,11 @@ type GraphTraversalType = "DFS" | "BFS";
 
 export class Graph {
     private nodes: Map<string, GraphNode>;
+    private hashes: number[];
 
     constructor() {
         this.nodes = new Map<string, GraphNode>();
+        this.hashes = [];
     }
 
     getNode(location: Vector3): GraphNode | undefined {
@@ -42,6 +61,7 @@ export class Graph {
     addNode(node: GraphNode): void;
     addNode(param: Vector3 | GraphNode): GraphNode | void {
         if (param instanceof GraphNode) {
+            this.hashes.push(hashVector3(param.location));
             const key = this.serializeLocation(param.location);
             param.index = this.nodes.size;
             this.nodes.set(key, param);
@@ -53,6 +73,7 @@ export class Graph {
                 node = new GraphNode(param);
                 this.nodes.set(key, node);
             }
+            this.hashes.push(hashVector3(node.location));
             node.index = this.nodes.size - 1;
             return node; // Return the newly created or retrieved node
         }
@@ -68,6 +89,7 @@ export class Graph {
             neighbor.removeNeighbor(node);
             node.removeNeighbor(neighbor);
         });
+        this.hashes.splice(this.hashes.lastIndexOf(hashVector3(location)));
         this.nodes.delete(key);
     }
 
@@ -77,8 +99,8 @@ export class Graph {
 
     getSize(): number {
         return this.nodes.size;
-    } 
-
+    }
+    
     traverse(startLocation: Vector3, traversalType: GraphTraversalType = "DFS", visit: (node: GraphNode) => void) {
         const startNode = this.getNode(startLocation);
         if (!startNode) {
@@ -108,91 +130,12 @@ export class Graph {
         }
     }
 
-    *traverseIterative(startLocation: Vector3, traversalType: GraphTraversalType = "DFS"): Generator<GraphNode> {
-        const startNode = this.getNode(startLocation);
-        if (!startNode) {
-            return;
-        }
-
-        const visited = new Set<GraphNode>();
-
-        // Choose a data structure based on traversal type
-        const toVisit: GraphNode[] = [startNode]; // Stack for DFS, queue for BFS
-
-        while (toVisit.length > 0) {
-            // For DFS, pop from the end (LIFO). For BFS, shift from the start (FIFO).
-            const node = traversalType === "DFS" ? toVisit.pop()! : toVisit.shift()!;
-
-            if (!visited.has(node)) {
-                yield node; // Yield node instead of visiting it
-                visited.add(node);
-
-                // Add neighbors to the toVisit stack/queue
-                node.neighbors.forEach(neighbor => {
-                    if (!visited.has(neighbor)) {
-                        toVisit.push(neighbor);
-                    }
-                });
-            }
-        }
+    hash(): number {
+        return this.hashes.reduce((accumulator, currentValue) => {return accumulator + currentValue},0);
     }
-
 
     isEqual(otherGraph: Graph): boolean {
-        // Step 1: Check if both graphs have the same number of nodes
-        if (this.getSize() !== otherGraph.getSize()) {
-            return false;
-        }
-
-        // Step 2: Compare each node and its neighbors
-        for (const [locationKey, node] of this.nodes) {
-            const otherNode = otherGraph.nodes.get(locationKey);
-
-            if (!otherNode) {
-            // If the node doesn't exist in the other graph, return false
-            return false;
-            }
-
-            // Step 3: Compare neighbors of the current node with the other node
-            if (node.neighbors.size !== otherNode.neighbors.size) {
-            return false; // Different number of neighbors
-            }
-
-            // Check if all neighbors are the same
-            for (const neighbor of node.neighbors) {
-            const otherNeighbor = otherGraph.getNode(neighbor.location);
-
-            if (!otherNeighbor || !otherNode.neighbors.has(otherNeighbor)) {
-                return false; // If any neighbor is missing or different
-            }
-            }
-        }
-
-        // If all nodes and neighbors match, return true
-        return true;
-    }
-
-    toJSON(): object {
-        const serializedNodes: Record<string, { location: Vector3, neighbors: string[] }> = {};
-    
-        // Convert and sort each node and its neighbors into a plain object
-        const sortedNodeEntries = Array.from(this.nodes.entries()).sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
-    
-        sortedNodeEntries.forEach(([key, node]) => {
-            // Sort neighbors by serialized location
-            const sortedNeighbors = Array.from(node.neighbors)
-                .map(neighbor => this.serializeLocation(neighbor.location))
-                .sort((a, b) => a.localeCompare(b));
-    
-            serializedNodes[key] = {
-                location: node.location,
-                neighbors: sortedNeighbors
-            };
-        });
-    
-        return {
-            nodes: serializedNodes
-        };
+        return this.hash() === otherGraph.hash();
     }
     
 }

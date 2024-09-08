@@ -203,137 +203,110 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         try {
             // Check also, if this tree is already being interacted. By checking this current blockOutline (node), if it's being interacted.
             if(blockOutline?.isValid()) {
-                // When the original has still the same size, then just return that.
                 let inspectedTree: InteractedTreeResult;
-                const tempResult = await new Promise<{result: VisitedBlockResult, index: number}>((inspectTreePromiseResolve) => {
-                    const tMain = system.runJob((function*(inspectTreePromiseResolve: (inspectedTreeResult: {result: VisitedBlockResult, index: number} | PromiseLike<{result: VisitedBlockResult, index: number}>) => void){
-                        let index = -1;
-                        if(!player.visitedLogs) return system.clearJob(tMain);
-                        for(const visitedLogsGraph of player.visitedLogs) {
-                            index++;
-        
-                            // Check if there's existing nodes based on the interacted block, 
-                            // if there is, then possibly there's already a inspected tree.
-                            const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
-                            // If there is not, then just go next.
-                            yield;
-                            if(!interactedNode) continue; 
-                            
-                            // If there is, then check if this is already done, if it is then go next instance.
-                            yield;
-                            if(visitedLogsGraph.isDone) continue;
-                            
-                            // Removing some duplicates
-                            const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
-                            yield;
-                            if(lastIndexOccurence === -1) continue;
+                let index = -1;
+                if(!player.visitedLogs) return;
+                for(const visitedLogsGraph of player.visitedLogs) {
+                    index++;
 
-                            // If the first possible occurence, is not the current index, then go next until it's in the first occurence's position.
-                            if(index !== lastIndexOccurence) continue;
-                            
-                            index = lastIndexOccurence;
-        
-                            inspectedTree = player.visitedLogs[index];
-                            break;
-                        }
-    
-                        if(!inspectedTree) return system.clearJob(tMain);
-                        if(inspectedTree.initialSize === inspectedTree.visitedLogs.source.getSize()) {
-                            system.clearJob(tMain);
-                            inspectTreePromiseResolve({result: inspectedTree.visitedLogs, index: index});
-                        }
-    
-                        // O(n)
-                        for(const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
-                            if(!blockOutline?.isValid()) {
-                                let {x, y, z} = blockOutline.lastLocation;
-                                x -= 0.5;
-                                z -= 0.5;
-                                inspectedTree.visitedLogs.source.removeNode({x, y, z});
-                            }
-                            yield;
-                        }
-    
-                        const tempResult: VisitedBlockResult = {blockOutlines: [], source: new Graph()};
-    
-                        // Traverse the interacted block to validate the remaining nodes, if something was removed. O(n)
-                        if(inspectedTree.visitedLogs.source.getSize() !== 0) {
-                            for(const node of inspectedTree.visitedLogs.source.traverseIterative(blockInteracted.location, "BFS")) {
-                                if(node) {
-                                    tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
-                                    tempResult.source.addNode(node);
-                                }
-                                yield;
-                            }
-                        } else {
-                            // This is for main tree, and subtree conflict bug. :D Just refetch it all over again, but using the cache. 
-                            // O(2n)
-                            index = -1;
-                            if(!player.visitedLogs) return;
-                            for(const visitedLogsGraph of player.visitedLogs) {
-                                index++;
-                                const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
-                                yield;
-                                if(!interactedNode) continue; 
-                                yield;
-                                if(visitedLogsGraph.isDone) continue;
-                                const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
-                                yield;
-                                if(lastIndexOccurence === -1) continue;
-                                if(index !== lastIndexOccurence) continue;
-                                index = lastIndexOccurence;
-                                inspectedTree = player.visitedLogs[index];
-                                break;
-                            }
-                            if(!inspectedTree) return system.clearJob(tMain);
-                            for(const node of inspectedTree.visitedLogs.source.traverseIterative(blockInteracted.location, "BFS")) {
-                                if(node) {
-                                    tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
-                                    tempResult.source.addNode(node);
-                                } 
-                                yield;
-                            }
-                        }
-                        system.clearJob(tMain);
-                        inspectTreePromiseResolve({result: tempResult, index: index});
-                    })(inspectTreePromiseResolve));
-                });
+                    // Check if there's existing nodes based on the interacted block, 
+                    // if there is, then possibly there's already a inspected tree.
+                    const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
+
+                    // If there is not, then just go next.
+                    if(!interactedNode) continue; 
+
+                    // If there is, then check if this is already done, if it is then go next instance.
+                    if(visitedLogsGraph.isDone) continue;
+
+                    // Removing some duplicates
+                    const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
+                    // If the first possible occurence, is not the current index, then go next until it's in the first occurence's position.
+                    if(lastIndexOccurence === -1) continue;
+                    if(index !== lastIndexOccurence) continue;
+
+                    index = lastIndexOccurence;
+
+                    inspectedTree = player.visitedLogs[index];
+                    break;
+                }
+                if(!inspectedTree) return;
+                
+                for(const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
+                    if(blockOutline?.isValid()) {
+                        continue;
+                    }
+                    let {x, y, z} = blockOutline.lastLocation;
+                    x -= 0.5;
+                    z -= 0.5;
+                    inspectedTree.visitedLogs.source.removeNode({x, y, z});
+                }
+
+                // if(inspectedTree.initialSize === inspectedTree.visitedLogs.source.getSize()) {
+                //     return;
+                // }
+
+                const tempResult: VisitedBlockResult = {blockOutlines: [], source: new Graph()};
+
+                // Traverse the interacted block to validate the remaining nodes, if something was removed.
+                if(inspectedTree.visitedLogs.source.getSize() !== 0) {
+                    inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
+                        if(node) {
+                            tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
+                            tempResult.source.addNode(node);
+                        } 
+                    });
+                } else {
+                    // This is for main tree, and subtree conflict bug. :D Just refetch it all over again, but using the cache.
+                    index = -1;
+                    if(!player.visitedLogs) return;
+                    for(const visitedLogsGraph of player.visitedLogs) {
+                        index++;
+                        const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
+                        if(!interactedNode) continue; 
+                        if(visitedLogsGraph.isDone) continue;
+                        const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
+                        if(lastIndexOccurence === -1) continue;
+                        if(index !== lastIndexOccurence) continue;
+                        index = lastIndexOccurence;
+                        inspectedTree = player.visitedLogs[index];
+                        break;
+                    }
+                    if(!inspectedTree) return;
+                    inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
+                        if(node) {
+                            tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
+                            tempResult.source.addNode(node);
+                        } 
+                    });
+                }
 
                 const newInspectedSubTree: InteractedTreeResult = {
-                    initialSize: tempResult.result.source.getSize(),
+                    initialSize: tempResult.source.getSize(),
                     isDone: false, 
-                    visitedLogs: tempResult.result
+                    visitedLogs: tempResult
                 };
                 
-                // If it already exists, then just update, else add this new result, since it has changed.
-                const currentChangedIndex = player.visitedLogs.findIndex((result) => JSON.stringify(newInspectedSubTree.visitedLogs.source) === JSON.stringify(inspectedTree.visitedLogs.source) && !result.isDone);
+                // if this newly inspected tree is just the main inspected tree, then just update, else add this new result, since it has changed.
+                const currentChangedIndex = player.visitedLogs.findIndex((result) => newInspectedSubTree.visitedLogs.source.isEqual(inspectedTree.visitedLogs.source) && !result.isDone);
                 if(currentChangedIndex === -1) {
                     player.visitedLogs.push(newInspectedSubTree);
                     system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond). then((_) => {
-                        if(!player.visitedLogs[tempResult.index]) return;
-                        if(!player.visitedLogs[tempResult.index].isDone) resetOutlinedTrees(player, newInspectedSubTree);
+                        if(!player.visitedLogs[index]) return;
+                        if(!player.visitedLogs[index].isDone) resetOutlinedTrees(player, newInspectedSubTree);
                     });
                 } else {
                     player.visitedLogs[currentChangedIndex] = newInspectedSubTree;
                 }
 
-                const size = tempResult.result.source.getSize();
+                const size = tempResult.source.getSize();
                 const totalDamage: number = size * unbreakingDamage;
                 const totalDurabilityConsumed: number = currentDurability + totalDamage;
                 const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
-                const t = system.runJob((function*(){
-                    for(const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines){
-                        if(blockOutline?.isValid()) {
-                            if(canBeChopped) blockOutline.triggerEvent('is_tree_choppable');
-                            else blockOutline.triggerEvent('unchoppable_tree');
-                        }
-                        yield;
-                    }
-                    system.clearJob(t);
-                })());
-                
-
-                // After amount of seconds, make it default.
+                // for(const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines){
+                //     if(canBeChopped) blockOutline.triggerEvent('is_tree_choppable');
+                //     else blockOutline.triggerEvent('unchoppable_tree');
+                // }
                 const inspectionForm: ActionFormData = new ActionFormData()
                 .title({
                     rawtext: [
@@ -386,13 +359,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     ]}, "textures/InfoUI/canBeCut.png");
                 forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
                     if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
-                    const t = system.runJob((function*(){
-                        for(const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines){
-                            if(blockOutline?.isValid()) blockOutline.triggerEvent('go_default_outline');
-                            yield;
-                        }
-                        system.clearJob(t);
-                    })());
+                    // for(const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines){
+                    //     if(!blockOutline?.isValid()) continue;
+                    //     blockOutline.triggerEvent('go_default_outline');
+                    // }
                     return;
                 }
                 }).catch((error: Error) => {
