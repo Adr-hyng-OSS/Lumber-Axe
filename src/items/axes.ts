@@ -129,19 +129,14 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             visited = tempResult.source;
             size = visited.getSize() - 1;
         } else {
-            const choppedTree = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, true) as VisitedBlockResult);
+            const choppedTree = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false) as VisitedBlockResult);
             destroyedTree.visitedLogs.source = choppedTree.source;
             destroyedTree.visitedLogs.blockOutlines = choppedTree.blockOutlines;
-            
             visited = choppedTree.source;
             size = visited.getSize() - 1;
         }
         if(!visited) return;
         if(size <= 0) return;
-        system.runTimeout(() => { 
-            resetOutlinedTrees(player, destroyedTree);
-        }, blockOutlinesDespawnTimer * TicksPerSecond);
-        console.warn(size);
         //! Use this when fillBlocks is in stable. (Not applicable but can be good to be refactored to graph-based)
         // for (const group of groupAdjacentBlocks(visited)) {
         //     const firstElement = JSON.parse(group[0]);
@@ -155,14 +150,13 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         // }
 
         await (new Promise<void>((resolve) => {
-            for (const entityBlock of destroyedTree.visitedLogs.blockOutlines) {
-                if(!entityBlock?.isValid()) continue;
-                system.run(() => {
-                    system.waitTicks(1);
-                    entityBlock.playAnimation('animation.block_outline.spawn_particle');
-                    dimension.setBlockType(entityBlock.lastLocation, MinecraftBlockTypes.Air);
-                });
-            }
+            destroyedTree.visitedLogs.source.traverse(location, "BFS", (node) => {
+                if(node) {
+                    const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
+                    // system.waitTicks(1).then(()=>blockOutline.playAnimation('animation.block_outline.spawn_particle')); // This doesn't get executed :<<
+                    dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
+                }
+            });
             resolve();
         })).then(() => {
             resetOutlinedTrees(player, destroyedTree);
@@ -181,7 +175,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             for (const group of stackDistribution(size)) {
                 system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
             }
-        }).catch((e) => console.warn(e, e.stack));
+        }).catch((e) => {
+            resetOutlinedTrees(player, destroyedTree);
+            console.warn(e, e.stack);
+        });
     },
     onUseOn(arg) {
         const currentHeldAxe: ItemStack = arg.itemStack;
@@ -300,6 +297,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const totalDamage: number = size * unbreakingDamage;
                     const totalDurabilityConsumed: number = currentDurability + totalDamage;
                     const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
+                    for(const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines){
+                        if(canBeChopped) blockOutline.triggerEvent('is_tree_choppable');
+                        else blockOutline.triggerEvent('unchoppable_tree');
+                    }
                     const inspectionForm: ActionFormData = new ActionFormData()
                     .title({
                         rawtext: [
@@ -352,6 +353,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         ]}, "textures/InfoUI/canBeCut.png");
                     forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
                         if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
+                        for(const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines){
+                            if(!blockOutline?.isValid()) continue;
+                            blockOutline.triggerEvent('go_default_outline');
+                        }
                         return;
                     }
                     }).catch((error: Error) => {

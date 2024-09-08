@@ -105,7 +105,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 size = visited.getSize() - 1;
             }
             else {
-                const choppedTree = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, true);
+                const choppedTree = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false);
                 destroyedTree.visitedLogs.source = choppedTree.source;
                 destroyedTree.visitedLogs.blockOutlines = choppedTree.blockOutlines;
                 visited = choppedTree.source;
@@ -115,20 +115,13 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 return;
             if (size <= 0)
                 return;
-            system.runTimeout(() => {
-                resetOutlinedTrees(player, destroyedTree);
-            }, blockOutlinesDespawnTimer * TicksPerSecond);
-            console.warn(size);
             await (new Promise((resolve) => {
-                for (const entityBlock of destroyedTree.visitedLogs.blockOutlines) {
-                    if (!entityBlock?.isValid())
-                        continue;
-                    system.run(() => {
-                        system.waitTicks(1);
-                        entityBlock.playAnimation('animation.block_outline.spawn_particle');
-                        dimension.setBlockType(entityBlock.lastLocation, MinecraftBlockTypes.Air);
-                    });
-                }
+                destroyedTree.visitedLogs.source.traverse(location, "BFS", (node) => {
+                    if (node) {
+                        const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
+                        dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
+                    }
+                });
                 resolve();
             })).then(() => {
                 resetOutlinedTrees(player, destroyedTree);
@@ -149,7 +142,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 for (const group of stackDistribution(size)) {
                     system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
                 }
-            }).catch((e) => console.warn(e, e.stack));
+            }).catch((e) => {
+                resetOutlinedTrees(player, destroyedTree);
+                console.warn(e, e.stack);
+            });
         },
         onUseOn(arg) {
             const currentHeldAxe = arg.itemStack;
@@ -264,6 +260,12 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         const totalDamage = size * unbreakingDamage;
                         const totalDurabilityConsumed = currentDurability + totalDamage;
                         const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
+                        for (const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines) {
+                            if (canBeChopped)
+                                blockOutline.triggerEvent('is_tree_choppable');
+                            else
+                                blockOutline.triggerEvent('unchoppable_tree');
+                        }
                         const inspectionForm = new ActionFormData()
                             .title({
                             rawtext: [
@@ -317,6 +319,11 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         }, "textures/InfoUI/canBeCut.png");
                         forceShow(player, inspectionForm).then((response) => {
                             if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
+                                for (const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines) {
+                                    if (!blockOutline?.isValid())
+                                        continue;
+                                    blockOutline.triggerEvent('go_default_outline');
+                                }
                                 return;
                             }
                         }).catch((error) => {

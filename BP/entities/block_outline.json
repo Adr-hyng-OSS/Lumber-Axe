@@ -60,6 +60,21 @@
 					"value": 0
 				}
 			},
+			"default_outline": {
+				"minecraft:mark_variant": {
+					"value": 0
+				}
+			},
+			"choppable_tree": {
+				"minecraft:mark_variant": {
+					"value": 1
+				}
+			},
+			"unchoppable_tree": {
+				"minecraft:mark_variant": {
+					"value": 2
+				}
+			},
 			"despawn": {
         "minecraft:instant_despawn": {}
       },
@@ -84,7 +99,7 @@
 										},
 										{
 											"test": "inactivity_timer",
-											"value": 1
+											"value": 3
 										}
 									]
 								}
@@ -128,11 +143,23 @@
 			"minecraft:entity_spawned": {
 				"trigger": "not_persistent",
 				"remove": { "component_groups": [ "active_outline" ] },
-				"add": { "component_groups": [ "inactive_outline" ] }
+				"add": { "component_groups": [ "inactive_outline", "default_outline" ] }
 			},
 			"despawn": {
 				"add": { "component_groups": [ "despawn" ] }
       },
+			"is_tree_choppable": {
+				"remove": { "component_groups": [ "unchoppable_tree", "default_outline" ] },
+				"add": { "component_groups": [ "choppable_tree" ] }
+			},
+			"unchoppable_tree": {
+				"remove": { "component_groups": [ "choppable_tree", "default_outline" ] },
+				"add": { "component_groups": [ "unchoppable_tree" ] }
+			},
+			"go_default_outline": {
+				"remove": { "component_groups": [ "choppable_tree", "unchoppable_tree" ] },
+				"add": { "component_groups": [ "default_outline" ] }
+			},
 			"active_outline": {
 				"remove": { "component_groups": [ "inactive_outline" ] },
 				"add": { "component_groups": [ "active_outline" ] }

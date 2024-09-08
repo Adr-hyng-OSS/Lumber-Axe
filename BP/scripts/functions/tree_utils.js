@@ -37,6 +37,9 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
                 if (shouldSpawnOutline) {
                     outline.triggerEvent('active_outline');
                 }
+                system.waitTicks(1).then(() => {
+                    outline.playAnimation('animation.block_outline.spawn_particle');
+                });
                 blockOutlines.push(outline);
                 yield;
                 for (const neighborBlock of getBlockNear(dimension, block.location)) {

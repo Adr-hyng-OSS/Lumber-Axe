@@ -30,7 +30,10 @@
 				"pre_animation": [
 					"temp.red = 1;",
 					"temp.green = 1;",
-					"temp.blue = 1;"
+					"temp.blue = 1;",
+					"query.mark_variant == 0 ? {t.red = 1; t.green = 1; t.blue = 1};",
+					"query.mark_variant == 1 ? {t.red = 0; t.green = 1; t.blue = 0};",
+					"query.mark_variant == 2 ? {t.red = 1; t.green = 0; t.blue = 0};"
 				],
 				"scale": "query.variant == 1 ? (1.0) : (0.0)",
 				"animate": ["render"]

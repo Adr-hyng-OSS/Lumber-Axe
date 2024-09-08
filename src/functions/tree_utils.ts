@@ -48,7 +48,10 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
                 outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
                 if (shouldSpawnOutline) {
                     outline.triggerEvent('active_outline');
-                }
+                } 
+                system.waitTicks(1).then(() => {
+                    outline.playAnimation('animation.block_outline.spawn_particle');
+                });
                 blockOutlines.push(outline);
                 yield;
 
