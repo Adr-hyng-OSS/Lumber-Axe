@@ -58,24 +58,17 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             };
             let size = 0;
             if (blockOutline) {
-                let inspectedTree;
-                let index = -1;
-                for (const visitedLogsGraph of player.visitedLogs) {
-                    index++;
-                    const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
-                    if (!interactedNode)
-                        continue;
-                    if (visitedLogsGraph.isDone)
-                        continue;
-                    const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
-                    if (lastIndexOccurence === -1)
-                        continue;
-                    if (index !== lastIndexOccurence)
-                        continue;
-                    index = lastIndexOccurence;
-                    inspectedTree = player.visitedLogs[index];
-                    break;
+                const possibleVisitedLogs = [];
+                for (let i = 0; i < player.visitedLogs.length; i++) {
+                    const currentInspectedTree = player.visitedLogs[i];
+                    const interactedTreeNode = currentInspectedTree.visitedLogs.source.getNode(blockInteracted.location);
+                    if (interactedTreeNode) {
+                        possibleVisitedLogs.push({ result: currentInspectedTree, index: i });
+                    }
                 }
+                const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
+                const index = latestPossibleInspectedTree.index;
+                const inspectedTree = latestPossibleInspectedTree.result;
                 if (!inspectedTree)
                     return;
                 destroyedTree.initialSize = inspectedTree.initialSize;
@@ -173,35 +166,19 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     let inspectedTree;
                     const tempResult = await new Promise((inspectTreePromiseResolve) => {
                         const tMain = system.runJob((function* (inspectTreePromiseResolve) {
-                            let index = -1;
                             if (!player.visitedLogs)
                                 return system.clearJob(tMain);
                             const possibleVisitedLogs = [];
-                            let i = 0;
-                            for (const currentInspectedTree of player.visitedLogs) {
-                                console.warn("Index possible tree: ", i);
+                            for (let i = 0; i < player.visitedLogs.length; i++) {
+                                const currentInspectedTree = player.visitedLogs[i];
                                 const interactedTreeNode = currentInspectedTree.visitedLogs.source.getNode(blockInteracted.location);
                                 if (interactedTreeNode) {
                                     possibleVisitedLogs.push({ result: currentInspectedTree, index: i });
                                 }
-                                i++;
                             }
-                            console.warn("Possible Trees: ", possibleVisitedLogs.length);
-                            possibleVisitedLogs.forEach((res) => console.warn("Possible Tree: ", res.result.visitedLogs.source.hash()));
-                            for (let i = 0; i < possibleVisitedLogs.length; i++) {
-                                index++;
-                                const visitedTree = possibleVisitedLogs[i].result;
-                                const _i = possibleVisitedLogs[i].index;
-                                yield;
-                                if (visitedTree.isDone)
-                                    continue;
-                                yield;
-                                if (index !== possibleVisitedLogs.length - 1)
-                                    continue;
-                                index = player.visitedLogs.lastIndexOf(visitedTree);
-                                inspectedTree = visitedTree;
-                                break;
-                            }
+                            const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
+                            const index = latestPossibleInspectedTree.index;
+                            inspectedTree = latestPossibleInspectedTree.result;
                             if (!inspectedTree)
                                 return system.clearJob(tMain);
                             for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
@@ -218,47 +195,12 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                                 inspectTreePromiseResolve({ result: inspectedTree.visitedLogs, index: index });
                             }
                             const tempResult = { blockOutlines: [], source: new Graph() };
-                            if (inspectedTree.visitedLogs.source.getSize() !== 0) {
-                                for (const node of inspectedTree.visitedLogs.source.traverseIterative(blockInteracted.location, "BFS")) {
-                                    if (node) {
-                                        tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
-                                        tempResult.source.addNode(node);
-                                    }
-                                    yield;
+                            for (const node of inspectedTree.visitedLogs.source.traverseIterative(blockInteracted.location, "BFS")) {
+                                if (node) {
+                                    tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
+                                    tempResult.source.addNode(node);
                                 }
-                            }
-                            else {
-                                index = -1;
-                                if (!player.visitedLogs)
-                                    return;
-                                for (const visitedLogsGraph of player.visitedLogs) {
-                                    index++;
-                                    const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
-                                    yield;
-                                    if (!interactedNode)
-                                        continue;
-                                    yield;
-                                    if (visitedLogsGraph.isDone)
-                                        continue;
-                                    const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
-                                    yield;
-                                    if (lastIndexOccurence === -1)
-                                        continue;
-                                    if (index !== lastIndexOccurence)
-                                        continue;
-                                    index = lastIndexOccurence;
-                                    inspectedTree = player.visitedLogs[index];
-                                    break;
-                                }
-                                if (!inspectedTree)
-                                    return system.clearJob(tMain);
-                                for (const node of inspectedTree.visitedLogs.source.traverseIterative(blockInteracted.location, "BFS")) {
-                                    if (node) {
-                                        tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
-                                        tempResult.source.addNode(node);
-                                    }
-                                    yield;
-                                }
+                                yield;
                             }
                             system.clearJob(tMain);
                             inspectTreePromiseResolve({ result: tempResult, index: index });
@@ -388,8 +330,11 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
     });
 });
 async function resetOutlinedTrees(player, result) {
-    return new Promise((resolve) => {
-        result.isDone = true;
+    await new Promise((removingOutlineResolved) => {
+        if (result.isDone) {
+            removingOutlineResolved();
+            return;
+        }
         const t = system.runJob((function* () {
             for (const blockOutline of result.visitedLogs.blockOutlines) {
                 if (blockOutline?.isValid()) {
@@ -402,9 +347,13 @@ async function resetOutlinedTrees(player, result) {
                 yield;
             }
             system.clearJob(t);
-            resolve();
+            removingOutlineResolved();
         })());
-        console.warn("RESET");
-        player.visitedLogs?.shift();
     });
+    result.isDone = true;
+    const indexToRemove = player.visitedLogs.indexOf(result);
+    if (indexToRemove === -1)
+        return;
+    console.warn("RESETTED", indexToRemove, player.visitedLogs.length);
+    player.visitedLogs.splice(indexToRemove, 1);
 }
