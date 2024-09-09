@@ -171,96 +171,126 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             try {
                 if (blockOutline?.isValid()) {
                     let inspectedTree;
-                    let index = -1;
-                    if (!player.visitedLogs)
-                        return;
-                    for (const visitedLogsGraph of player.visitedLogs) {
-                        index++;
-                        const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
-                        if (!interactedNode)
-                            continue;
-                        if (visitedLogsGraph.isDone)
-                            continue;
-                        const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
-                        if (lastIndexOccurence === -1)
-                            continue;
-                        if (index !== lastIndexOccurence)
-                            continue;
-                        index = lastIndexOccurence;
-                        inspectedTree = player.visitedLogs[index];
-                        break;
-                    }
-                    if (!inspectedTree)
-                        return;
-                    for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
-                        if (blockOutline?.isValid()) {
-                            continue;
-                        }
-                        let { x, y, z } = blockOutline.lastLocation;
-                        x -= 0.5;
-                        z -= 0.5;
-                        inspectedTree.visitedLogs.source.removeNode({ x, y, z });
-                    }
-                    const tempResult = { blockOutlines: [], source: new Graph() };
-                    if (inspectedTree.visitedLogs.source.getSize() !== 0) {
-                        inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
-                            if (node) {
-                                tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
-                                tempResult.source.addNode(node);
+                    const tempResult = await new Promise((inspectTreePromiseResolve) => {
+                        const tMain = system.runJob((function* (inspectTreePromiseResolve) {
+                            let index = -1;
+                            if (!player.visitedLogs)
+                                return system.clearJob(tMain);
+                            for (const visitedLogsGraph of player.visitedLogs) {
+                                index++;
+                                const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
+                                yield;
+                                if (!interactedNode)
+                                    continue;
+                                yield;
+                                if (visitedLogsGraph.isDone)
+                                    continue;
+                                const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
+                                yield;
+                                if (lastIndexOccurence === -1)
+                                    continue;
+                                if (index !== lastIndexOccurence)
+                                    continue;
+                                index = lastIndexOccurence;
+                                inspectedTree = player.visitedLogs[index];
+                                break;
                             }
-                        });
-                    }
-                    else {
-                        index = -1;
-                        if (!player.visitedLogs)
-                            return;
-                        for (const visitedLogsGraph of player.visitedLogs) {
-                            index++;
-                            const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
-                            if (!interactedNode)
-                                continue;
-                            if (visitedLogsGraph.isDone)
-                                continue;
-                            const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
-                            if (lastIndexOccurence === -1)
-                                continue;
-                            if (index !== lastIndexOccurence)
-                                continue;
-                            index = lastIndexOccurence;
-                            inspectedTree = player.visitedLogs[index];
-                            break;
-                        }
-                        if (!inspectedTree)
-                            return;
-                        inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
-                            if (node) {
-                                tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
-                                tempResult.source.addNode(node);
+                            if (!inspectedTree)
+                                return system.clearJob(tMain);
+                            for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
+                                if (!blockOutline?.isValid()) {
+                                    let { x, y, z } = blockOutline.lastLocation;
+                                    x -= 0.5;
+                                    z -= 0.5;
+                                    inspectedTree.visitedLogs.source.removeNode({ x, y, z });
+                                }
+                                yield;
                             }
-                        });
-                    }
+                            if (inspectedTree.initialSize === inspectedTree.visitedLogs.source.getSize()) {
+                                system.clearJob(tMain);
+                                inspectTreePromiseResolve({ result: inspectedTree.visitedLogs, index: index });
+                            }
+                            const tempResult = { blockOutlines: [], source: new Graph() };
+                            if (inspectedTree.visitedLogs.source.getSize() !== 0) {
+                                for (const node of inspectedTree.visitedLogs.source.traverseIterative(blockInteracted.location, "BFS")) {
+                                    if (node) {
+                                        tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
+                                        tempResult.source.addNode(node);
+                                    }
+                                    yield;
+                                }
+                            }
+                            else {
+                                index = -1;
+                                if (!player.visitedLogs)
+                                    return;
+                                for (const visitedLogsGraph of player.visitedLogs) {
+                                    index++;
+                                    const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
+                                    yield;
+                                    if (!interactedNode)
+                                        continue;
+                                    yield;
+                                    if (visitedLogsGraph.isDone)
+                                        continue;
+                                    const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
+                                    yield;
+                                    if (lastIndexOccurence === -1)
+                                        continue;
+                                    if (index !== lastIndexOccurence)
+                                        continue;
+                                    index = lastIndexOccurence;
+                                    inspectedTree = player.visitedLogs[index];
+                                    break;
+                                }
+                                if (!inspectedTree)
+                                    return system.clearJob(tMain);
+                                for (const node of inspectedTree.visitedLogs.source.traverseIterative(blockInteracted.location, "BFS")) {
+                                    if (node) {
+                                        tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
+                                        tempResult.source.addNode(node);
+                                    }
+                                    yield;
+                                }
+                            }
+                            system.clearJob(tMain);
+                            inspectTreePromiseResolve({ result: tempResult, index: index });
+                        })(inspectTreePromiseResolve));
+                    });
                     const newInspectedSubTree = {
-                        initialSize: tempResult.source.getSize(),
+                        initialSize: tempResult.result.source.getSize(),
                         isDone: false,
-                        visitedLogs: tempResult
+                        visitedLogs: tempResult.result
                     };
                     const currentChangedIndex = player.visitedLogs.findIndex((result) => newInspectedSubTree.visitedLogs.source.isEqual(inspectedTree.visitedLogs.source) && !result.isDone);
                     if (currentChangedIndex === -1) {
                         player.visitedLogs.push(newInspectedSubTree);
                         system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond).then((_) => {
-                            if (!player.visitedLogs[index])
+                            if (!player.visitedLogs[tempResult.index])
                                 return;
-                            if (!player.visitedLogs[index].isDone)
+                            if (!player.visitedLogs[tempResult.index].isDone)
                                 resetOutlinedTrees(player, newInspectedSubTree);
                         });
                     }
                     else {
                         player.visitedLogs[currentChangedIndex] = newInspectedSubTree;
                     }
-                    const size = tempResult.source.getSize();
+                    const size = tempResult.result.source.getSize();
                     const totalDamage = size * unbreakingDamage;
                     const totalDurabilityConsumed = currentDurability + totalDamage;
                     const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
+                    const t = system.runJob((function* () {
+                        for (const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines) {
+                            if (blockOutline?.isValid()) {
+                                if (canBeChopped)
+                                    blockOutline.triggerEvent('is_tree_choppable');
+                                else
+                                    blockOutline.triggerEvent('unchoppable_tree');
+                            }
+                            yield;
+                        }
+                        system.clearJob(t);
+                    })());
                     const inspectionForm = new ActionFormData()
                         .title({
                         rawtext: [
@@ -314,6 +344,15 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     }, "textures/InfoUI/canBeCut.png");
                     forceShow(player, inspectionForm).then((response) => {
                         if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
+                            const t = system.runJob((function* () {
+                                for (const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines) {
+                                    if (blockOutline?.isValid()) {
+                                        blockOutline.triggerEvent('go_default_outline');
+                                    }
+                                    yield;
+                                }
+                                system.clearJob(t);
+                            })());
                             return;
                         }
                     }).catch((error) => {
