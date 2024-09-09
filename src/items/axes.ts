@@ -208,37 +208,44 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const tMain = system.runJob((function*(inspectTreePromiseResolve: (inspectedTreeResult: {result: VisitedBlockResult, index: number} | PromiseLike<{result: VisitedBlockResult, index: number}>) => void){
                         let index = -1;
                         if(!player.visitedLogs) return system.clearJob(tMain);
-                        for(const visitedLogsGraph of player.visitedLogs) {
+
+                        // Filter by getting the graph that has this node.
+                        const possibleVisitedLogs: {result: InteractedTreeResult, index: number}[] = [];
+                        let i = 0;
+                        for(const currentInspectedTree of player.visitedLogs) {
+                            console.warn("Index possible tree: ", i);
+                            const interactedTreeNode = currentInspectedTree.visitedLogs.source.getNode(blockInteracted.location);
+                            if(interactedTreeNode) {
+                                possibleVisitedLogs.push({result: currentInspectedTree, index: i});
+                            }
+                            i++;
+                        }
+
+                        console.warn("Possible Trees: ", possibleVisitedLogs.length);
+                        possibleVisitedLogs.forEach((res) => console.warn("Possible Tree: ", res.result.visitedLogs.source.hash()));
+
+                        // After filtering check get that tree that this player has inspected, get the latest one.
+                        for(let i = 0; i < possibleVisitedLogs.length; i++) {
                             index++;
+
+                            const visitedTree: InteractedTreeResult = possibleVisitedLogs[i].result;
+                            const _i: number = possibleVisitedLogs[i].index;
         
-                            // Check if there's existing nodes based on the interacted block, 
-                            // if there is, then possibly there's already a inspected tree.
-                            const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
-                            // If there is not, then just go next.
-                            yield;
-                            if(!interactedNode) continue; 
-                            
                             // If there is, then check if this is already done, if it is then go next instance.
                             yield;
-                            if(visitedLogsGraph.isDone) continue;
+                            if(visitedTree.isDone) continue;
                             
                             // Removing some duplicates
-                            const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
                             yield;
-                            if(lastIndexOccurence === -1) continue;
 
                             // If the first possible occurence, is not the current index, then go next until it's in the first occurence's position.
-                            if(index !== lastIndexOccurence) continue;
-                            
-                            index = lastIndexOccurence;
-        
-                            inspectedTree = player.visitedLogs[index];
+                            if(index !== possibleVisitedLogs.length - 1) continue;
+                            index = player.visitedLogs.lastIndexOf(visitedTree);
+                            inspectedTree = visitedTree;
                             break;
                         }
     
                         if(!inspectedTree) return system.clearJob(tMain);
-
-                        console.warn(inspectedTree.visitedLogs.source.getSize());
     
                         // O(n)
                         for(const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
@@ -310,14 +317,13 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 const currentChangedIndex = player.visitedLogs.findIndex((result) => newInspectedSubTree.visitedLogs.source.isEqual(inspectedTree.visitedLogs.source) && !result.isDone);
                 if(currentChangedIndex === -1) {
                     player.visitedLogs.push(newInspectedSubTree);
-                    system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond). then(async (_) => {
+                    system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond).then(async (_) => {
                         if(!player.visitedLogs[tempResult.index]) return;
                         if(!player.visitedLogs[tempResult.index].isDone) await resetOutlinedTrees(player, newInspectedSubTree);
                     });
                 } else {
-                    player.visitedLogs[currentChangedIndex] = newInspectedSubTree;
+                    player.visitedLogs[tempResult.index] = newInspectedSubTree;
                 }
-
                 const size = tempResult.result.source.getSize();
                 const totalDamage: number = size * unbreakingDamage;
                 const totalDurabilityConsumed: number = currentDurability + totalDamage;
@@ -407,6 +413,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     isDone: false,
                     initialSize: treeCollectedResult.source.getSize(),
                 };
+                console.warn("Original: ", result.visitedLogs.source.hash(), "\n");
                 player.visitedLogs.push(result);
                 system.runTimeout(async () => { 
                     await resetOutlinedTrees(player, result);

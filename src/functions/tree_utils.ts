@@ -42,7 +42,7 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
                 const mainNode = graph.getNode(pos);
                 if (!mainNode) continue;
 
-                const outline = dimension.spawnEntity('yn:block_outline', { x: block.location.x + 0.5, y: parseInt(block.location.y.toFixed(0)), z: block.location.z + 0.5 });
+                const outline = dimension.spawnEntity('yn:block_outline', { x: block.location.x + 0.5, y: block.location.y, z: block.location.z + 0.5 });
                 outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
                 if (shouldSpawnOutline) {
                     outline.triggerEvent('active_outline');

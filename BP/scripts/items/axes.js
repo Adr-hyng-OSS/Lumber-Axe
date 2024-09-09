@@ -176,28 +176,34 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             let index = -1;
                             if (!player.visitedLogs)
                                 return system.clearJob(tMain);
-                            for (const visitedLogsGraph of player.visitedLogs) {
+                            const possibleVisitedLogs = [];
+                            let i = 0;
+                            for (const currentInspectedTree of player.visitedLogs) {
+                                console.warn("Index possible tree: ", i);
+                                const interactedTreeNode = currentInspectedTree.visitedLogs.source.getNode(blockInteracted.location);
+                                if (interactedTreeNode) {
+                                    possibleVisitedLogs.push({ result: currentInspectedTree, index: i });
+                                }
+                                i++;
+                            }
+                            console.warn("Possible Trees: ", possibleVisitedLogs.length);
+                            possibleVisitedLogs.forEach((res) => console.warn("Possible Tree: ", res.result.visitedLogs.source.hash()));
+                            for (let i = 0; i < possibleVisitedLogs.length; i++) {
                                 index++;
-                                const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);
+                                const visitedTree = possibleVisitedLogs[i].result;
+                                const _i = possibleVisitedLogs[i].index;
                                 yield;
-                                if (!interactedNode)
+                                if (visitedTree.isDone)
                                     continue;
                                 yield;
-                                if (visitedLogsGraph.isDone)
+                                if (index !== possibleVisitedLogs.length - 1)
                                     continue;
-                                const lastIndexOccurence = player.visitedLogs.lastIndexOf(visitedLogsGraph);
-                                yield;
-                                if (lastIndexOccurence === -1)
-                                    continue;
-                                if (index !== lastIndexOccurence)
-                                    continue;
-                                index = lastIndexOccurence;
-                                inspectedTree = player.visitedLogs[index];
+                                index = player.visitedLogs.lastIndexOf(visitedTree);
+                                inspectedTree = visitedTree;
                                 break;
                             }
                             if (!inspectedTree)
                                 return system.clearJob(tMain);
-                            console.warn(inspectedTree.visitedLogs.source.getSize());
                             for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
                                 if (!blockOutline?.isValid()) {
                                     let { x, y, z } = blockOutline.lastLocation;
@@ -274,7 +280,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         });
                     }
                     else {
-                        player.visitedLogs[currentChangedIndex] = newInspectedSubTree;
+                        player.visitedLogs[tempResult.index] = newInspectedSubTree;
                     }
                     const size = tempResult.result.source.getSize();
                     const totalDamage = size * unbreakingDamage;
@@ -368,6 +374,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         isDone: false,
                         initialSize: treeCollectedResult.source.getSize(),
                     };
+                    console.warn("Original: ", result.visitedLogs.source.hash(), "\n");
                     player.visitedLogs.push(result);
                     system.runTimeout(async () => {
                         await resetOutlinedTrees(player, result);
