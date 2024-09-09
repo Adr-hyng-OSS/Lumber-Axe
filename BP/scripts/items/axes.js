@@ -5,7 +5,7 @@ import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-
 import { Logger } from "utils/logger";
 import "classes/player";
 import { Graph } from "utils/graph";
-const blockOutlinesDespawnTimer = 5;
+const blockOutlinesDespawnTimer = 10;
 world.beforeEvents.worldInitialize.subscribe((registry) => {
     registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
         onHitEntity(arg) {
@@ -125,8 +125,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     system.clearJob(t);
                     resolve();
                 })());
-            })).then(() => {
-                resetOutlinedTrees(player, destroyedTree);
+            })).then(async () => {
+                await resetOutlinedTrees(player, destroyedTree);
                 const totalDamage = size * unbreakingDamage;
                 const postDamagedDurability = itemDurability.damage + totalDamage;
                 if (postDamagedDurability + 1 === itemDurability.maxDurability) {
@@ -144,8 +144,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 for (const group of stackDistribution(size)) {
                     system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
                 }
-            }).catch((e) => {
-                resetOutlinedTrees(player, destroyedTree);
+            }).catch(async (e) => {
+                await resetOutlinedTrees(player, destroyedTree);
                 console.warn(e, e.stack);
             });
         },
@@ -197,6 +197,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             }
                             if (!inspectedTree)
                                 return system.clearJob(tMain);
+                            console.warn(inspectedTree.visitedLogs.source.getSize());
                             for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
                                 if (!blockOutline?.isValid()) {
                                     let { x, y, z } = blockOutline.lastLocation;
@@ -265,11 +266,11 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const currentChangedIndex = player.visitedLogs.findIndex((result) => newInspectedSubTree.visitedLogs.source.isEqual(inspectedTree.visitedLogs.source) && !result.isDone);
                     if (currentChangedIndex === -1) {
                         player.visitedLogs.push(newInspectedSubTree);
-                        system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond).then((_) => {
+                        system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond).then(async (_) => {
                             if (!player.visitedLogs[tempResult.index])
                                 return;
                             if (!player.visitedLogs[tempResult.index].isDone)
-                                resetOutlinedTrees(player, newInspectedSubTree);
+                                await resetOutlinedTrees(player, newInspectedSubTree);
                         });
                     }
                     else {
@@ -368,8 +369,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         initialSize: treeCollectedResult.source.getSize(),
                     };
                     player.visitedLogs.push(result);
-                    system.runTimeout(() => {
-                        resetOutlinedTrees(player, result);
+                    system.runTimeout(async () => {
+                        await resetOutlinedTrees(player, result);
                     }, blockOutlinesDespawnTimer * TicksPerSecond);
                 }
             }
@@ -379,20 +380,24 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         },
     });
 });
-function resetOutlinedTrees(player, result) {
-    result.isDone = true;
-    const t = system.runJob((function* () {
-        for (const blockOutline of result.visitedLogs.blockOutlines) {
-            if (blockOutline?.isValid()) {
-                const isPersistent = blockOutline.getProperty('yn:stay_persistent');
+async function resetOutlinedTrees(player, result) {
+    return new Promise((resolve) => {
+        result.isDone = true;
+        const t = system.runJob((function* () {
+            for (const blockOutline of result.visitedLogs.blockOutlines) {
+                if (blockOutline?.isValid()) {
+                    const isPersistent = blockOutline.getProperty('yn:stay_persistent');
+                    yield;
+                    if (isPersistent)
+                        continue;
+                    blockOutline.triggerEvent('despawn');
+                }
                 yield;
-                if (isPersistent)
-                    continue;
-                blockOutline.triggerEvent('despawn');
             }
-            yield;
-        }
-        system.clearJob(t);
-    })());
-    player.visitedLogs?.shift();
+            system.clearJob(t);
+            resolve();
+        })());
+        console.warn("RESET");
+        player.visitedLogs?.shift();
+    });
 }
