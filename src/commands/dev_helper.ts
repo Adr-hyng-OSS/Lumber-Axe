@@ -51,11 +51,12 @@ const command: ICommandBase = {
             case REQUIRED_PARAMETER.TEST:
 
                 // Need to check if this neighbor is a neighbor from another node.
-                let inspectedTree: InteractedTreeResult;
-                let blockInteracted = player.getBlockFromViewDirection({maxDistance: 50}).block;
-                const outline = player.dimension.getEntities({closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter()})[0];
-                if(!outline?.isValid()) return;
-                outline.playAnimation('animation.block_outline.spawn_particle');
+                console.warn(player.visitedLogs?.length ?? 0);
+                // let inspectedTree: InteractedTreeResult;
+                // let blockInteracted = player.getBlockFromViewDirection({maxDistance: 50}).block;
+                // const outline = player.dimension.getEntities({closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter()})[0];
+                // if(!outline?.isValid()) return;
+                // outline.playAnimation('animation.block_outline.spawn_particle');
                 // if(!player.visitedLogs.length) return;
                 // for(const visitedLogsGraph of player.visitedLogs) {
                 //     const interactedNode = visitedLogsGraph.visitedLogs.source.getNode(blockInteracted.location);

@@ -97,7 +97,7 @@
 			"not_persistent": {
 				"minecraft:timer": {
 					"looping": false,
-					"time": 30,
+					"time": 15,
 					"time_down_event": {
 						"event": "despawn"
 					}

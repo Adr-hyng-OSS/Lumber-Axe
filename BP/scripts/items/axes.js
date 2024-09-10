@@ -5,7 +5,7 @@ import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-
 import { Logger } from "utils/logger";
 import "classes/player";
 import { Graph } from "utils/graph";
-const blockOutlinesDespawnTimer = 20;
+const blockOutlinesDespawnTimer = 10;
 world.beforeEvents.worldInitialize.subscribe((registry) => {
     registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
         onHitEntity(arg) {
@@ -56,54 +56,11 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     source: new Graph()
                 }
             };
-            let size = 0;
-            let index = -1;
-            if (blockOutline) {
-                const possibleVisitedLogs = [];
-                for (let i = 0; i < player.visitedLogs.length; i++) {
-                    const currentInspectedTree = player.visitedLogs[i];
-                    const interactedTreeNode = currentInspectedTree.visitedLogs.source.getNode(blockInteracted.location);
-                    if (interactedTreeNode) {
-                        possibleVisitedLogs.push({ result: currentInspectedTree, index: i });
-                    }
-                }
-                const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
-                index = latestPossibleInspectedTree.index;
-                const inspectedTree = latestPossibleInspectedTree.result;
-                if (!inspectedTree)
-                    return;
-                destroyedTree.initialSize = inspectedTree.initialSize;
-                inspectedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
-                    destroyedTree.visitedLogs.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
-                    destroyedTree.visitedLogs.source.addNode(node);
-                });
-                for (const blockOutline of destroyedTree.visitedLogs.blockOutlines) {
-                    if (blockOutline?.isValid())
-                        continue;
-                    let { x, y, z } = blockOutline.lastLocation;
-                    x -= 0.5;
-                    z -= 0.5;
-                    destroyedTree.visitedLogs.source.removeNode({ x, y, z });
-                }
-                const tempResult = { blockOutlines: [], source: new Graph() };
-                destroyedTree.visitedLogs.source.traverse(blockInteracted.location, "BFS", (node) => {
-                    if (node) {
-                        tempResult.blockOutlines.push(destroyedTree.visitedLogs.blockOutlines[node.index]);
-                        tempResult.source.addNode(node);
-                    }
-                });
-                tempResult.source.removeNode(blockOutline.lastLocation);
-                destroyedTree.visitedLogs = tempResult;
-                visited = tempResult.source;
-                size = visited.getSize() - 1;
-            }
-            else {
-                const choppedTree = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false);
-                destroyedTree.visitedLogs.source = choppedTree.source;
-                destroyedTree.visitedLogs.blockOutlines = choppedTree.blockOutlines;
-                visited = choppedTree.source;
-                size = visited.getSize() - 1;
-            }
+            const choppedTree = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false);
+            destroyedTree.visitedLogs.source = choppedTree.source;
+            destroyedTree.visitedLogs.blockOutlines = choppedTree.blockOutlines;
+            visited = choppedTree.source;
+            const size = visited.getSize() - 1;
             if (!visited)
                 return;
             if (size <= 0)
@@ -120,10 +77,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     resolve();
                 })());
             })).then(async () => {
-                console.warn("Index: ", index);
-                if (index !== -1) {
-                    player.visitedLogs[index].isDone = true;
-                }
                 const totalDamage = size * unbreakingDamage;
                 const postDamagedDurability = itemDurability.damage + totalDamage;
                 if (postDamagedDurability + 1 === itemDurability.maxDurability) {
@@ -142,7 +95,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
                 }
             }).catch(async (e) => {
-                player.visitedLogs.splice(index, 1);
                 console.warn(e, e.stack);
             });
         },
@@ -224,7 +176,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             if (!player.visitedLogs[tempResult.index])
                                 return;
                             if (!player.visitedLogs[tempResult.index].isDone)
-                                await resetOutlinedTrees(player, newInspectedSubTree);
+                                resetOutlinedTrees(player, newInspectedSubTree);
                         });
                     }
                     else {
@@ -324,7 +276,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     };
                     player.visitedLogs.push(result);
                     system.runTimeout(async () => {
-                        await resetOutlinedTrees(player, result);
+                        if (!result.isDone)
+                            resetOutlinedTrees(player, result);
                     }, blockOutlinesDespawnTimer * TicksPerSecond);
                 }
             }
@@ -334,23 +287,19 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         },
     });
 });
-async function resetOutlinedTrees(player, result) {
-    await new Promise((removingOutlineResolved) => {
-        if (result.isDone) {
-            removingOutlineResolved();
-            return;
-        }
-        const t = system.runJob((function* () {
-            for (const blockOutline of result.visitedLogs.blockOutlines) {
-                if (blockOutline?.isValid()) {
-                    blockOutline.triggerEvent('despawn');
-                }
-                yield;
+function resetOutlinedTrees(player, result) {
+    if (result.isDone) {
+        return;
+    }
+    result.isDone = true;
+    player.visitedLogs.shift();
+    const t = system.runJob((function* () {
+        for (const blockOutline of result.visitedLogs.blockOutlines) {
+            if (blockOutline?.isValid()) {
+                blockOutline.triggerEvent('despawn');
             }
-            system.clearJob(t);
-            result.isDone = true;
-            player.visitedLogs.shift();
-            removingOutlineResolved();
-        })());
-    });
+            yield;
+        }
+        system.clearJob(t);
+    })());
 }
