@@ -9,7 +9,7 @@ import { Graph } from "utils/graph";
 
 // Improve in next update using runJob for caching, since caching still gets O(2n).
 
-const blockOutlinesDespawnTimer = 10;
+const blockOutlinesDespawnTimer = 20;
 
 world.beforeEvents.worldInitialize.subscribe((registry) => {
   registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
@@ -62,6 +62,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             }
         };
         let size = 0;
+        let index = -1;
         if(blockOutline) {
             // It copies the reference from the array. So, if you change something
             // It changes the array's content also.
@@ -76,7 +77,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             
             // After filtering check get that tree that this player has inspected, get the latest one.
             const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
-            const index: number = latestPossibleInspectedTree.index;
+            index = latestPossibleInspectedTree.index;
             const inspectedTree: InteractedTreeResult = latestPossibleInspectedTree.result; 
 
             if(!inspectedTree) return;
@@ -147,14 +148,19 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 resolve();
             })());
         })).then(async () => {
-            await resetOutlinedTrees(player, destroyedTree);
+            // When you inspect and break something, it causes an error.
+            console.warn("Index: ", index);
+            if(index !== -1) {
+                // player.visitedLogs.splice(index, 1);
+                player.visitedLogs[index].isDone = true;
+            }
             const totalDamage: number = size * unbreakingDamage;
             const postDamagedDurability: number = itemDurability.damage + totalDamage;
             if (postDamagedDurability + 1 === itemDurability.maxDurability) {
                 equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
             } else if (postDamagedDurability > itemDurability.maxDurability) {
                 currentHeldAxe.lockMode = ItemLockMode.none;
-                return;
+                return; 
             } else if (postDamagedDurability < itemDurability.maxDurability){
                 itemDurability.damage = itemDurability.damage +  totalDamage;
                 currentHeldAxe.lockMode = ItemLockMode.none;
@@ -164,7 +170,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
             }
         }).catch(async (e) => {
-            await resetOutlinedTrees(player, destroyedTree);
+            // await resetOutlinedTrees(player, destroyedTree);
+            player.visitedLogs.splice(index, 1);
             console.warn(e, e.stack);
         });
     },
@@ -191,9 +198,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             // Check also, if this tree is already being interacted. By checking this current blockOutline (node), if it's being interacted.
             if(blockOutline?.isValid()) {
                 let inspectedTree: InteractedTreeResult;
+                if(!player.visitedLogs) return;
                 const tempResult = await new Promise<{result: VisitedBlockResult, index: number}>((inspectTreePromiseResolve) => {
                     const tMain = system.runJob((function*(inspectTreePromiseResolve: (inspectedTreeResult: {result: VisitedBlockResult, index: number} | PromiseLike<{result: VisitedBlockResult, index: number}>) => void){
-                        if(!player.visitedLogs) return system.clearJob(tMain);
 
                         // Filter by getting the graph that has this node.
                         const possibleVisitedLogs: {result: InteractedTreeResult, index: number}[] = [];
@@ -204,6 +211,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                                 possibleVisitedLogs.push({result: currentInspectedTree, index: i});
                             }
                         }
+
+                        if(!possibleVisitedLogs.length) return system.clearJob(tMain);
 
                         // After filtering check get that tree that this player has inspected, get the latest one.
                         const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
@@ -349,7 +358,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     isDone: false,
                     initialSize: treeCollectedResult.source.getSize(),
                 };
-                console.warn("Original: ", result.visitedLogs.source.hash(), "\n");
                 player.visitedLogs.push(result);
                 system.runTimeout(async () => { 
                     await resetOutlinedTrees(player, result);
@@ -371,20 +379,16 @@ async function resetOutlinedTrees(player: Player, result: InteractedTreeResult) 
         const t = system.runJob((function*(){
             for(const blockOutline of result.visitedLogs.blockOutlines) {
                 if(blockOutline?.isValid()) {
-                    const isPersistent = blockOutline.getProperty('yn:stay_persistent');
-                    yield;
-                    if(isPersistent) continue;
                     blockOutline.triggerEvent('despawn');
                 }
                 yield;
             }
             system.clearJob(t);
+            result.isDone = true;
+            
+            // player.visitedLogs.splice(index, 1);
+            player.visitedLogs.shift();
             removingOutlineResolved();
         })());
     });
-    result.isDone = true;
-    const indexToRemove = player.visitedLogs.indexOf(result);
-    if(indexToRemove === -1) return;
-    console.warn("RESETTED", indexToRemove, player.visitedLogs.length);
-    player.visitedLogs.splice(indexToRemove, 1);
 }
