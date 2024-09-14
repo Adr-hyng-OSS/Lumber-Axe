@@ -14,6 +14,7 @@ export * from "items/axes";
 export type VisitedBlockResult = {
   source: Graph;
   blockOutlines: Entity[];
+  yOffsets: Map<number, boolean>;
 }
 
 export type InteractedTreeResult = {

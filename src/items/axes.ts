@@ -43,13 +43,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
         const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
         const unbreakingDamage: number = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
-        
-        const blockOutline = player.dimension.getEntities({
-            closest: 1, 
-            maxDistance: 1, 
-            type: "yn:block_outline", 
-            location: blockInteracted.bottomCenter()
-        })[0];
         let visited: Graph;
         
         // This should be the temporary container where it doesn't copy the reference from the original player's visitedNodes.
@@ -58,14 +51,15 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             isDone: false,
             visitedLogs: {
                 blockOutlines: [], 
-                source: new Graph()
+                source: new Graph(),
+                yOffsets: new Map()
             }
         };
         // Haven't used the cache for visual effect purposes :3
-
         const choppedTree = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false) as VisitedBlockResult);
         destroyedTree.visitedLogs.source = choppedTree.source;
         destroyedTree.visitedLogs.blockOutlines = choppedTree.blockOutlines;
+        destroyedTree.visitedLogs.yOffsets = choppedTree.yOffsets;
         visited = choppedTree.source;
         const size = visited.getSize() - 1;
 
@@ -88,8 +82,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 destroyedTree.visitedLogs.source.traverse(location, "BFS", (node) => {
                     if(node) {
                         const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
-                        // Just execute one blockOutline per 1 block straight, don't involve everything even the branches.
-                        blockOutline.playAnimation('animation.block_outline.spawn_particle');
+                        if(destroyedTree.visitedLogs.yOffsets.has(node.location.y) && destroyedTree.visitedLogs.yOffsets.get(node.location.y)) {
+                            blockOutline.playAnimation('animation.block_outline.spawn_particle');
+                            destroyedTree.visitedLogs.yOffsets.set(node.location.y, false);
+                        }
                         system.waitTicks(3).then(()=>{
                             dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
                         }); 
@@ -182,13 +178,14 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             inspectTreePromiseResolve({result: inspectedTree.visitedLogs, index: index});
                         }
 
-                        const tempResult: VisitedBlockResult = {blockOutlines: [], source: new Graph()};
+                        const tempResult: VisitedBlockResult = {blockOutlines: [], source: new Graph(), yOffsets: new Map()};
     
                         // Traverse the interacted block to validate the remaining nodes, if something was removed. O(n)
                         for(const node of inspectedTree.visitedLogs.source.traverseIterative(blockInteracted.location, "BFS")) {
                             if(node) {
                                 tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
                                 tempResult.source.addNode(node);
+                                tempResult.yOffsets.set(node.location.y, false);
                             }
                             yield;
                         }

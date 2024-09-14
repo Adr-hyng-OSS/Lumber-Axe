@@ -58,14 +58,22 @@ function getTreeLogs(
             centroidLog.x = (centroidLog.x / _len) + 0.5;
             centroidLog.z = (centroidLog.z / _len) + 0.5;
 
-
+            // Get the most bottom block, and the top most block.
             yOffsets.set(firstBlock.location.y, false);
             let _topBlock = firstBlock.above();
+            let _bottomBlock = firstBlock.below();
             while(true) {
-                if (!_topBlock?.isValid() || !isLogIncluded(_topBlock?.typeId)) break;
-                if (_topBlock?.typeId !== blockTypeId) break;
-                yOffsets.set(_topBlock.location.y, false);
-                _topBlock = _topBlock.above();
+                const availableAbove = _topBlock?.isValid() && isLogIncluded(_topBlock?.typeId) && _topBlock?.typeId === blockTypeId;
+                const availableBelow = _bottomBlock?.isValid() && isLogIncluded(_bottomBlock?.typeId) && _bottomBlock?.typeId === blockTypeId;
+                if(!availableAbove && !availableBelow) break;
+                if(availableAbove) {
+                    yOffsets.set(_topBlock.location.y, false);
+                    _topBlock = _topBlock.above();
+                }
+                if (availableBelow) {
+                    yOffsets.set(_bottomBlock.location.y, false);
+                    _bottomBlock = _bottomBlock.below();
+                } 
                 yield;
             }
 
@@ -75,7 +83,7 @@ function getTreeLogs(
                 // Check termination conditions
                 if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || size >= maxNeeded) {
                     system.clearJob(traversingTreeInterval);
-                    resolve({ source: graph, blockOutlines });
+                    resolve({ source: graph, blockOutlines, yOffsets });
                     return;
                 }
 
@@ -85,9 +93,8 @@ function getTreeLogs(
                 const mainNode = graph.getNode(pos);
                 if (!mainNode) continue;
 
-                
                 // VFX
-                // Stop creating entity if there's already an entity
+                //! Stop creating entity if there's already an entity
                 const outline = dimension.spawnEntity('yn:block_outline', { x: block.location.x + 0.5, y: block.location.y, z: block.location.z + 0.5 });
                 outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
                 if (shouldSpawnOutline) {
@@ -98,8 +105,6 @@ function getTreeLogs(
                             dimension.spawnParticle('yn:tree_dust', {x: centroidLog.x, y: mainNode.location.y, z: centroidLog.z});
                             yOffsets.set(mainNode.location.y, true);
                         }
-                        // Play this upon destroying.
-                        // outline.playAnimation('animation.block_outline.spawn_particle');
                     });
                 }
 
@@ -136,7 +141,7 @@ function getTreeLogs(
 
             queue = [];
             system.clearJob(traversingTreeInterval);
-            resolve({ source: graph, blockOutlines });
+            resolve({ source: graph, blockOutlines, yOffsets });
         }());
     });
 }

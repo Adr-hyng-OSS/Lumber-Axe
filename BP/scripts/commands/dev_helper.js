@@ -45,10 +45,9 @@ const command = {
                 let blockInteracted = player.getBlockFromViewDirection({ maxDistance: 50 }).block;
                 const topMostBlockRay = player.dimension.getBlockFromRay(blockInteracted.location, { x: 0, y: 1, z: 0 }, {
                     excludeTypes: [
-                        MinecraftBlockTypes.JungleLog.id,
+                        MinecraftBlockTypes.JungleLog.id
                     ]
                 }) ?? undefined;
-                console.warn(topMostBlockRay.faceLocation.y);
                 if (!topMostBlockRay)
                     return;
                 const topMostBlock = topMostBlockRay.block;

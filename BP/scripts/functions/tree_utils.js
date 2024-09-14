@@ -44,20 +44,27 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
             centroidLog.z = (centroidLog.z / _len) + 0.5;
             yOffsets.set(firstBlock.location.y, false);
             let _topBlock = firstBlock.above();
+            let _bottomBlock = firstBlock.below();
             while (true) {
-                if (!_topBlock?.isValid() || !isLogIncluded(_topBlock?.typeId))
+                const availableAbove = _topBlock?.isValid() && isLogIncluded(_topBlock?.typeId) && _topBlock?.typeId === blockTypeId;
+                const availableBelow = _bottomBlock?.isValid() && isLogIncluded(_bottomBlock?.typeId) && _bottomBlock?.typeId === blockTypeId;
+                if (!availableAbove && !availableBelow)
                     break;
-                if (_topBlock?.typeId !== blockTypeId)
-                    break;
-                yOffsets.set(_topBlock.location.y, false);
-                _topBlock = _topBlock.above();
+                if (availableAbove) {
+                    yOffsets.set(_topBlock.location.y, false);
+                    _topBlock = _topBlock.above();
+                }
+                if (availableBelow) {
+                    yOffsets.set(_bottomBlock.location.y, false);
+                    _bottomBlock = _bottomBlock.below();
+                }
                 yield;
             }
             while (queue.length > 0) {
                 const size = graph.getSize();
                 if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || size >= maxNeeded) {
                     system.clearJob(traversingTreeInterval);
-                    resolve({ source: graph, blockOutlines });
+                    resolve({ source: graph, blockOutlines, yOffsets });
                     return;
                 }
                 const block = queue.shift();
@@ -102,7 +109,7 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
             }
             queue = [];
             system.clearJob(traversingTreeInterval);
-            resolve({ source: graph, blockOutlines });
+            resolve({ source: graph, blockOutlines, yOffsets });
         }());
     });
 }

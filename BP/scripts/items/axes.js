@@ -41,24 +41,20 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             const level = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
             const unbreakingMultiplier = (100 / (level + 1)) / 100;
             const unbreakingDamage = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
-            const blockOutline = player.dimension.getEntities({
-                closest: 1,
-                maxDistance: 1,
-                type: "yn:block_outline",
-                location: blockInteracted.bottomCenter()
-            })[0];
             let visited;
             let destroyedTree = {
                 initialSize: 0,
                 isDone: false,
                 visitedLogs: {
                     blockOutlines: [],
-                    source: new Graph()
+                    source: new Graph(),
+                    yOffsets: new Map()
                 }
             };
             const choppedTree = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false);
             destroyedTree.visitedLogs.source = choppedTree.source;
             destroyedTree.visitedLogs.blockOutlines = choppedTree.blockOutlines;
+            destroyedTree.visitedLogs.yOffsets = choppedTree.yOffsets;
             visited = choppedTree.source;
             const size = visited.getSize() - 1;
             if (!visited)
@@ -70,7 +66,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     destroyedTree.visitedLogs.source.traverse(location, "BFS", (node) => {
                         if (node) {
                             const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
-                            blockOutline.playAnimation('animation.block_outline.spawn_particle');
+                            if (destroyedTree.visitedLogs.yOffsets.has(node.location.y) && destroyedTree.visitedLogs.yOffsets.get(node.location.y)) {
+                                blockOutline.playAnimation('animation.block_outline.spawn_particle');
+                                destroyedTree.visitedLogs.yOffsets.set(node.location.y, false);
+                            }
                             system.waitTicks(3).then(() => {
                                 dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
                             });
@@ -155,11 +154,12 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                                 system.clearJob(tMain);
                                 inspectTreePromiseResolve({ result: inspectedTree.visitedLogs, index: index });
                             }
-                            const tempResult = { blockOutlines: [], source: new Graph() };
+                            const tempResult = { blockOutlines: [], source: new Graph(), yOffsets: new Map() };
                             for (const node of inspectedTree.visitedLogs.source.traverseIterative(blockInteracted.location, "BFS")) {
                                 if (node) {
                                     tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
                                     tempResult.source.addNode(node);
+                                    tempResult.yOffsets.set(node.location.y, false);
                                 }
                                 yield;
                             }

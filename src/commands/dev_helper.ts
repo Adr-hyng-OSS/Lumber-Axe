@@ -48,15 +48,13 @@ const command: ICommandBase = {
             case REQUIRED_PARAMETER.TEST:
                 // Need to check if this neighbor is a neighbor from another node.
                 // let inspectedTree: InteractedTreeResult;
-                let blockInteracted = player.getBlockFromViewDirection({maxDistance: 50}).block;
                 // const topMostBlock = player.dimension.getTopmostBlock({x: blockInteracted.x, z: blockInteracted.z});
+                let blockInteracted = player.getBlockFromViewDirection({maxDistance: 50}).block;
                 const topMostBlockRay = player.dimension.getBlockFromRay(blockInteracted.location, {x: 0, y: 1, z: 0}, {
                     excludeTypes: [
-                        MinecraftBlockTypes.JungleLog.id, 
-                        // MinecraftBlockTypes.Air.id
+                        MinecraftBlockTypes.JungleLog.id
                     ]
                 }) ?? undefined;
-                console.warn(topMostBlockRay.faceLocation.y);
                 if(!topMostBlockRay) return;
                 const topMostBlock = topMostBlockRay.block;
                 console.warn("Height: ", (topMostBlock.location.y - blockInteracted.location.y) + 1, "\nID: ", topMostBlock.typeId);
