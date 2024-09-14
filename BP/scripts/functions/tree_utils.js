@@ -1,4 +1,4 @@
-import { system } from "@minecraft/server";
+import { MolangVariableMap, system } from "@minecraft/server";
 import { validLogBlocks, serverConfigurationCopy } from "../index";
 import { Graph } from "utils/graph";
 function isLogIncluded(blockTypeId) {
@@ -8,8 +8,10 @@ function isLogIncluded(blockTypeId) {
         return true;
     return false;
 }
-function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOutline = true) {
-    return new Promise((resolve) => {
+async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOutline = true) {
+    let centroidLog = { x: 0, y: 0, z: 0 };
+    let trunkNumberOfBlocks = shouldSpawnOutline ? 0 : 1;
+    const visitedTree = new Promise((resolve) => {
         const graph = new Graph();
         const blockOutlines = [];
         const yOffsets = new Map();
@@ -20,8 +22,7 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
             queue.push(firstBlock);
             graph.addNode(firstBlock.location);
             visited.add(JSON.stringify(firstBlock.location));
-            let trunkNumberOfBlocks = shouldSpawnOutline ? 0 : 1;
-            const centroidLog = {
+            centroidLog = {
                 x: shouldSpawnOutline ? 0 : firstBlock.x,
                 y: 0,
                 z: shouldSpawnOutline ? 0 : firstBlock.z
@@ -83,12 +84,6 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
                     outline.triggerEvent('active_outline');
                 }
                 else {
-                    system.waitTicks(1).then(() => {
-                        if (yOffsets.has(mainNode.location.y) && !yOffsets.get(mainNode.location.y)) {
-                            dimension.spawnParticle('yn:tree_dust', { x: centroidLog.x, y: mainNode.location.y, z: centroidLog.z });
-                            yOffsets.set(mainNode.location.y, true);
-                        }
-                    });
                 }
                 blockOutlines.push(outline);
                 yield;
@@ -122,6 +117,22 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
             resolve({ source: graph, blockOutlines, yOffsets });
         }());
     });
+    const awaitedVisitedTree = await visitedTree;
+    if (!shouldSpawnOutline && awaitedVisitedTree.source.getSize() > 1) {
+        const trunkYCoordinates = awaitedVisitedTree.yOffsets;
+        let i = 0;
+        for (const yOffset of trunkYCoordinates) {
+            if (i % 2 === 0) {
+                await system.waitTicks(3);
+                const molang = new MolangVariableMap();
+                molang.setFloat('trunk_size', trunkNumberOfBlocks);
+                dimension.spawnParticle('yn:tree_dust', { x: centroidLog.x, y: yOffset[0], z: centroidLog.z }, molang);
+            }
+            awaitedVisitedTree.yOffsets.set(yOffset[0], true);
+            i++;
+        }
+    }
+    return awaitedVisitedTree;
 }
 function* getBlockNear(dimension, location, radius = 1) {
     const centerX = location.x;

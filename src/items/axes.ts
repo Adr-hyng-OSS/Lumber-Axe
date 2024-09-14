@@ -34,10 +34,11 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         if (!isLogIncluded(blockTypeId)) {
             axe.damageDurability(1);
             return;
-        }
+        } 
+        axe.damageDurability(2);
         const equipment = player.getComponent(EntityEquippableComponent.componentId) as EntityEquippableComponent;
         currentHeldAxe.lockMode = ItemLockMode.slot;
-
+        
         const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
         const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
         const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
@@ -58,9 +59,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         // Haven't used the cache for visual effect purposes :3
         const choppedTree = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false) as VisitedBlockResult);
         SendMessageTo(player, {rawtext: [{text: "Tree is fully traversed. "}]});
-        destroyedTree.visitedLogs.source = choppedTree.source;
-        destroyedTree.visitedLogs.blockOutlines = choppedTree.blockOutlines;
-        destroyedTree.visitedLogs.yOffsets = choppedTree.yOffsets;
+        destroyedTree.visitedLogs = choppedTree;
         visited = choppedTree.source;
         const size = visited.getSize() - 1;
 
@@ -95,14 +94,12 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         system.waitTicks(3).then(()=>{
                             dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
                         }); 
-                        
-                        // system.waitTicks(1).then(()=>dimension.spawnParticle('yn:tree_dust', node.location));
                     }
                 });
                 system.clearJob(t);
                 resolve();
             })());
-        })).then(async () => {
+        })).then(() => {
             const totalDamage: number = size * unbreakingDamage;
             const postDamagedDurability: number = itemDurability.damage + totalDamage;
             if (postDamagedDurability + 1 === itemDurability.maxDurability) {
@@ -118,8 +115,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             for (const group of stackDistribution(size)) {
                 system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
             }
-        }).catch(async (e) => {
+        }).catch((e) => {
             console.warn(e, e.stack);
+            currentHeldAxe.lockMode = ItemLockMode.none;
         });
     },
     async onUseOn(arg) {

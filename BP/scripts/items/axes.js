@@ -34,6 +34,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 axe.damageDurability(1);
                 return;
             }
+            axe.damageDurability(2);
             const equipment = player.getComponent(EntityEquippableComponent.componentId);
             currentHeldAxe.lockMode = ItemLockMode.slot;
             const itemDurability = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId);
@@ -53,9 +54,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             };
             const choppedTree = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false);
             SendMessageTo(player, { rawtext: [{ text: "Tree is fully traversed. " }] });
-            destroyedTree.visitedLogs.source = choppedTree.source;
-            destroyedTree.visitedLogs.blockOutlines = choppedTree.blockOutlines;
-            destroyedTree.visitedLogs.yOffsets = choppedTree.yOffsets;
+            destroyedTree.visitedLogs = choppedTree;
             visited = choppedTree.source;
             const size = visited.getSize() - 1;
             if (!visited)
@@ -83,7 +82,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     system.clearJob(t);
                     resolve();
                 })());
-            })).then(async () => {
+            })).then(() => {
                 const totalDamage = size * unbreakingDamage;
                 const postDamagedDurability = itemDurability.damage + totalDamage;
                 if (postDamagedDurability + 1 === itemDurability.maxDurability) {
@@ -101,8 +100,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 for (const group of stackDistribution(size)) {
                     system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
                 }
-            }).catch(async (e) => {
+            }).catch((e) => {
                 console.warn(e, e.stack);
+                currentHeldAxe.lockMode = ItemLockMode.none;
             });
         },
         async onUseOn(arg) {
