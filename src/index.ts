@@ -1,4 +1,4 @@
-import { Entity, Vector3 } from '@minecraft/server';
+import { Entity, Vector3, VectorXZ } from '@minecraft/server';
 import { Graph } from 'utils/graph';
 
 export * from './utils/utilities';
@@ -11,10 +11,16 @@ export * from "configuration/server_configuration";
 export * from "constant";
 export * from "items/axes";
 
+export type TrunkBlockResult = {
+  size: number;
+  centroid: VectorXZ;
+}
+
 export type VisitedBlockResult = {
   source: Graph;
   blockOutlines: Entity[];
   yOffsets: Map<number, boolean>;
+  trunk: TrunkBlockResult;
 }
 
 export type InteractedTreeResult = {

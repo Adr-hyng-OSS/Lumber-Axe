@@ -1,4 +1,4 @@
-import { EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, system, TicksPerSecond, world } from "@minecraft/server";
+import { EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, Player, system, TicksPerSecond, world } from "@minecraft/server";
 import { ActionFormData, FormCancelationReason } from "@minecraft/server-ui";
 import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, playerInteractedTimeLogMap, SendMessageTo, serverConfigurationCopy, stackDistribution } from "index";
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
@@ -6,6 +6,7 @@ import { Logger } from "utils/logger";
 import "classes/player";
 import { Graph } from "utils/graph";
 const blockOutlinesDespawnTimer = 5;
+export const visitedLogs = [];
 world.beforeEvents.worldInitialize.subscribe((registry) => {
     registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
         onHitEntity(arg) {
@@ -48,7 +49,14 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 visitedLogs: {
                     blockOutlines: [],
                     source: new Graph(),
-                    yOffsets: new Map()
+                    yOffsets: new Map(),
+                    trunk: {
+                        centroid: {
+                            x: 0,
+                            z: 0
+                        },
+                        size: 0
+                    }
                 }
             };
             const choppedTree = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false);
@@ -61,7 +69,19 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             if (size <= 1)
                 return axe.damageDurability(2);
             if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + ""))
-                return resetOutlinedTrees(player, destroyedTree, true);
+                return resetOutlinedTrees(destroyedTree, true);
+            const trunkYCoordinates = destroyedTree.visitedLogs.yOffsets;
+            let i = 0;
+            for (const yOffset of trunkYCoordinates) {
+                if (i % 2 === 0) {
+                    await system.waitTicks(3);
+                    const molang = new MolangVariableMap();
+                    molang.setFloat('trunk_size', destroyedTree.visitedLogs.trunk.size);
+                    dimension.spawnParticle('yn:tree_dust', { x: destroyedTree.visitedLogs.trunk.centroid.x, y: yOffset[0], z: destroyedTree.visitedLogs.trunk.centroid.z }, molang);
+                }
+                destroyedTree.visitedLogs.yOffsets.set(yOffset[0], true);
+                i++;
+            }
             await (new Promise((resolve) => {
                 const t = system.runJob((function* () {
                     destroyedTree.visitedLogs.source.traverse(location, "BFS", (node) => {
@@ -126,13 +146,13 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             try {
                 if (blockOutline?.isValid()) {
                     let inspectedTree;
-                    if (!player.visitedLogs)
+                    if (!visitedLogs)
                         return;
                     const tempResult = await new Promise((inspectTreePromiseResolve) => {
                         const tMain = system.runJob((function* (inspectTreePromiseResolve) {
                             const possibleVisitedLogs = [];
-                            for (let i = 0; i < player.visitedLogs.length; i++) {
-                                const currentInspectedTree = player.visitedLogs[i];
+                            for (let i = 0; i < visitedLogs.length; i++) {
+                                const currentInspectedTree = visitedLogs[i];
                                 const interactedTreeNode = currentInspectedTree.visitedLogs.source.getNode(blockInteracted.location);
                                 if (interactedTreeNode) {
                                     possibleVisitedLogs.push({ result: currentInspectedTree, index: i });
@@ -158,7 +178,18 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                                 system.clearJob(tMain);
                                 inspectTreePromiseResolve({ result: inspectedTree.visitedLogs, index: index });
                             }
-                            const tempResult = { blockOutlines: [], source: new Graph(), yOffsets: new Map() };
+                            const tempResult = {
+                                blockOutlines: [],
+                                source: new Graph(),
+                                yOffsets: new Map(),
+                                trunk: {
+                                    centroid: {
+                                        x: 0,
+                                        z: 0
+                                    },
+                                    size: 0
+                                }
+                            };
                             for (const node of inspectedTree.visitedLogs.source.traverseIterative(blockInteracted.location, "BFS")) {
                                 if (node) {
                                     tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
@@ -176,18 +207,19 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         isDone: false,
                         visitedLogs: tempResult.result
                     };
-                    const currentChangedIndex = player.visitedLogs.findIndex((result) => newInspectedSubTree.visitedLogs.source.isEqual(inspectedTree.visitedLogs.source) && !result.isDone);
+                    const currentChangedIndex = visitedLogs.findIndex((result) => newInspectedSubTree.visitedLogs.source.isEqual(inspectedTree.visitedLogs.source) && !result.isDone);
                     if (currentChangedIndex === -1) {
-                        player.visitedLogs.push(newInspectedSubTree);
+                        if (newInspectedSubTree.initialSize > 0)
+                            visitedLogs.push(newInspectedSubTree);
                         system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond).then(async (_) => {
-                            if (!player.visitedLogs[tempResult.index])
+                            if (!visitedLogs[tempResult.index])
                                 return;
-                            if (!player.visitedLogs[tempResult.index].isDone)
-                                resetOutlinedTrees(player, newInspectedSubTree);
+                            if (!visitedLogs[tempResult.index].isDone)
+                                resetOutlinedTrees(newInspectedSubTree);
                         });
                     }
                     else {
-                        player.visitedLogs[tempResult.index] = newInspectedSubTree;
+                        visitedLogs[tempResult.index] = newInspectedSubTree;
                     }
                     const size = tempResult.result.source.getSize();
                     const totalDamage = size * unbreakingDamage;
@@ -254,7 +286,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 }
                 else {
                     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
-                    player.visitedLogs = player.visitedLogs ?? [];
                     const t = system.runJob((function* () {
                         for (const blockOutline of treeCollectedResult.blockOutlines) {
                             if (blockOutline?.isValid())
@@ -268,10 +299,11 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         isDone: false,
                         initialSize: treeCollectedResult.source.getSize(),
                     };
-                    player.visitedLogs.push(result);
+                    if (result.initialSize > 0)
+                        visitedLogs.push(result);
                     system.runTimeout(async () => {
                         if (!result.isDone)
-                            resetOutlinedTrees(player, result);
+                            resetOutlinedTrees(result);
                     }, blockOutlinesDespawnTimer * TicksPerSecond);
                 }
             }
@@ -281,13 +313,12 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         },
     });
 });
-function resetOutlinedTrees(player, result, instantDespawn = false) {
-    if (result.isDone) {
+function resetOutlinedTrees(result, instantDespawn = false) {
+    if (result.isDone)
         return;
-    }
     result.isDone = true;
     if (!instantDespawn)
-        player.visitedLogs?.shift();
+        visitedLogs?.shift();
     const t = system.runJob((function* () {
         for (const blockOutline of result.visitedLogs.blockOutlines) {
             if (blockOutline?.isValid()) {

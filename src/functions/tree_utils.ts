@@ -1,4 +1,4 @@
-import { Block, BlockVolumeBase, Dimension, Entity, MolangVariableMap, Vector3, system } from "@minecraft/server";
+import { Block, BlockVolumeBase, Dimension, Entity, MolangVariableMap, Vector3, VectorXZ, system } from "@minecraft/server";
 
 import { validLogBlocks, serverConfigurationCopy, VisitedBlockResult } from "../index";
 import { Graph, GraphNode } from "utils/graph";
@@ -20,9 +20,7 @@ async function getTreeLogs(
     maxNeeded: number, 
     shouldSpawnOutline: boolean = true
 ): Promise<VisitedBlockResult> {
-    let centroidLog: Vector3 = {x: 0, y: 0, z: 0};
-    let trunkNumberOfBlocks: number = shouldSpawnOutline ? 0 : 1;
-    const visitedTree = new Promise<VisitedBlockResult>((resolve) => {
+    return new Promise<VisitedBlockResult>((resolve) => {
         const graph = new Graph();
         const blockOutlines: Entity[] = [];
         const yOffsets: Map<number, boolean> = new Map();
@@ -41,9 +39,9 @@ async function getTreeLogs(
             // Breaking = False
 
             // Gets the center of the trunk.
-            centroidLog = {
+            let trunkNumberOfBlocks: number = shouldSpawnOutline ? 0 : 1;
+            let centroidLog: VectorXZ = {
                 x: shouldSpawnOutline ? 0 : firstBlock.x, 
-                y: 0, 
                 z: shouldSpawnOutline ? 0 : firstBlock.z
             };
             for (let x = location.x - 2; x <= location.x + 2; x++) {
@@ -91,7 +89,15 @@ async function getTreeLogs(
                         yield;
                     }
                     system.clearJob(traversingTreeInterval);
-                    resolve({ source: graph, blockOutlines, yOffsets });
+                    resolve({
+                        source: graph, 
+                        blockOutlines, 
+                        yOffsets, 
+                        trunk: {
+                            size: trunkNumberOfBlocks, 
+                            centroid: centroidLog
+                        }
+                    });
                     return;
                 }
 
@@ -145,41 +151,31 @@ async function getTreeLogs(
 
             queue = [];
             system.clearJob(traversingTreeInterval);
-            resolve({ source: graph, blockOutlines, yOffsets });
+            resolve({
+                source: graph, 
+                blockOutlines, 
+                yOffsets, 
+                trunk: {
+                    size: trunkNumberOfBlocks,
+                    centroid: centroidLog
+                }
+            });
         }());
     });
-
-    const awaitedVisitedTree = await visitedTree;
-    if(!shouldSpawnOutline && awaitedVisitedTree.source.getSize() > 1) {
-        const trunkYCoordinates = awaitedVisitedTree.yOffsets;
-        let i = 0;
-        for(const yOffset of trunkYCoordinates) {
-            // Spawn dust every 3 blocks
-            if(i % 2 === 0) {
-                await system.waitTicks(3);
-                const molang = new MolangVariableMap();
-                molang.setFloat('trunk_size', trunkNumberOfBlocks);
-                dimension.spawnParticle('yn:tree_dust', {x: centroidLog.x, y: yOffset[0], z: centroidLog.z}, molang);
-            }
-            awaitedVisitedTree.yOffsets.set(yOffset[0], true);
-            i++;
-        }
-    }
-    return awaitedVisitedTree;
 }
 
 
 
 function* getBlockNear(initialBlock: Block, radius: number = 1): Generator<Block, any, unknown> {
-    const centerX: number = initialBlock.location.x;
-    const centerY: number = initialBlock.location.y;
-    const centerZ: number = initialBlock.location.z;
+    const centerX: number = 0;
+    const centerY: number = 0;
+    const centerZ: number = 0;
     let _block: Block;
     for (let x = centerX - radius; x <= centerX + radius; x++) {
         for (let y = centerY - radius; y <= centerY + radius; y++) {
             for (let z = centerZ - radius; z <= centerZ + radius; z++) {
                 if (centerX === x && centerY === y && centerZ === z) continue;
-                _block = initialBlock.dimension.getBlock({x, y, z});
+                _block = initialBlock.offset({x, y, z});
                 if (!_block?.isValid() || !isLogIncluded(_block?.typeId)) continue;
                 yield _block;
             }

@@ -1,11 +1,9 @@
 import { GameMode, Player } from "@minecraft/server";
 import { OverTakes } from "./partial_overtakes";
 import { Configuration } from "configuration/configuration_screen";
-import { InteractedTreeResult } from "index";
 
 declare module "@minecraft/server" {
   interface Player {
-    visitedLogs: InteractedTreeResult[];
     configuration: Configuration;
     isSurvival(): boolean;
   }

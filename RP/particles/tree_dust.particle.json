@@ -25,7 +25,7 @@
 			"minecraft:particle_lifetime_expression": {
 				"max_lifetime": 1
 			},
-			"minecraft:particle_initial_speed": "return v.trunk_size == 1 ? 2.5 : v.trunk_size == 4 ? 5 : 7.5;",
+			"minecraft:particle_initial_speed": "return v.trunk_size == 1 ? 3.25 : v.trunk_size == 4 ? 5 : 7.5;",
 			"minecraft:particle_motion_dynamic": {
 				"linear_acceleration": ["(variable.particle_random_1 * 2 - 1) * variable.splash_power * (variable.is_vertical > 0 ? 0.2 : 0.5) * 1.0", 0, "(variable.particle_random_2 * 2 - 1) * variable.splash_power * (variable.is_vertical > 0 ? 0.2 : 0.5) * 1.0"],
 				"linear_drag_coefficient": 2

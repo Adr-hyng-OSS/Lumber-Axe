@@ -29,6 +29,15 @@
         "value": 1,
         "max": 1
       },
+			"minecraft:despawn": {
+				"despawn_from_distance": {
+					"min_distance": 32
+				},
+				"despawn_from_inactivity": true,
+				"despawn_from_simulation_edge": true,
+				"min_range_inactivity_timer": 15,
+				"remove_child_entities": false
+			},
 			"minecraft:on_death": "despawn",
 			"minecraft:breathable": {
 				"total_supply": 1,

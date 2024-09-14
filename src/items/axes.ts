@@ -1,4 +1,4 @@
-import { Block, BlockPermutation, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, system, TicksPerSecond, world } from "@minecraft/server";
+import { Block, BlockPermutation, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, Player, system, TicksPerSecond, world } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
 import { axeEquipments, forceShow, getTreeLogs, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult } from "index"
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
@@ -10,6 +10,7 @@ import { Graph } from "utils/graph";
 // Improve in next update using runJob for caching, since caching still gets O(2n).
 
 const blockOutlinesDespawnTimer = 5;
+export const visitedLogs: InteractedTreeResult[] = [];
 
 world.beforeEvents.worldInitialize.subscribe((registry) => {
   registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
@@ -52,11 +53,17 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             visitedLogs: {
                 blockOutlines: [], 
                 source: new Graph(),
-                yOffsets: new Map()
+                yOffsets: new Map(),
+                trunk: {
+                    centroid: {
+                        x: 0, 
+                        z: 0
+                    }, 
+                    size: 0
+                }
             }
         };
         // Haven't used the cache for visual effect purposes :3
-        // const blockOutline = player.dimension.getEntities({closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter()})[0];
         const choppedTree = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false) as VisitedBlockResult);
         SendMessageTo(player, {rawtext: [{text: "Tree is fully traversed. "}]});
         destroyedTree.visitedLogs = choppedTree;
@@ -65,25 +72,28 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
 
         if(!visited) return;
         if(size <= 1) return axe.damageDurability(2);
-        if(size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "")) return resetOutlinedTrees(player, destroyedTree, true);
-        //! Use this when fillBlocks is in stable. (Not applicable but can be good to be refactored to graph-based)
-        // for (const group of groupAdjacentBlocks(visited)) {
-        //     const firstElement = JSON.parse(group[0]);
-        //     const lastElement = JSON.parse(group[group.length - 1]);
-        //     if (firstElement === lastElement) {
-        //         dimension.getBlock(firstElement).setType(MinecraftBlockTypes.Air);
-        //         continue;
-        //     } else {
-        //         dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.Air);
-        //     }
-        // }
+        if(size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "")) return resetOutlinedTrees(destroyedTree, true);
 
+        // Dust Particle (VFX)
+        const trunkYCoordinates = destroyedTree.visitedLogs.yOffsets;
+        let i = 0;
+        for(const yOffset of trunkYCoordinates) {
+            // Spawn dust every 3 blocks
+            if(i % 2 === 0) {
+                await system.waitTicks(3);
+                const molang = new MolangVariableMap();
+                molang.setFloat('trunk_size', destroyedTree.visitedLogs.trunk.size);
+                dimension.spawnParticle('yn:tree_dust', {x: destroyedTree.visitedLogs.trunk.centroid.x, y: yOffset[0], z: destroyedTree.visitedLogs.trunk.centroid.z}, molang);
+            }
+            destroyedTree.visitedLogs.yOffsets.set(yOffset[0], true);
+            i++;
+        }
         await (new Promise<void>((resolve) => {
             const t = system.runJob((function*(){
                 destroyedTree.visitedLogs.source.traverse(location, "BFS", (node) => {
                     if(node) {
-
                         // If there's setDestroy that cancels the dropped item, just use that instead of this.
+                        // Custom Destroy Particle
                         const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
                         if(destroyedTree.visitedLogs.yOffsets.has(node.location.y) && destroyedTree.visitedLogs.yOffsets.get(node.location.y)) {
                             if(blockOutline?.isValid()) {
@@ -143,14 +153,14 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             // Check also, if this tree is already being interacted. By checking this current blockOutline (node), if it's being interacted.
             if(blockOutline?.isValid()) {
                 let inspectedTree: InteractedTreeResult;
-                if(!player.visitedLogs) return;
+                if(!visitedLogs) return;
                 const tempResult = await new Promise<{result: VisitedBlockResult, index: number}>((inspectTreePromiseResolve) => {
                     const tMain = system.runJob((function*(inspectTreePromiseResolve: (inspectedTreeResult: {result: VisitedBlockResult, index: number} | PromiseLike<{result: VisitedBlockResult, index: number}>) => void){
 
                         // Filter by getting the graph that has this node.
                         const possibleVisitedLogs: {result: InteractedTreeResult, index: number}[] = [];
-                        for(let i = 0; i < player.visitedLogs.length; i++) {
-                            const currentInspectedTree = player.visitedLogs[i];
+                        for(let i = 0; i < visitedLogs.length; i++) {
+                            const currentInspectedTree = visitedLogs[i];
                             const interactedTreeNode = currentInspectedTree.visitedLogs.source.getNode(blockInteracted.location);
                             if(interactedTreeNode) {
                                 possibleVisitedLogs.push({result: currentInspectedTree, index: i});
@@ -182,7 +192,18 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             inspectTreePromiseResolve({result: inspectedTree.visitedLogs, index: index});
                         }
 
-                        const tempResult: VisitedBlockResult = {blockOutlines: [], source: new Graph(), yOffsets: new Map()};
+                        const tempResult: VisitedBlockResult = {
+                            blockOutlines: [], 
+                            source: new Graph(), 
+                            yOffsets: new Map(),
+                            trunk: {
+                                centroid: {
+                                    x: 0,
+                                    z: 0
+                                },
+                                size: 0
+                            }
+                        };
     
                         // Traverse the interacted block to validate the remaining nodes, if something was removed. O(n)
                         for(const node of inspectedTree.visitedLogs.source.traverseIterative(blockInteracted.location, "BFS")) {
@@ -205,15 +226,15 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 };
                 
                 // if this newly inspected tree is just the main inspected tree, then just update, else add this new result, since it has changed.
-                const currentChangedIndex = player.visitedLogs.findIndex((result) => newInspectedSubTree.visitedLogs.source.isEqual(inspectedTree.visitedLogs.source) && !result.isDone);
+                const currentChangedIndex = visitedLogs.findIndex((result) => newInspectedSubTree.visitedLogs.source.isEqual(inspectedTree.visitedLogs.source) && !result.isDone);
                 if(currentChangedIndex === -1) {
-                    player.visitedLogs.push(newInspectedSubTree);
+                    if(newInspectedSubTree.initialSize > 0) visitedLogs.push(newInspectedSubTree);
                     system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond).then(async (_) => {
-                        if(!player.visitedLogs[tempResult.index]) return;
-                        if(!player.visitedLogs[tempResult.index].isDone) resetOutlinedTrees(player, newInspectedSubTree);
+                        if(!visitedLogs[tempResult.index]) return;
+                        if(!visitedLogs[tempResult.index].isDone) resetOutlinedTrees(newInspectedSubTree);
                     });
                 } else {
-                    player.visitedLogs[tempResult.index] = newInspectedSubTree;
+                    visitedLogs[tempResult.index] = newInspectedSubTree;
                 }
                 const size = tempResult.result.source.getSize();
                 const totalDamage: number = size * unbreakingDamage;
@@ -279,7 +300,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 });
             } else {
                 const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
-                player.visitedLogs = player.visitedLogs ?? [];
                 const t = system.runJob((function*(){
                     for(const blockOutline of treeCollectedResult.blockOutlines){
                         if(blockOutline?.isValid()) blockOutline.triggerEvent('is_tree_choppable');
@@ -292,9 +312,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     isDone: false,
                     initialSize: treeCollectedResult.source.getSize(),
                 };
-                player.visitedLogs.push(result);
+                if(result.initialSize > 0) visitedLogs.push(result);
                 system.runTimeout(async () => { 
-                   if(!result.isDone) resetOutlinedTrees(player, result);
+                   if(!result.isDone) resetOutlinedTrees(result);
                 }, blockOutlinesDespawnTimer * TicksPerSecond);
             }
         } catch (e) {
@@ -311,12 +331,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
  * @param instantDespawn To instantly remove the outlines without shifting the visitedLogs.
  * @returns 
  */
-function resetOutlinedTrees(player: Player, result: InteractedTreeResult, instantDespawn: boolean = false) {
-    if(result.isDone) {
-        return;    
-    }
+function resetOutlinedTrees(result: InteractedTreeResult, instantDespawn: boolean = false) {
+    if(result.isDone) return;    
     result.isDone = true;
-    if(!instantDespawn) player.visitedLogs?.shift();
+    if(!instantDespawn) visitedLogs?.shift();
     const t = system.runJob((function*(){
         for(const blockOutline of result.visitedLogs.blockOutlines) {
             if(blockOutline?.isValid()) {
