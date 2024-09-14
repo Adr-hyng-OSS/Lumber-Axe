@@ -84,6 +84,11 @@ function getTreeLogs(
 
                 // Check termination conditions
                 if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || size >= maxNeeded) {
+                    // After all is traversed, start timer.
+                    for(const blockOutline of blockOutlines) {
+                        if(blockOutline?.isValid()) blockOutline.triggerEvent('not_persistent');
+                        yield;
+                    }
                     system.clearJob(traversingTreeInterval);
                     resolve({ source: graph, blockOutlines, yOffsets });
                     return;

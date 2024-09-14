@@ -66,6 +66,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
 
         if(!visited) return;
         if(size <= 0) return;
+        if(size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "")) return resetOutlinedTrees(player, destroyedTree, true);
         //! Use this when fillBlocks is in stable. (Not applicable but can be good to be refactored to graph-based)
         // for (const group of groupAdjacentBlocks(visited)) {
         //     const firstElement = JSON.parse(group[0]);
@@ -219,7 +220,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 const size = tempResult.result.source.getSize();
                 const totalDamage: number = size * unbreakingDamage;
                 const totalDurabilityConsumed: number = currentDurability + totalDamage;
-                const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
+                console.warn(size, parseInt(serverConfigurationCopy.chopLimit.defaultValue + ""));
+                const canBeChopped: boolean = ((totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability)) && (size <= parseInt(serverConfigurationCopy.chopLimit.defaultValue + ""));
                 
                 const inspectionForm: ActionFormData = new ActionFormData()
                 .title({
@@ -298,12 +300,19 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
   })
 });
 
-function resetOutlinedTrees(player: Player, result: InteractedTreeResult) {
+/**
+ * 
+ * @param player Player
+ * @param result Interacted Tree to despawn the block outlines later.
+ * @param instantDespawn To instantly remove the outlines without shifting the visitedLogs.
+ * @returns 
+ */
+function resetOutlinedTrees(player: Player, result: InteractedTreeResult, instantDespawn: boolean = false) {
     if(result.isDone) {
         return;    
     }
     result.isDone = true;
-    player.visitedLogs.shift();
+    if(!instantDespawn) player.visitedLogs?.shift();
     const t = system.runJob((function*(){
         for(const blockOutline of result.visitedLogs.blockOutlines) {
             if(blockOutline?.isValid()) {

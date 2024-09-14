@@ -62,6 +62,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 return;
             if (size <= 0)
                 return;
+            if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + ""))
+                return resetOutlinedTrees(player, destroyedTree, true);
             await (new Promise((resolve) => {
                 const t = system.runJob((function* () {
                     destroyedTree.visitedLogs.source.traverse(location, "BFS", (node) => {
@@ -191,7 +193,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const size = tempResult.result.source.getSize();
                     const totalDamage = size * unbreakingDamage;
                     const totalDurabilityConsumed = currentDurability + totalDamage;
-                    const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
+                    console.warn(size, parseInt(serverConfigurationCopy.chopLimit.defaultValue + ""));
+                    const canBeChopped = ((totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability)) && (size <= parseInt(serverConfigurationCopy.chopLimit.defaultValue + ""));
                     const inspectionForm = new ActionFormData()
                         .title({
                         rawtext: [
@@ -272,12 +275,13 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         },
     });
 });
-function resetOutlinedTrees(player, result) {
+function resetOutlinedTrees(player, result, instantDespawn = false) {
     if (result.isDone) {
         return;
     }
     result.isDone = true;
-    player.visitedLogs.shift();
+    if (!instantDespawn)
+        player.visitedLogs?.shift();
     const t = system.runJob((function* () {
         for (const blockOutline of result.visitedLogs.blockOutlines) {
             if (blockOutline?.isValid()) {

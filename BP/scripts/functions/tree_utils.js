@@ -63,6 +63,11 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
             while (queue.length > 0) {
                 const size = graph.getSize();
                 if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || size >= maxNeeded) {
+                    for (const blockOutline of blockOutlines) {
+                        if (blockOutline?.isValid())
+                            blockOutline.triggerEvent('not_persistent');
+                        yield;
+                    }
                     system.clearJob(traversingTreeInterval);
                     resolve({ source: graph, blockOutlines, yOffsets });
                     return;
