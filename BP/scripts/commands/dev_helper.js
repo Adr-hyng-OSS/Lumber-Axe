@@ -2,6 +2,7 @@ import { EntityComponentTypes, ItemStack } from "@minecraft/server";
 import { CommandHandler } from "commands/command_handler";
 import { SendMessageTo } from "utils/utilities";
 import { axeEquipments } from "constant";
+import { MinecraftBlockTypes } from "modules/vanilla-types/index";
 var REQUIRED_PARAMETER;
 (function (REQUIRED_PARAMETER) {
     REQUIRED_PARAMETER["GET"] = "get";
@@ -41,7 +42,17 @@ const command = {
                 }
                 break;
             case REQUIRED_PARAMETER.TEST:
-                console.warn(player.visitedLogs?.length ?? 0);
+                let blockInteracted = player.getBlockFromViewDirection({ maxDistance: 50 }).block;
+                const topMostBlockRay = player.dimension.getBlockFromRay(blockInteracted.location, { x: 0, y: 1, z: 0 }, {
+                    excludeTypes: [
+                        MinecraftBlockTypes.JungleLog.id,
+                    ]
+                }) ?? undefined;
+                console.warn(topMostBlockRay.faceLocation.y);
+                if (!topMostBlockRay)
+                    return;
+                const topMostBlock = topMostBlockRay.block;
+                console.warn("Height: ", (topMostBlock.location.y - blockInteracted.location.y) + 1, "\nID: ", topMostBlock.typeId);
                 break;
             default:
                 break;

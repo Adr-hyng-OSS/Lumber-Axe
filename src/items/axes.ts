@@ -88,8 +88,13 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 destroyedTree.visitedLogs.source.traverse(location, "BFS", (node) => {
                     if(node) {
                         const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
-                        // system.waitTicks(1).then(()=>blockOutline.playAnimation('animation.block_outline.spawn_particle')); // This doesn't get executed :<<
-                        dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
+                        // Just execute one blockOutline per 1 block straight, don't involve everything even the branches.
+                        blockOutline.playAnimation('animation.block_outline.spawn_particle');
+                        system.waitTicks(3).then(()=>{
+                            dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
+                        }); 
+                        
+                        // system.waitTicks(1).then(()=>dimension.spawnParticle('yn:tree_dust', node.location));
                     }
                 });
                 system.clearJob(t);

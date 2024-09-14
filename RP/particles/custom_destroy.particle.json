@@ -25,13 +25,13 @@
 				"rotation": false
 			},
 			"minecraft:emitter_rate_instant": {
-				"num_particles": "Math.random(15, 45)"
+				"num_particles": "Math.random(5, 15)"
 			},
 			"minecraft:emitter_lifetime_once": {
 				"active_time": 0.1
 			},
 			"minecraft:emitter_shape_point": {
-				"offset": ["Math.random(-0.7, 0.7)", 5, "Math.random(-0.7, 0.7)"],
+				"offset": ["Math.random(-0.7, 0.7)", 1, "Math.random(-0.7, 0.7)"],
 				"direction": ["Math.random(-0.5,0.5)", 1, "Math.random(-0.5,0.5)"]
 			},
 			"minecraft:particle_initialization": {
@@ -55,6 +55,11 @@
 					"uv": ["variable.dig_particle_texture_coordinate.u + (variable.dig_particle_texture_size.u/4) * (variable.particle_random_1*3)", "variable.dig_particle_texture_coordinate.v + (variable.dig_particle_texture_size.v/4) * (variable.particle_random_2*3)"],
 					"uv_size": ["variable.dig_particle_texture_size.u/4", "variable.dig_particle_texture_size.v/4"]
 				}
+			},
+			"minecraft:particle_motion_collision": {
+				"collision_drag": 2.1,
+				"coefficient_of_restitution": 0.2,
+				"collision_radius": 0.01
 			},
 			"minecraft:particle_appearance_lighting": {},
 			"minecraft:particle_appearance_tinting": {

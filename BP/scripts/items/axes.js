@@ -70,7 +70,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     destroyedTree.visitedLogs.source.traverse(location, "BFS", (node) => {
                         if (node) {
                             const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
-                            dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
+                            blockOutline.playAnimation('animation.block_outline.spawn_particle');
+                            system.waitTicks(3).then(() => {
+                                dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
+                            });
                         }
                     });
                     system.clearJob(t);

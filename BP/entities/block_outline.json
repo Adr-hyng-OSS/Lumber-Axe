@@ -31,7 +31,7 @@
       },
 			"minecraft:on_death": "despawn",
 			"minecraft:breathable": {
-				"total_supply": 0,
+				"total_supply": 5,
 				"suffocate_time": 0,
 				"breathes_solids": true,
 				"breathe_blocks": [],
@@ -119,13 +119,6 @@
 			"stay_persistent": {
 				"minecraft:environment_sensor": {
 					"triggers": [
-						{
-							"event": "despawn",
-							"filters": {
-								"test": "in_block",
-								"value": "minecraft:air"
-							}
-						},
 						{
 							"event": "not_persistent",
 							"filters": {

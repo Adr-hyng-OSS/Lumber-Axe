@@ -3,10 +3,7 @@ import { CommandHandler } from "commands/command_handler";
 import { ICommandBase} from "./ICommandBase";
 import { SendMessageTo} from "utils/utilities";
 import { axeEquipments } from "constant";
-import { InteractedTreeResult } from "index";
-import { Logger } from "utils/logger";
-import { OverTakes } from "classes/partial_overtakes";
-import { Vec3 } from "utils/VectorUtils";
+import { MinecraftBlockTypes } from "modules/vanilla-types/index";
 
 // Automate this, the values should be the description.
 enum REQUIRED_PARAMETER {
@@ -49,11 +46,20 @@ const command: ICommandBase = {
                 }
                 break;
             case REQUIRED_PARAMETER.TEST:
-
                 // Need to check if this neighbor is a neighbor from another node.
-                console.warn(player.visitedLogs?.length ?? 0);
                 // let inspectedTree: InteractedTreeResult;
-                // let blockInteracted = player.getBlockFromViewDirection({maxDistance: 50}).block;
+                let blockInteracted = player.getBlockFromViewDirection({maxDistance: 50}).block;
+                // const topMostBlock = player.dimension.getTopmostBlock({x: blockInteracted.x, z: blockInteracted.z});
+                const topMostBlockRay = player.dimension.getBlockFromRay(blockInteracted.location, {x: 0, y: 1, z: 0}, {
+                    excludeTypes: [
+                        MinecraftBlockTypes.JungleLog.id, 
+                        // MinecraftBlockTypes.Air.id
+                    ]
+                }) ?? undefined;
+                console.warn(topMostBlockRay.faceLocation.y);
+                if(!topMostBlockRay) return;
+                const topMostBlock = topMostBlockRay.block;
+                console.warn("Height: ", (topMostBlock.location.y - blockInteracted.location.y) + 1, "\nID: ", topMostBlock.typeId);
                 // const outline = player.dimension.getEntities({closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter()})[0];
                 // if(!outline?.isValid()) return;
                 // outline.playAnimation('animation.block_outline.spawn_particle');

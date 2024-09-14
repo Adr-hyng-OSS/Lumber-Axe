@@ -1,9 +1,10 @@
-import { Block, Dimension, Entity, Vector3, system } from "@minecraft/server";
+import { Block, BlockVolumeBase, Dimension, Entity, Vector3, system } from "@minecraft/server";
 
 import { validLogBlocks, serverConfigurationCopy, VisitedBlockResult } from "../index";
 import { Graph, GraphNode } from "utils/graph";
 import { world } from "@minecraft/server";
 import { MinecraftEffectTypes } from "modules/vanilla-types/index";
+import { Vec3 } from "utils/VectorUtils";
 
 function isLogIncluded(blockTypeId: string): boolean {
     if(serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
@@ -12,20 +13,62 @@ function isLogIncluded(blockTypeId: string): boolean {
 }
 
 
-function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number, shouldSpawnOutline: boolean = true): Promise<VisitedBlockResult> {
+function getTreeLogs(
+    dimension: Dimension, 
+    location: Vector3, 
+    blockTypeId: string, 
+    maxNeeded: number, 
+    shouldSpawnOutline: boolean = true
+): Promise<VisitedBlockResult> {
     return new Promise<VisitedBlockResult>((resolve) => {
         const graph = new Graph();
         const blockOutlines: Entity[] = [];
+        const yOffsets: Map<number, boolean> = new Map();
 
         let queue: Block[] = [];
         const visited = new Set<string>(); // To track visited locations
 
-        const firstBlock = dimension.getBlock(location);
-        queue.push(firstBlock);
-        graph.addNode(firstBlock.location);
-        visited.add(JSON.stringify(firstBlock.location)); // Mark a+s visited
-
         const traversingTreeInterval: number = system.runJob(function* () {
+            const firstBlock = dimension.getBlock(location);
+            queue.push(firstBlock);
+            graph.addNode(firstBlock.location);
+            visited.add(JSON.stringify(firstBlock.location)); // Mark as visited
+
+            // Should spawn outline is indicator for inspection or breaking tree.
+            // Inspection = True
+            // Breaking = False
+            let _len = shouldSpawnOutline ? 0 : 1;
+            const centroidLog = {
+                x: shouldSpawnOutline ? 0 : firstBlock.x, 
+                y: 0, 
+                z: shouldSpawnOutline ? 0 : firstBlock.z
+            };
+            for (let x = location.x - 2; x <= location.x + 2; x++) {
+                for (let z = location.z - 2; z <= location.z + 2; z++) {
+                    const _neighborBlock = dimension.getBlock({ x: x, y: location.y, z: z });
+                    if (!_neighborBlock?.isValid() || !isLogIncluded(_neighborBlock?.typeId)) continue;
+                    if (_neighborBlock.typeId !== blockTypeId) continue;
+                    centroidLog.x += _neighborBlock.x;
+                    centroidLog.z += _neighborBlock.z;
+                    _len++;
+                    yield;
+                }
+                yield;
+            }
+            centroidLog.x = (centroidLog.x / _len) + 0.5;
+            centroidLog.z = (centroidLog.z / _len) + 0.5;
+
+
+            yOffsets.set(firstBlock.location.y, false);
+            let _topBlock = firstBlock.above();
+            while(true) {
+                if (!_topBlock?.isValid() || !isLogIncluded(_topBlock?.typeId)) break;
+                if (_topBlock?.typeId !== blockTypeId) break;
+                yOffsets.set(_topBlock.location.y, false);
+                _topBlock = _topBlock.above();
+                yield;
+            }
+
             while (queue.length > 0) {
                 const size = graph.getSize();
 
@@ -42,23 +85,30 @@ function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: strin
                 const mainNode = graph.getNode(pos);
                 if (!mainNode) continue;
 
+                
+                // VFX
+                // Stop creating entity if there's already an entity
                 const outline = dimension.spawnEntity('yn:block_outline', { x: block.location.x + 0.5, y: block.location.y, z: block.location.z + 0.5 });
                 outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
                 if (shouldSpawnOutline) {
                     outline.triggerEvent('active_outline');
                 } else {
                     system.waitTicks(1).then(() => {
-                        outline.playAnimation('animation.block_outline.spawn_particle');
+                        if(yOffsets.has(mainNode.location.y) && !yOffsets.get(mainNode.location.y)) {
+                            dimension.spawnParticle('yn:tree_dust', {x: centroidLog.x, y: mainNode.location.y, z: centroidLog.z});
+                            yOffsets.set(mainNode.location.y, true);
+                        }
+                        // Play this upon destroying.
+                        // outline.playAnimation('animation.block_outline.spawn_particle');
                     });
                 }
+
                 blockOutlines.push(outline);
                 yield;
 
                 // First, gather all valid neighbors
                 for (const neighborBlock of getBlockNear(dimension, block.location)) {
-                    if (!neighborBlock?.isValid() || !isLogIncluded(neighborBlock?.typeId)) continue;
                     if (neighborBlock.typeId !== blockTypeId) continue;
-
                     const serializedLocation = JSON.stringify(neighborBlock.location);
                     
                     let neighborNode = graph.getNode(neighborBlock.location);
@@ -103,7 +153,7 @@ function* getBlockNear(dimension: Dimension, location: Vector3, radius: number =
             for (let z = centerZ - radius; z <= centerZ + radius; z++) {
                 if (centerX === x && centerY === y && centerZ === z) continue;
                 _block = dimension.getBlock({ x, y, z });
-                if (_block.isAir) continue;
+                if (!_block?.isValid() || !isLogIncluded(_block?.typeId)) continue;
                 yield _block;
             }
         }
