@@ -1,6 +1,6 @@
 import { Block, BlockPermutation, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, system, TicksPerSecond, world } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
-import { axeEquipments, forceShow, getTreeLogs, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, serverConfigurationCopy, stackDistribution, VisitedBlockResult } from "index"
+import { axeEquipments, forceShow, getTreeLogs, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult } from "index"
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
 import { Logger } from "utils/logger";
 
@@ -57,6 +57,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         };
         // Haven't used the cache for visual effect purposes :3
         const choppedTree = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false) as VisitedBlockResult);
+        SendMessageTo(player, {rawtext: [{text: "Tree is fully traversed. "}]});
         destroyedTree.visitedLogs.source = choppedTree.source;
         destroyedTree.visitedLogs.blockOutlines = choppedTree.blockOutlines;
         destroyedTree.visitedLogs.yOffsets = choppedTree.yOffsets;
@@ -81,10 +82,14 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             const t = system.runJob((function*(){
                 destroyedTree.visitedLogs.source.traverse(location, "BFS", (node) => {
                     if(node) {
+
+                        // If there's setDestroy that cancels the dropped item, just use that instead of this.
                         const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
                         if(destroyedTree.visitedLogs.yOffsets.has(node.location.y) && destroyedTree.visitedLogs.yOffsets.get(node.location.y)) {
-                            blockOutline.playAnimation('animation.block_outline.spawn_particle');
-                            destroyedTree.visitedLogs.yOffsets.set(node.location.y, false);
+                            if(blockOutline?.isValid()) {
+                                blockOutline.playAnimation('animation.block_outline.spawn_particle');
+                                destroyedTree.visitedLogs.yOffsets.set(node.location.y, false);
+                            }
                         }
                         system.waitTicks(3).then(()=>{
                             dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
@@ -216,16 +221,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 const totalDurabilityConsumed: number = currentDurability + totalDamage;
                 const canBeChopped: boolean = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
                 
-                const t = system.runJob((function*(){
-                    for(const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines){
-                        if(blockOutline?.isValid()) {
-                            if(canBeChopped) blockOutline.triggerEvent('is_tree_choppable');
-                            else blockOutline.triggerEvent('unchoppable_tree');
-                        }
-                        yield;
-                    }
-                    system.clearJob(t);
-                })());
                 const inspectionForm: ActionFormData = new ActionFormData()
                 .title({
                     rawtext: [
@@ -278,15 +273,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     ]}, "textures/InfoUI/canBeCut.png");
                 forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
                     if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
-                    const t = system.runJob((function*(){
-                        for(const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines){
-                            if(blockOutline?.isValid()) {
-                                blockOutline.triggerEvent('go_default_outline');
-                            }
-                            yield;
-                        }
-                        system.clearJob(t);
-                    })());
                     return;
                 }
                 }).catch((error: Error) => {

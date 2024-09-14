@@ -1,6 +1,6 @@
 import { EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, system, TicksPerSecond, world } from "@minecraft/server";
 import { ActionFormData, FormCancelationReason } from "@minecraft/server-ui";
-import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, playerInteractedTimeLogMap, serverConfigurationCopy, stackDistribution } from "index";
+import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, playerInteractedTimeLogMap, SendMessageTo, serverConfigurationCopy, stackDistribution } from "index";
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
 import { Logger } from "utils/logger";
 import "classes/player";
@@ -52,6 +52,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 }
             };
             const choppedTree = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false);
+            SendMessageTo(player, { rawtext: [{ text: "Tree is fully traversed. " }] });
             destroyedTree.visitedLogs.source = choppedTree.source;
             destroyedTree.visitedLogs.blockOutlines = choppedTree.blockOutlines;
             destroyedTree.visitedLogs.yOffsets = choppedTree.yOffsets;
@@ -67,8 +68,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         if (node) {
                             const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
                             if (destroyedTree.visitedLogs.yOffsets.has(node.location.y) && destroyedTree.visitedLogs.yOffsets.get(node.location.y)) {
-                                blockOutline.playAnimation('animation.block_outline.spawn_particle');
-                                destroyedTree.visitedLogs.yOffsets.set(node.location.y, false);
+                                if (blockOutline?.isValid()) {
+                                    blockOutline.playAnimation('animation.block_outline.spawn_particle');
+                                    destroyedTree.visitedLogs.yOffsets.set(node.location.y, false);
+                                }
                             }
                             system.waitTicks(3).then(() => {
                                 dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
@@ -189,18 +192,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const totalDamage = size * unbreakingDamage;
                     const totalDurabilityConsumed = currentDurability + totalDamage;
                     const canBeChopped = (totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability);
-                    const t = system.runJob((function* () {
-                        for (const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines) {
-                            if (blockOutline?.isValid()) {
-                                if (canBeChopped)
-                                    blockOutline.triggerEvent('is_tree_choppable');
-                                else
-                                    blockOutline.triggerEvent('unchoppable_tree');
-                            }
-                            yield;
-                        }
-                        system.clearJob(t);
-                    })());
                     const inspectionForm = new ActionFormData()
                         .title({
                         rawtext: [
@@ -254,15 +245,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     }, "textures/InfoUI/canBeCut.png");
                     forceShow(player, inspectionForm).then((response) => {
                         if (response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
-                            const t = system.runJob((function* () {
-                                for (const blockOutline of newInspectedSubTree.visitedLogs.blockOutlines) {
-                                    if (blockOutline?.isValid()) {
-                                        blockOutline.triggerEvent('go_default_outline');
-                                    }
-                                    yield;
-                                }
-                                system.clearJob(t);
-                            })());
                             return;
                         }
                     }).catch((error) => {

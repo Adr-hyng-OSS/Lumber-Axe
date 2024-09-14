@@ -32,12 +32,14 @@ function getTreeLogs(
             const firstBlock = dimension.getBlock(location);
             queue.push(firstBlock);
             graph.addNode(firstBlock.location);
-            visited.add(JSON.stringify(firstBlock.location)); // Mark as visited
+            visited.add(JSON.stringify(firstBlock.location));
 
             // Should spawn outline is indicator for inspection or breaking tree.
             // Inspection = True
             // Breaking = False
-            let _len = shouldSpawnOutline ? 0 : 1;
+
+            // Gets the center of the trunk.
+            let trunkNumberOfBlocks = shouldSpawnOutline ? 0 : 1;
             const centroidLog = {
                 x: shouldSpawnOutline ? 0 : firstBlock.x, 
                 y: 0, 
@@ -50,13 +52,13 @@ function getTreeLogs(
                     if (_neighborBlock.typeId !== blockTypeId) continue;
                     centroidLog.x += _neighborBlock.x;
                     centroidLog.z += _neighborBlock.z;
-                    _len++;
+                    trunkNumberOfBlocks++;
                     yield;
                 }
                 yield;
             }
-            centroidLog.x = (centroidLog.x / _len) + 0.5;
-            centroidLog.z = (centroidLog.z / _len) + 0.5;
+            centroidLog.x = (centroidLog.x / trunkNumberOfBlocks) + 0.5;
+            centroidLog.z = (centroidLog.z / trunkNumberOfBlocks) + 0.5;
 
             // Get the most bottom block, and the top most block.
             yOffsets.set(firstBlock.location.y, false);
@@ -136,6 +138,12 @@ function getTreeLogs(
                     queue.push(neighborBlock);
                     yield;
                 }
+                yield;
+            }
+
+            // After all is traversed, start timer.
+            for(const blockOutline of blockOutlines) {
+                if(blockOutline?.isValid()) blockOutline.triggerEvent('not_persistent');
                 yield;
             }
 

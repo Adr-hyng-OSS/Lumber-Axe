@@ -31,7 +31,7 @@
       },
 			"minecraft:on_death": "despawn",
 			"minecraft:breathable": {
-				"total_supply": 5,
+				"total_supply": 2,
 				"suffocate_time": 0,
 				"breathes_solids": true,
 				"breathe_blocks": [],
@@ -97,7 +97,7 @@
 			"not_persistent": {
 				"minecraft:timer": {
 					"looping": false,
-					"time": 15,
+					"time": 30,
 					"time_down_event": {
 						"event": "despawn"
 					}
@@ -134,7 +134,6 @@
 		
 		"events": {
 			"minecraft:entity_spawned": {
-				"trigger": "not_persistent",
 				"remove": { "component_groups": [ "active_outline" ] },
 				"add": { "component_groups": [ "inactive_outline", "default_outline" ] }
 			},

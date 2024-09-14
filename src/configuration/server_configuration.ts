@@ -9,7 +9,7 @@ export const serverConfiguration = {
   /**
    * 1500 above is not recommended. It Does work but it's not recommended.
    */
-  chopLimit: new FormBuilder("LumberAxe.server.chop_limit").createTextField("300"),
+  chopLimit: new FormBuilder("LumberAxe.server.chop_limit").createTextField("500"),
   /**
    * Included blocks for custom logs, but any custom or vanilla logs also work as long as the block identifier ends with "*_log".
    * Check: https://github.com/mcbe-mods/Cut-tree-one-click by Lete114.

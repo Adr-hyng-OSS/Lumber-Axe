@@ -20,7 +20,7 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
             queue.push(firstBlock);
             graph.addNode(firstBlock.location);
             visited.add(JSON.stringify(firstBlock.location));
-            let _len = shouldSpawnOutline ? 0 : 1;
+            let trunkNumberOfBlocks = shouldSpawnOutline ? 0 : 1;
             const centroidLog = {
                 x: shouldSpawnOutline ? 0 : firstBlock.x,
                 y: 0,
@@ -35,13 +35,13 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
                         continue;
                     centroidLog.x += _neighborBlock.x;
                     centroidLog.z += _neighborBlock.z;
-                    _len++;
+                    trunkNumberOfBlocks++;
                     yield;
                 }
                 yield;
             }
-            centroidLog.x = (centroidLog.x / _len) + 0.5;
-            centroidLog.z = (centroidLog.z / _len) + 0.5;
+            centroidLog.x = (centroidLog.x / trunkNumberOfBlocks) + 0.5;
+            centroidLog.z = (centroidLog.z / trunkNumberOfBlocks) + 0.5;
             yOffsets.set(firstBlock.location.y, false);
             let _topBlock = firstBlock.above();
             let _bottomBlock = firstBlock.below();
@@ -105,6 +105,11 @@ function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOut
                     queue.push(neighborBlock);
                     yield;
                 }
+                yield;
+            }
+            for (const blockOutline of blockOutlines) {
+                if (blockOutline?.isValid())
+                    blockOutline.triggerEvent('not_persistent');
                 yield;
             }
             queue = [];
