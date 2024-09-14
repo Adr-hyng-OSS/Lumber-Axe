@@ -31,7 +31,7 @@
       },
 			"minecraft:on_death": "despawn",
 			"minecraft:breathable": {
-				"total_supply": 2,
+				"total_supply": 1,
 				"suffocate_time": 0,
 				"breathes_solids": true,
 				"breathe_blocks": [],
@@ -97,7 +97,7 @@
 			"not_persistent": {
 				"minecraft:timer": {
 					"looping": false,
-					"time": 15,
+					"time": 7,
 					"time_down_event": {
 						"event": "despawn"
 					}

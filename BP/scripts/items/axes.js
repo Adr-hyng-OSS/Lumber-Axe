@@ -5,7 +5,7 @@ import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-
 import { Logger } from "utils/logger";
 import "classes/player";
 import { Graph } from "utils/graph";
-const blockOutlinesDespawnTimer = 10;
+const blockOutlinesDespawnTimer = 5;
 world.beforeEvents.worldInitialize.subscribe((registry) => {
     registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
         onHitEntity(arg) {
@@ -34,7 +34,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 axe.damageDurability(1);
                 return;
             }
-            axe.damageDurability(2);
             const equipment = player.getComponent(EntityEquippableComponent.componentId);
             currentHeldAxe.lockMode = ItemLockMode.slot;
             const itemDurability = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId);
@@ -59,8 +58,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             const size = visited.getSize() - 1;
             if (!visited)
                 return;
-            if (size <= 0)
-                return;
+            if (size <= 1)
+                return axe.damageDurability(2);
             if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + ""))
                 return resetOutlinedTrees(player, destroyedTree, true);
             await (new Promise((resolve) => {
@@ -193,7 +192,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const size = tempResult.result.source.getSize();
                     const totalDamage = size * unbreakingDamage;
                     const totalDurabilityConsumed = currentDurability + totalDamage;
-                    console.warn(size, parseInt(serverConfigurationCopy.chopLimit.defaultValue + ""));
                     const canBeChopped = ((totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability)) && (size <= parseInt(serverConfigurationCopy.chopLimit.defaultValue + ""));
                     const inspectionForm = new ActionFormData()
                         .title({
@@ -257,6 +255,14 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 else {
                     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                     player.visitedLogs = player.visitedLogs ?? [];
+                    const t = system.runJob((function* () {
+                        for (const blockOutline of treeCollectedResult.blockOutlines) {
+                            if (blockOutline?.isValid())
+                                blockOutline.triggerEvent('is_tree_choppable');
+                            yield;
+                        }
+                        system.clearJob(t);
+                    })());
                     const result = {
                         visitedLogs: treeCollectedResult,
                         isDone: false,

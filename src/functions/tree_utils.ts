@@ -105,23 +105,12 @@ async function getTreeLogs(
                 //! Stop creating entity if there's already an entity
                 const outline = dimension.spawnEntity('yn:block_outline', { x: block.location.x + 0.5, y: block.location.y, z: block.location.z + 0.5 });
                 outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
-                if (shouldSpawnOutline) {
-                    outline.triggerEvent('active_outline');
-                } else {
-                    // system.waitTicks(1).then(() => {
-                    //     // Make this be stretched up to the end.??
-                    //     if(yOffsets.has(mainNode.location.y) && !yOffsets.get(mainNode.location.y)) {
-                    //         dimension.spawnParticle('yn:tree_dust', {x: centroidLog.x, y: mainNode.location.y, z: centroidLog.z});
-                    //         yOffsets.set(mainNode.location.y, true);
-                    //     }
-                    // });
-                }
-
+                if (shouldSpawnOutline) outline.triggerEvent('active_outline');
                 blockOutlines.push(outline);
                 yield;
 
                 // First, gather all valid neighbors
-                for (const neighborBlock of getBlockNear(dimension, block.location)) {
+                for (const neighborBlock of getBlockNear(block)) {
                     if (neighborBlock.typeId !== blockTypeId) continue;
                     const serializedLocation = JSON.stringify(neighborBlock.location);
                     
@@ -181,16 +170,16 @@ async function getTreeLogs(
 
 
 
-function* getBlockNear(dimension: Dimension, location: Vector3, radius: number = 1): Generator<Block, any, unknown> {
-    const centerX: number = location.x;
-    const centerY: number = location.y;
-    const centerZ: number = location.z;
+function* getBlockNear(initialBlock: Block, radius: number = 1): Generator<Block, any, unknown> {
+    const centerX: number = initialBlock.location.x;
+    const centerY: number = initialBlock.location.y;
+    const centerZ: number = initialBlock.location.z;
     let _block: Block;
     for (let x = centerX - radius; x <= centerX + radius; x++) {
         for (let y = centerY - radius; y <= centerY + radius; y++) {
             for (let z = centerZ - radius; z <= centerZ + radius; z++) {
                 if (centerX === x && centerY === y && centerZ === z) continue;
-                _block = dimension.getBlock({ x, y, z });
+                _block = initialBlock.dimension.getBlock({x, y, z});
                 if (!_block?.isValid() || !isLogIncluded(_block?.typeId)) continue;
                 yield _block;
             }

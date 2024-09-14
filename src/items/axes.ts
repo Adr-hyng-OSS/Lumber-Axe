@@ -9,7 +9,7 @@ import { Graph } from "utils/graph";
 
 // Improve in next update using runJob for caching, since caching still gets O(2n).
 
-const blockOutlinesDespawnTimer = 10;
+const blockOutlinesDespawnTimer = 5;
 
 world.beforeEvents.worldInitialize.subscribe((registry) => {
   registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
@@ -35,7 +35,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             axe.damageDurability(1);
             return;
         } 
-        axe.damageDurability(2);
         const equipment = player.getComponent(EntityEquippableComponent.componentId) as EntityEquippableComponent;
         currentHeldAxe.lockMode = ItemLockMode.slot;
         
@@ -57,6 +56,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             }
         };
         // Haven't used the cache for visual effect purposes :3
+        // const blockOutline = player.dimension.getEntities({closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter()})[0];
         const choppedTree = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false) as VisitedBlockResult);
         SendMessageTo(player, {rawtext: [{text: "Tree is fully traversed. "}]});
         destroyedTree.visitedLogs = choppedTree;
@@ -64,7 +64,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         const size = visited.getSize() - 1;
 
         if(!visited) return;
-        if(size <= 0) return;
+        if(size <= 1) return axe.damageDurability(2);
         if(size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "")) return resetOutlinedTrees(player, destroyedTree, true);
         //! Use this when fillBlocks is in stable. (Not applicable but can be good to be refactored to graph-based)
         // for (const group of groupAdjacentBlocks(visited)) {
@@ -218,7 +218,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 const size = tempResult.result.source.getSize();
                 const totalDamage: number = size * unbreakingDamage;
                 const totalDurabilityConsumed: number = currentDurability + totalDamage;
-                console.warn(size, parseInt(serverConfigurationCopy.chopLimit.defaultValue + ""));
                 const canBeChopped: boolean = ((totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability)) && (size <= parseInt(serverConfigurationCopy.chopLimit.defaultValue + ""));
                 
                 const inspectionForm: ActionFormData = new ActionFormData()
@@ -281,6 +280,13 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             } else {
                 const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                 player.visitedLogs = player.visitedLogs ?? [];
+                const t = system.runJob((function*(){
+                    for(const blockOutline of treeCollectedResult.blockOutlines){
+                        if(blockOutline?.isValid()) blockOutline.triggerEvent('is_tree_choppable');
+                        yield;
+                    }
+                    system.clearJob(t);
+                })());
                 const result: InteractedTreeResult = {
                     visitedLogs: treeCollectedResult, 
                     isDone: false,

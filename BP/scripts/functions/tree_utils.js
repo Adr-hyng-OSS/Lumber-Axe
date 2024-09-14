@@ -80,14 +80,11 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSp
                     continue;
                 const outline = dimension.spawnEntity('yn:block_outline', { x: block.location.x + 0.5, y: block.location.y, z: block.location.z + 0.5 });
                 outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
-                if (shouldSpawnOutline) {
+                if (shouldSpawnOutline)
                     outline.triggerEvent('active_outline');
-                }
-                else {
-                }
                 blockOutlines.push(outline);
                 yield;
-                for (const neighborBlock of getBlockNear(dimension, block.location)) {
+                for (const neighborBlock of getBlockNear(block)) {
                     if (neighborBlock.typeId !== blockTypeId)
                         continue;
                     const serializedLocation = JSON.stringify(neighborBlock.location);
@@ -134,17 +131,17 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSp
     }
     return awaitedVisitedTree;
 }
-function* getBlockNear(dimension, location, radius = 1) {
-    const centerX = location.x;
-    const centerY = location.y;
-    const centerZ = location.z;
+function* getBlockNear(initialBlock, radius = 1) {
+    const centerX = initialBlock.location.x;
+    const centerY = initialBlock.location.y;
+    const centerZ = initialBlock.location.z;
     let _block;
     for (let x = centerX - radius; x <= centerX + radius; x++) {
         for (let y = centerY - radius; y <= centerY + radius; y++) {
             for (let z = centerZ - radius; z <= centerZ + radius; z++) {
                 if (centerX === x && centerY === y && centerZ === z)
                     continue;
-                _block = dimension.getBlock({ x, y, z });
+                _block = initialBlock.dimension.getBlock({ x, y, z });
                 if (!_block?.isValid() || !isLogIncluded(_block?.typeId))
                     continue;
                 yield _block;
