@@ -1,6 +1,6 @@
-import { Block, BlockPermutation, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, Player, system, TicksPerSecond, world } from "@minecraft/server";
+import { Block, BlockPermutation, EntityEquippableComponent, EquipmentSlot, ItemCooldownComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, Player, system, TicksPerSecond, world } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
-import { axeEquipments, forceShow, getTreeLogs, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult } from "index"
+import { axeEquipments, forceShow, getTreeLogs, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult } from "index"
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
 import { Logger } from "utils/logger";
 
@@ -63,7 +63,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 }
             }
         };
-        // Haven't used the cache for visual effect purposes :3
+
+        // Use Cache again :,D 
         const choppedTree = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false) as VisitedBlockResult);
         SendMessageTo(player, {rawtext: [{text: "Tree is fully traversed. "}]});
         destroyedTree.visitedLogs = choppedTree;
@@ -101,9 +102,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                                 destroyedTree.visitedLogs.yOffsets.set(node.location.y, false);
                             }
                         }
-                        system.waitTicks(3).then(()=>{
-                            dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
-                        }); 
+                        system.waitTicks(3).then(()=>dimension.setBlockType(node.location, MinecraftBlockTypes.Air)); 
                     }
                 });
                 system.clearJob(t);
@@ -148,7 +147,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
 
         const blockOutline = player.dimension.getEntities({closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter()})[0];
-        
+        const cooldown = (currentHeldAxe.getComponent(ItemCooldownComponent.componentId) as ItemCooldownComponent);
         try {
             // Check also, if this tree is already being interacted. By checking this current blockOutline (node), if it's being interacted.
             if(blockOutline?.isValid()) {
@@ -299,7 +298,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     Logger.error("Form Error: ", error, error.stack);
                 });
             } else {
+                if(cooldown.getCooldownTicksRemaining(player) !== 0) return;
                 const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
+                cooldown.startCooldown(player);
                 const t = system.runJob((function*(){
                     for(const blockOutline of treeCollectedResult.blockOutlines){
                         if(blockOutline?.isValid()) blockOutline.triggerEvent('is_tree_choppable');

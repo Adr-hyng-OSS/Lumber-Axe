@@ -1,10 +1,7 @@
-import { Block, BlockVolumeBase, Dimension, Entity, MolangVariableMap, Vector3, VectorXZ, system } from "@minecraft/server";
+import { Block, Dimension, Entity, Vector3, VectorXZ, system } from "@minecraft/server";
 
 import { validLogBlocks, serverConfigurationCopy, VisitedBlockResult } from "../index";
-import { Graph, GraphNode } from "utils/graph";
-import { world } from "@minecraft/server";
-import { MinecraftEffectTypes } from "modules/vanilla-types/index";
-import { Vec3 } from "utils/VectorUtils";
+import { Graph } from "utils/graph";
 
 function isLogIncluded(blockTypeId: string): boolean {
     if(serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;

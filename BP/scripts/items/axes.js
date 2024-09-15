@@ -1,4 +1,4 @@
-import { EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, Player, system, TicksPerSecond, world } from "@minecraft/server";
+import { EntityEquippableComponent, EquipmentSlot, ItemCooldownComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, Player, system, TicksPerSecond, world } from "@minecraft/server";
 import { ActionFormData, FormCancelationReason } from "@minecraft/server-ui";
 import { axeEquipments, forceShow, getTreeLogs, isLogIncluded, playerInteractedTimeLogMap, SendMessageTo, serverConfigurationCopy, stackDistribution } from "index";
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
@@ -93,9 +93,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                                     destroyedTree.visitedLogs.yOffsets.set(node.location.y, false);
                                 }
                             }
-                            system.waitTicks(3).then(() => {
-                                dimension.setBlockType(node.location, MinecraftBlockTypes.Air);
-                            });
+                            system.waitTicks(3).then(() => dimension.setBlockType(node.location, MinecraftBlockTypes.Air));
                         }
                     });
                     system.clearJob(t);
@@ -143,6 +141,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             const unbreakingDamage = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
             const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
             const blockOutline = player.dimension.getEntities({ closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter() })[0];
+            const cooldown = currentHeldAxe.getComponent(ItemCooldownComponent.componentId);
             try {
                 if (blockOutline?.isValid()) {
                     let inspectedTree;
@@ -285,7 +284,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     });
                 }
                 else {
+                    if (cooldown.getCooldownTicksRemaining(player) !== 0)
+                        return;
                     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
+                    cooldown.startCooldown(player);
                     const t = system.runJob((function* () {
                         for (const blockOutline of treeCollectedResult.blockOutlines) {
                             if (blockOutline?.isValid())
