@@ -1,16 +1,12 @@
-import { Block, BlockPermutation, EntityEquippableComponent, EquipmentSlot, ItemCooldownComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, Player, system, TicksPerSecond, world } from "@minecraft/server";
+import { Block, BlockPermutation, EntityEquippableComponent, EntityInventoryComponent, EquipmentSlot, ItemCooldownComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, Player, system, TicksPerSecond, world } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
-import { axeEquipments, forceShow, getTreeLogs, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult } from "index"
+import { axeEquipments, blockOutlinesDespawnTimer, forceShow, getTreeLogs, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult, visitedLogs} from "index"
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
 import { Logger } from "utils/logger";
 
 import "classes/player";
 import { Graph } from "utils/graph";
-
-// Improve in next update using runJob for caching, since caching still gets O(2n).
-
-const blockOutlinesDespawnTimer = 5;
-export const visitedLogs: InteractedTreeResult[] = [];
+import { Timer } from "utils/timer";
 
 world.beforeEvents.worldInitialize.subscribe((registry) => {
   registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
@@ -29,16 +25,16 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         const blockInteracted = arg.block;
         const location = blockInteracted.location;
         const currentHeldAxe = arg.itemStack;
+        const currentHeldAxeSlot = player.selectedSlotIndex;
         const currentBreakBlock: BlockPermutation = arg.minedBlockPermutation;
         const blockTypeId: string = currentBreakBlock.type.id;
         if(!player.isSurvival()) return;
+        currentHeldAxe.lockMode = ItemLockMode.slot; // It's not locking....
+        const inventory = (player.getComponent(EntityInventoryComponent.componentId) as EntityInventoryComponent).container;
         if (!isLogIncluded(blockTypeId)) {
             axe.damageDurability(1);
             return;
         } 
-        const equipment = player.getComponent(EntityEquippableComponent.componentId) as EntityEquippableComponent;
-        currentHeldAxe.lockMode = ItemLockMode.slot;
-        
         const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
         const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
         const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
@@ -51,16 +47,16 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             initialSize: 0,
             isDone: false,
             visitedLogs: {
-                blockOutlines: [], 
-                source: new Graph(),
-                yOffsets: new Map(),
-                trunk: {
-                    centroid: {
-                        x: 0, 
-                        z: 0
-                    }, 
-                    size: 0
-                }
+            blockOutlines: [], 
+            source: new Graph(),
+            yOffsets: new Map(),
+            trunk: {
+                centroid: {
+                x: 0, 
+                z: 0
+                }, 
+                size: 0
+            }
             }
         };
 
@@ -77,16 +73,16 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         const totalDamage: number = size * unbreakingDamage;
         const postDamagedDurability: number = itemDurability.damage + totalDamage;
         if (postDamagedDurability + 1 === itemDurability.maxDurability) {
-            equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
+            inventory.setItem(currentHeldAxeSlot, undefined);
         } else if (postDamagedDurability > itemDurability.maxDurability) {
             currentHeldAxe.lockMode = ItemLockMode.none;
             return; 
-        } else if (postDamagedDurability < itemDurability.maxDurability){
+        } 
+        else if (postDamagedDurability < itemDurability.maxDurability){
             itemDurability.damage = itemDurability.damage +  totalDamage;
             currentHeldAxe.lockMode = ItemLockMode.none;
-            equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
+            if(inventory.getSlot(currentHeldAxeSlot).isValid()) inventory.setItem(currentHeldAxeSlot, currentHeldAxe.clone());
         }
-
         // Dust Particle (VFX)
         const trunkYCoordinates = Array.from(destroyedTree.visitedLogs.yOffsets.keys()).sort((a, b) => a - b);
         let currentBlockOffset = 0;
@@ -101,33 +97,33 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             destroyedTree.visitedLogs.yOffsets.set(yOffset, true);
             currentBlockOffset++;
         }
-        await (new Promise<void>((resolve) => {
-            const t = system.runJob((function*(){
-                destroyedTree.visitedLogs.source.traverse(blockInteracted, "BFS", (node) => {
-                    if(node) {
-                        // If there's setDestroy that cancels the dropped item, just use that instead of this.
-                        // Custom Destroy Particle
-                        const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
-                        if(destroyedTree.visitedLogs.yOffsets.has(node.block.location.y) && destroyedTree.visitedLogs.yOffsets.get(node.block.location.y)) {
-                            if(blockOutline?.isValid()) {
-                                blockOutline.playAnimation('animation.block_outline.spawn_particle');
-                                destroyedTree.visitedLogs.yOffsets.set(node.block.location.y, false);
-                            }
+        const t = system.runJob( (function* () {
+            for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
+                if (node) {
+                    // If there's setDestroy that cancels the dropped item, just use that instead of this.
+                    // Custom Destroy Particle
+                    const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
+                    if (
+                        destroyedTree.visitedLogs.yOffsets.has(node.block.location.y) &&
+                        destroyedTree.visitedLogs.yOffsets.get(node.block.location.y)
+                    ) {
+                        if (blockOutline?.isValid()) {
+                            blockOutline.playAnimation('animation.block_outline.spawn_particle');
+                            destroyedTree.visitedLogs.yOffsets.set(node.block.location.y, false);
                         }
-                        system.waitTicks(3).then(()=>dimension.setBlockType(node.block.location, MinecraftBlockTypes.Air)); 
                     }
-                });
-                system.clearJob(t);
-                resolve();
-            })());
-        })).then(() => {
-            for (const group of stackDistribution(size)) {
-                system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
+                    system.waitTicks(3).then(() => dimension.setBlockType(node.block.location, MinecraftBlockTypes.Air));
+                }
+                yield;
             }
-        }).catch((e) => {
-            console.warn(e, e.stack);
-            currentHeldAxe.lockMode = ItemLockMode.none;
-        });
+
+            for (const group of stackDistribution(size)) {
+                dimension.spawnItem(new ItemStack(blockTypeId, group), location);
+                yield;
+            }
+
+            system.clearJob(t);
+        })());
     },
     async onUseOn(arg) {
         const currentHeldAxe: ItemStack = arg.itemStack;
@@ -232,15 +228,19 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
 
             if(tempResult.index === -1) {
                 if(cooldown.getCooldownTicksRemaining(player) !== 0) return;
+                const currentTime = system.currentTick;
                 const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
+                const t = system.runInterval(() => {
+                    // Get the first block, and based on that it will get the height.
+                    if(system.currentTick >= currentTime + (blockOutlinesDespawnTimer * TicksPerSecond)) system.clearRun(t);
+                    const molangVariable = new MolangVariableMap();
+                    const treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
+                    molangVariable.setFloat('radius', treeCollectedResult.trunk.size == 1 ? 0.75 : 1.5);
+                    molangVariable.setFloat('depth', -(treeOffsets.length));
+                    molangVariable.setColorRGB('color', {red: 1.0, green: 1.0, blue: 1.0}); // Change color based on property??
+                    player.dimension.spawnParticle('yn:inspecting_indicator', {x: treeCollectedResult.trunk.centroid.x, y: treeOffsets[0], z: treeCollectedResult.trunk.centroid.z}, molangVariable);
+                }, 5);
                 cooldown.startCooldown(player);
-                const t = system.runJob((function*(){
-                    for(const blockOutline of treeCollectedResult.blockOutlines){
-                        if(blockOutline?.isValid()) blockOutline.triggerEvent('is_tree_choppable');
-                        yield;
-                    }
-                    system.clearJob(t);
-                })());
                 const result: InteractedTreeResult = {
                     visitedLogs: treeCollectedResult, 
                     isDone: false,
@@ -248,7 +248,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 };
                 if(result.initialSize > 0) visitedLogs.push(result);
                 system.runTimeout(async () => { 
-                if(!result.isDone) resetOutlinedTrees(result);
+                    if(!result.isDone) resetOutlinedTrees(result);
                 }, blockOutlinesDespawnTimer * TicksPerSecond);
             } else {
                 const size = tempResult.result.source.getSize();
@@ -320,25 +320,3 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
     },
   })
 });
-
-/**
- * 
- * @param player Player
- * @param result Interacted Tree to despawn the block outlines later.
- * @param instantDespawn To instantly remove the outlines without shifting the visitedLogs.
- * @returns 
- */
-function resetOutlinedTrees(result: InteractedTreeResult, instantDespawn: boolean = false) {
-    if(result.isDone) return;    
-    result.isDone = true;
-    if(!instantDespawn) visitedLogs?.shift();
-    const t = system.runJob((function*(){
-        for(const blockOutline of result.visitedLogs.blockOutlines) {
-            if(blockOutline?.isValid()) {
-                blockOutline.triggerEvent('despawn');
-            }
-            yield;
-        }
-        system.clearJob(t);
-    })());
-}

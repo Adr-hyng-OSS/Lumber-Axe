@@ -1,4 +1,4 @@
-import { Entity, Vector3, VectorXZ } from '@minecraft/server';
+import { Entity, VectorXZ } from '@minecraft/server';
 import { Graph } from 'utils/graph';
 
 export * from './utils/utilities';

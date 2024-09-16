@@ -1,10 +1,8 @@
-import { EntityComponentTypes, EntityInventoryComponent, ItemStack } from "@minecraft/server";
+import { EntityComponentTypes, EntityInventoryComponent, ItemStack, MolangVariableMap } from "@minecraft/server";
 import { CommandHandler } from "commands/command_handler";
 import { ICommandBase} from "./ICommandBase";
 import { SendMessageTo} from "utils/utilities";
 import { axeEquipments } from "constant";
-import { MinecraftBlockTypes } from "modules/vanilla-types/index";
-import { visitedLogs } from "items/axes";
 
 // Automate this, the values should be the description.
 enum REQUIRED_PARAMETER {
@@ -48,9 +46,13 @@ const command: ICommandBase = {
                 break;
             case REQUIRED_PARAMETER.TEST:
                 // Need to check if this neighbor is a neighbor from another node.
+                const molangVariable = new MolangVariableMap();
+                molangVariable.setFloat('radius', 1);
+                molangVariable.setFloat('depth', -5);
+                molangVariable.setColorRGB('color', {red: 1.0, green: 1.0, blue: 1.0});
+                player.dimension.spawnParticle('yn:inspecting_indicator', {x: parseFloat(args[1] + ""), y: parseFloat(args[2] + ""), z: parseFloat(args[3] + "")}, molangVariable);
                 // let inspectedTree: InteractedTreeResult;
                 // const topMostBlock = player.dimension.getTopmostBlock({x: blockInteracted.x, z: blockInteracted.z});
-                console.warn(visitedLogs.length);
                 // let blockInteracted = player.getBlockFromViewDirection({maxDistance: 50}).block;
                 // const topMostBlockRay = player.dimension.getBlockFromRay(blockInteracted.location, {x: 0, y: 1, z: 0}, {
                 //     excludeTypes: [

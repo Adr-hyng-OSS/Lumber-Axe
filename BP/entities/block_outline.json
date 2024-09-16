@@ -7,10 +7,11 @@
 			"is_spawnable": true,
 			"is_summonable": true,
 			"properties": {
-        "yn:stay_persistent": {
-          "type": "bool",
+        "yn:color_state": {
+          "type": "int",
           "client_sync": true,
-          "default": false
+          "default": 0,
+					"range": [0, 3]
         }
       }
 		},
@@ -85,21 +86,6 @@
 					"value": 0
 				}
 			},
-			"default_outline": {
-				"minecraft:mark_variant": {
-					"value": 0
-				}
-			},
-			"choppable_tree": {
-				"minecraft:mark_variant": {
-					"value": 1
-				}
-			},
-			"unchoppable_tree": {
-				"minecraft:mark_variant": {
-					"value": 2
-				}
-			},
 			"despawn": {
         "minecraft:instant_despawn": {}
       },
@@ -110,33 +96,6 @@
 					"time_down_event": {
 						"event": "despawn"
 					}
-				},
-				"minecraft:environment_sensor": {
-					"triggers": [
-						
-						{
-							"event": "stay_persistent",
-							"filters": {
-								"test": "bool_property",
-								"domain": "yn:stay_persistent",
-								"value": true
-							}
-						}
-					]
-				}
-			},
-			"stay_persistent": {
-				"minecraft:environment_sensor": {
-					"triggers": [
-						{
-							"event": "not_persistent",
-							"filters": {
-								"test": "bool_property",
-								"domain": "yn:stay_persistent",
-								"value": false
-							}
-						}
-					]
 				}
 			}
 		},
@@ -144,23 +103,11 @@
 		"events": {
 			"minecraft:entity_spawned": {
 				"remove": { "component_groups": [ "active_outline" ] },
-				"add": { "component_groups": [ "inactive_outline", "default_outline" ] }
+				"add": { "component_groups": [ "inactive_outline" ] }
 			},
 			"despawn": {
 				"add": { "component_groups": [ "despawn" ] }
       },
-			"is_tree_choppable": {
-				"remove": { "component_groups": [ "unchoppable_tree", "default_outline" ] },
-				"add": { "component_groups": [ "choppable_tree" ] }
-			},
-			"unchoppable_tree": {
-				"remove": { "component_groups": [ "choppable_tree", "default_outline" ] },
-				"add": { "component_groups": [ "unchoppable_tree" ] }
-			},
-			"go_default_outline": {
-				"remove": { "component_groups": [ "choppable_tree", "unchoppable_tree" ] },
-				"add": { "component_groups": [ "default_outline" ] }
-			},
 			"active_outline": {
 				"remove": { "component_groups": [ "inactive_outline" ] },
 				"add": { "component_groups": [ "active_outline" ] }
@@ -170,12 +117,7 @@
 				"add": { "component_groups": [ "inactive_outline" ] }
       },
 			"not_persistent": {
-				"remove": { "component_groups": [ "stay_persistent" ]},
 				"add": { "component_groups": [ "not_persistent" ]}
-			},
-			"stay_persistent": {
-				"remove": { "component_groups": [ "not_persistent" ]},
-				"add": { "component_groups": [ "stay_persistent" ]}
 			}
 		}
 	}

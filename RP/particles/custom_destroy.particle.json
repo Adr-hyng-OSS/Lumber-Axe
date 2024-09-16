@@ -14,6 +14,12 @@
 				"input": "v.particle_age",
 				"horizontal_range": "v.particle_lifetime",
 				"nodes": [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+			},
+			"variable.collide_things": {
+				"type": "linear",
+				"input": "v.particle_age",
+				"horizontal_range": "v.particle_lifetime",
+				"nodes": [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 			}
 		},
 		"components": {
@@ -21,13 +27,13 @@
 				"creation_expression": "temp.start_texture_color_r = 0.11;temp.start_texture_color_g = 0.11;temp.start_texture_color_b = 0.11;temp.start_texture_color_a = 0.11;"
 			},
 			"minecraft:emitter_rate_instant": {
-				"num_particles": "Math.random(10, 20)"
+				"num_particles": "Math.random(15, 25)"
 			},
 			"minecraft:emitter_lifetime_once": {
 				"active_time": 0.1
 			},
 			"minecraft:emitter_shape_sphere": {
-				"offset": [0, 0.5, 0],
+				"offset": [0, 0.75, 0],
 				"radius": 1,
 				"direction": "outwards"
 			},
@@ -53,9 +59,11 @@
 				}
 			},
 			"minecraft:particle_motion_collision": {
+				"enabled": "v.collide_things",
 				"collision_drag": 10,
 				"coefficient_of_restitution": 0.1,
-				"collision_radius": 0.01
+				"collision_radius": 0.01,
+				"expire_on_contact": true
 			},
 			"minecraft:particle_appearance_lighting": {},
 			"minecraft:particle_appearance_tinting": {

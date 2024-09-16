@@ -116,7 +116,6 @@ async function getTreeLogs(
                 blockOutlines.push(outline);
                 yield;
             }
-
             queue = [];
             system.clearJob(traversingTreeInterval);
             resolve({

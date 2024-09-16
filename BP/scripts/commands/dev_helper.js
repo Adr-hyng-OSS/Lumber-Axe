@@ -1,8 +1,7 @@
-import { EntityComponentTypes, ItemStack } from "@minecraft/server";
+import { EntityComponentTypes, ItemStack, MolangVariableMap } from "@minecraft/server";
 import { CommandHandler } from "commands/command_handler";
 import { SendMessageTo } from "utils/utilities";
 import { axeEquipments } from "constant";
-import { visitedLogs } from "items/axes";
 var REQUIRED_PARAMETER;
 (function (REQUIRED_PARAMETER) {
     REQUIRED_PARAMETER["GET"] = "get";
@@ -42,7 +41,11 @@ const command = {
                 }
                 break;
             case REQUIRED_PARAMETER.TEST:
-                console.warn(visitedLogs.length);
+                const molangVariable = new MolangVariableMap();
+                molangVariable.setFloat('radius', 1);
+                molangVariable.setFloat('depth', -5);
+                molangVariable.setColorRGB('color', { red: 1.0, green: 1.0, blue: 1.0 });
+                player.dimension.spawnParticle('yn:inspecting_indicator', { x: parseFloat(args[1] + ""), y: parseFloat(args[2] + ""), z: parseFloat(args[3] + "") }, molangVariable);
                 break;
             default:
                 break;

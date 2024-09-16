@@ -31,9 +31,9 @@
 					"temp.red = 1;",
 					"temp.green = 1;",
 					"temp.blue = 1;",
-					"query.mark_variant == 0 ? {t.red = 1; t.green = 1; t.blue = 1};",
-					"query.mark_variant == 1 ? {t.red = 0; t.green = 1; t.blue = 0};",
-					"query.mark_variant == 2 ? {t.red = 1; t.green = 0; t.blue = 0};"
+					"query.property('yn:color_state') == 0 ? {t.red = 1; t.green = 1; t.blue = 1};",
+					"query.property('yn:color_state') == 1 ? {t.red = 0; t.green = 1; t.blue = 0};",
+					"query.property('yn:color_state') == 2 ? {t.red = 1; t.green = 0; t.blue = 0};"
 				],
 				"scale": "query.variant == 1 ? (1.0) : (0.0)",
 				"animate": ["render"]
@@ -43,7 +43,8 @@
 				"show_particles": "animation.block_outline.spawn_particle"
 			},
 			"particle_effects": {
-        "destroy_block": "yn:custom_destroy"
+        "destroy_block": "yn:custom_destroy",
+				"inspect_indicator": "yn:inspecting_indicator"
       }
 		}
 	}
