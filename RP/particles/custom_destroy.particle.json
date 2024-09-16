@@ -21,14 +21,15 @@
 				"creation_expression": "temp.start_texture_color_r = 0.11;temp.start_texture_color_g = 0.11;temp.start_texture_color_b = 0.11;temp.start_texture_color_a = 0.11;"
 			},
 			"minecraft:emitter_rate_instant": {
-				"num_particles": "Math.random(5, 15)"
+				"num_particles": "Math.random(10, 20)"
 			},
 			"minecraft:emitter_lifetime_once": {
 				"active_time": 0.1
 			},
-			"minecraft:emitter_shape_point": {
-				"offset": ["Math.random(-0.7, 0.7)", 1, "Math.random(-0.7, 0.7)"],
-				"direction": ["Math.random(-0.5,0.5)", 1, "Math.random(-0.5,0.5)"]
+			"minecraft:emitter_shape_sphere": {
+				"offset": [0, 0.5, 0],
+				"radius": 1,
+				"direction": "outwards"
 			},
 			"minecraft:particle_initialization": {
 				"per_render_expression": "temp.start_texture_color_r = Math.clamp(variable.dig_particle_color.r, 0, 1);temp.start_texture_color_g = Math.clamp(variable.dig_particle_color.g, 0, 1);temp.start_texture_color_b = Math.clamp(variable.dig_particle_color.b, 0, 1);temp.start_texture_color_a = Math.clamp(variable.dig_particle_color.a, 0, 1);"
@@ -37,10 +38,9 @@
 				"max_lifetime": "Math.random(1.0, 2.5)",
 				"expiration_expression": "(t.start_texture_color_r <= 0.01 && t.start_texture_color_g <= 0.01 && t.start_texture_color_b <= 0.01) && variable.kill == 1"
 			},
-			"minecraft:particle_initial_speed": "Math.random(3.0, 4.5)",
+			"minecraft:particle_initial_speed": 2,
 			"minecraft:particle_motion_dynamic": {
-				"linear_acceleration": [0, -9.8, 0],
-				"linear_drag_coefficient": 0.5
+				"linear_acceleration": [0, -9.8, 0]
 			},
 			"minecraft:particle_appearance_billboard": {
 				"size": ["variable.particle_random_1 * 0.0375 + 0.0375", "variable.particle_random_1 * 0.0375 + 0.0375"],
@@ -53,8 +53,8 @@
 				}
 			},
 			"minecraft:particle_motion_collision": {
-				"collision_drag": 2.1,
-				"coefficient_of_restitution": 0.2,
+				"collision_drag": 10,
+				"coefficient_of_restitution": 0.1,
 				"collision_radius": 0.01
 			},
 			"minecraft:particle_appearance_lighting": {},

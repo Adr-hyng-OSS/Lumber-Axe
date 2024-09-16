@@ -17,7 +17,7 @@ world.afterEvents.playerSpawn.subscribe((e) => {
 
 world.afterEvents.playerLeave.subscribe((e: PlayerLeaveAfterEvent) => {
     playerInteractionMap.set(e.playerId, false);
-});
+}); 
 
 system.afterEvents.scriptEventReceive.subscribe((event: ScriptEventCommandMessageAfterEvent) => {
     if(event.sourceType !== ScriptEventSource.Entity) return;
@@ -52,4 +52,4 @@ system.afterEvents.scriptEventReceive.subscribe((event: ScriptEventCommandMessag
         }
       }
     });
-  });
+});

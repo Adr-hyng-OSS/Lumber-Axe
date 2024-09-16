@@ -8,7 +8,7 @@ function isLogIncluded(blockTypeId) {
         return true;
     return false;
 }
-async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSpawnOutline = true) {
+async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, isInspectingTree = true) {
     return new Promise((resolve) => {
         const graph = new Graph();
         const blockOutlines = [];
@@ -18,12 +18,12 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSp
         const traversingTreeInterval = system.runJob(function* () {
             const firstBlock = dimension.getBlock(location);
             queue.push(firstBlock);
-            graph.addNode(firstBlock.location);
+            graph.addNode(firstBlock);
             visited.add(JSON.stringify(firstBlock.location));
-            let trunkNumberOfBlocks = shouldSpawnOutline ? 0 : 1;
+            let trunkNumberOfBlocks = isInspectingTree ? 0 : 1;
             let centroidLog = {
-                x: shouldSpawnOutline ? 0 : firstBlock.x,
-                z: shouldSpawnOutline ? 0 : firstBlock.z
+                x: isInspectingTree ? 0 : firstBlock.x,
+                z: isInspectingTree ? 0 : firstBlock.z
             };
             for (let x = location.x - 2; x <= location.x + 2; x++) {
                 for (let z = location.z - 2; z <= location.z + 2; z++) {
@@ -41,63 +41,21 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSp
             }
             centroidLog.x = (centroidLog.x / trunkNumberOfBlocks) + 0.5;
             centroidLog.z = (centroidLog.z / trunkNumberOfBlocks) + 0.5;
-            yOffsets.set(firstBlock.location.y, false);
-            let _topBlock = firstBlock.above();
-            let _bottomBlock = firstBlock.below();
-            while (true) {
-                const availableAbove = _topBlock?.isValid() && isLogIncluded(_topBlock?.typeId) && _topBlock?.typeId === blockTypeId;
-                const availableBelow = _bottomBlock?.isValid() && isLogIncluded(_bottomBlock?.typeId) && _bottomBlock?.typeId === blockTypeId;
-                if (!availableAbove && !availableBelow)
-                    break;
-                if (availableAbove) {
-                    yOffsets.set(_topBlock.location.y, false);
-                    _topBlock = _topBlock.above();
-                }
-                if (availableBelow) {
-                    yOffsets.set(_bottomBlock.location.y, false);
-                    _bottomBlock = _bottomBlock.below();
-                }
-                yield;
-            }
             while (queue.length > 0) {
                 const size = graph.getSize();
                 if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || size >= maxNeeded) {
-                    for (const blockOutline of blockOutlines) {
-                        if (blockOutline?.isValid())
-                            blockOutline.triggerEvent('not_persistent');
-                        yield;
-                    }
-                    system.clearJob(traversingTreeInterval);
-                    resolve({
-                        source: graph,
-                        blockOutlines,
-                        yOffsets,
-                        trunk: {
-                            size: trunkNumberOfBlocks,
-                            centroid: centroidLog
-                        }
-                    });
-                    return;
+                    break;
                 }
                 const block = queue.shift();
-                const pos = block.location;
-                const mainNode = graph.getNode(pos);
+                const mainNode = graph.getNode(block);
                 if (!mainNode)
                     continue;
-                const outline = dimension.spawnEntity('yn:block_outline', { x: block.location.x + 0.5, y: block.location.y, z: block.location.z + 0.5 });
-                outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
-                if (shouldSpawnOutline)
-                    outline.triggerEvent('active_outline');
-                blockOutlines.push(outline);
-                yield;
+                yOffsets.set(block.y, false);
                 for (const neighborBlock of getBlockNear(block)) {
                     if (neighborBlock.typeId !== blockTypeId)
                         continue;
                     const serializedLocation = JSON.stringify(neighborBlock.location);
-                    let neighborNode = graph.getNode(neighborBlock.location);
-                    if (!neighborNode) {
-                        neighborNode = graph.addNode(neighborBlock.location);
-                    }
+                    let neighborNode = graph.getNode(neighborBlock) ?? graph.addNode(neighborBlock);
                     if (mainNode.neighbors.has(neighborNode))
                         continue;
                     mainNode.addNeighbor(neighborNode);
@@ -110,9 +68,26 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, shouldSp
                 }
                 yield;
             }
-            for (const blockOutline of blockOutlines) {
-                if (blockOutline?.isValid())
-                    blockOutline.triggerEvent('not_persistent');
+            if (!isInspectingTree) {
+                for (const yOffset of yOffsets.keys()) {
+                    const outline = dimension.spawnEntity('yn:block_outline', { x: centroidLog.x, y: yOffset, z: centroidLog.z });
+                    outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
+                    blockOutlines.push(outline);
+                    yield;
+                }
+                for (const blockOutline of blockOutlines) {
+                    if (blockOutline?.isValid())
+                        blockOutline.triggerEvent('not_persistent');
+                    yield;
+                }
+            }
+            else {
+                const bottomMostBlock = Array.from(yOffsets.keys()).sort((a, b) => a - b)[0];
+                const outline = dimension.spawnEntity('yn:block_outline', { x: centroidLog.x, y: bottomMostBlock, z: centroidLog.z });
+                outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
+                outline.triggerEvent('not_persistent');
+                outline.triggerEvent('active_outline');
+                blockOutlines.push(outline);
                 yield;
             }
             queue = [];

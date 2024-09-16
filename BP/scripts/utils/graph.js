@@ -1,18 +1,18 @@
-function hashVector3(vec) {
+function hashBlock(block) {
     const prime = 31;
     let hash = 1;
-    hash = prime * hash + Math.imul(vec.x | 0, prime);
-    hash = prime * hash + Math.imul(vec.y | 0, prime);
-    hash = prime * hash + Math.imul(vec.z | 0, prime);
+    hash = prime * hash + Math.imul(block.x | 0, prime);
+    hash = prime * hash + Math.imul(block.y | 0, prime);
+    hash = prime * hash + Math.imul(block.z | 0, prime);
     hash ^= (hash << 13);
     hash ^= (hash >> 7);
     hash ^= (hash << 17);
     return hash >>> 0;
 }
 export class GraphNode {
-    constructor(location) {
+    constructor(block) {
         this.index = 0;
-        this.location = location;
+        this.block = block;
         this.neighbors = new Set();
     }
     addNeighbor(node) {
@@ -27,31 +27,31 @@ export class Graph {
         this.nodes = new Map();
         this.hashes = [];
     }
-    getNode(location) {
-        return this.nodes.get(this.serializeLocation(location));
+    getNode(block) {
+        return this.nodes.get(this.serializeLocation(block.location));
     }
     addNode(param) {
         if (param instanceof GraphNode) {
-            this.hashes.push(hashVector3(param.location));
-            const key = this.serializeLocation(param.location);
+            this.hashes.push(hashBlock(param.block));
+            const key = this.serializeLocation(param.block.location);
             param.index = this.nodes.size;
             this.nodes.set(key, param);
             return;
         }
         else {
-            const key = this.serializeLocation(param);
+            const key = this.serializeLocation(param.location);
             let node = this.nodes.get(key);
             if (!node) {
                 node = new GraphNode(param);
                 this.nodes.set(key, node);
             }
-            this.hashes.push(hashVector3(node.location));
+            this.hashes.push(hashBlock(node.block));
             node.index = this.nodes.size - 1;
             return node;
         }
     }
-    removeNode(location) {
-        const key = this.serializeLocation(location);
+    removeNode(block) {
+        const key = this.serializeLocation(block.location);
         const node = this.nodes.get(key);
         if (!node)
             return;
@@ -59,7 +59,7 @@ export class Graph {
             neighbor.removeNeighbor(node);
             node.removeNeighbor(neighbor);
         });
-        this.hashes.splice(this.hashes.lastIndexOf(hashVector3(location)));
+        this.hashes.splice(this.hashes.lastIndexOf(hashBlock(block)), 1);
         this.nodes.delete(key);
     }
     serializeLocation(location) {
@@ -68,8 +68,8 @@ export class Graph {
     getSize() {
         return this.nodes.size;
     }
-    traverse(startLocation, traversalType = "DFS", visit) {
-        const startNode = this.getNode(startLocation);
+    traverse(startBlock, traversalType = "DFS", visit) {
+        const startNode = this.getNode(startBlock);
         if (!startNode) {
             return;
         }
@@ -89,10 +89,10 @@ export class Graph {
         }
     }
     hash() {
-        return this.hashes.reduce((accumulator, currentValue) => { return accumulator + currentValue; }, 0);
+        return this.hashes.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
     }
-    *traverseIterative(startLocation, traversalType = "DFS") {
-        const startNode = this.getNode(startLocation);
+    *traverseIterative(startBlock, traversalType = "DFS") {
+        const startNode = this.getNode(startBlock);
         if (!startNode) {
             return;
         }

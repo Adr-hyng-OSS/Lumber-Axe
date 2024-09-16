@@ -4,6 +4,7 @@ import { ICommandBase} from "./ICommandBase";
 import { SendMessageTo} from "utils/utilities";
 import { axeEquipments } from "constant";
 import { MinecraftBlockTypes } from "modules/vanilla-types/index";
+import { visitedLogs } from "items/axes";
 
 // Automate this, the values should be the description.
 enum REQUIRED_PARAMETER {
@@ -49,15 +50,16 @@ const command: ICommandBase = {
                 // Need to check if this neighbor is a neighbor from another node.
                 // let inspectedTree: InteractedTreeResult;
                 // const topMostBlock = player.dimension.getTopmostBlock({x: blockInteracted.x, z: blockInteracted.z});
-                let blockInteracted = player.getBlockFromViewDirection({maxDistance: 50}).block;
-                const topMostBlockRay = player.dimension.getBlockFromRay(blockInteracted.location, {x: 0, y: 1, z: 0}, {
-                    excludeTypes: [
-                        MinecraftBlockTypes.JungleLog.id
-                    ]
-                }) ?? undefined;
-                if(!topMostBlockRay) return;
-                const topMostBlock = topMostBlockRay.block;
-                console.warn("Height: ", (topMostBlock.location.y - blockInteracted.location.y) + 1, "\nID: ", topMostBlock.typeId);
+                console.warn(visitedLogs.length);
+                // let blockInteracted = player.getBlockFromViewDirection({maxDistance: 50}).block;
+                // const topMostBlockRay = player.dimension.getBlockFromRay(blockInteracted.location, {x: 0, y: 1, z: 0}, {
+                //     excludeTypes: [
+                //         MinecraftBlockTypes.JungleLog.id
+                //     ]
+                // }) ?? undefined;
+                // if(!topMostBlockRay) return;
+                // const topMostBlock = topMostBlockRay.block;
+                // console.warn("Height: ", (topMostBlock.location.y - blockInteracted.location.y) + 1, "\nID: ", topMostBlock.typeId);
                 // const outline = player.dimension.getEntities({closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter()})[0];
                 // if(!outline?.isValid()) return;
                 // outline.playAnimation('animation.block_outline.spawn_particle');

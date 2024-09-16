@@ -70,50 +70,51 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 return axe.damageDurability(2);
             if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + ""))
                 return resetOutlinedTrees(destroyedTree, true);
-            const trunkYCoordinates = destroyedTree.visitedLogs.yOffsets;
-            let i = 0;
+            const totalDamage = size * unbreakingDamage;
+            const postDamagedDurability = itemDurability.damage + totalDamage;
+            if (postDamagedDurability + 1 === itemDurability.maxDurability) {
+                equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
+            }
+            else if (postDamagedDurability > itemDurability.maxDurability) {
+                currentHeldAxe.lockMode = ItemLockMode.none;
+                return;
+            }
+            else if (postDamagedDurability < itemDurability.maxDurability) {
+                itemDurability.damage = itemDurability.damage + totalDamage;
+                currentHeldAxe.lockMode = ItemLockMode.none;
+                equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
+            }
+            const trunkYCoordinates = Array.from(destroyedTree.visitedLogs.yOffsets.keys()).sort((a, b) => a - b);
+            let currentBlockOffset = 0;
+            const DustPerNumberOfBlocks = 2;
             for (const yOffset of trunkYCoordinates) {
-                if (i % 2 === 0) {
+                if (currentBlockOffset % DustPerNumberOfBlocks === 0) {
                     await system.waitTicks(3);
                     const molang = new MolangVariableMap();
                     molang.setFloat('trunk_size', destroyedTree.visitedLogs.trunk.size);
-                    dimension.spawnParticle('yn:tree_dust', { x: destroyedTree.visitedLogs.trunk.centroid.x, y: yOffset[0], z: destroyedTree.visitedLogs.trunk.centroid.z }, molang);
+                    dimension.spawnParticle('yn:tree_dust', { x: destroyedTree.visitedLogs.trunk.centroid.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.centroid.z }, molang);
                 }
-                destroyedTree.visitedLogs.yOffsets.set(yOffset[0], true);
-                i++;
+                destroyedTree.visitedLogs.yOffsets.set(yOffset, true);
+                currentBlockOffset++;
             }
             await (new Promise((resolve) => {
                 const t = system.runJob((function* () {
-                    destroyedTree.visitedLogs.source.traverse(location, "BFS", (node) => {
+                    destroyedTree.visitedLogs.source.traverse(blockInteracted, "BFS", (node) => {
                         if (node) {
                             const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
-                            if (destroyedTree.visitedLogs.yOffsets.has(node.location.y) && destroyedTree.visitedLogs.yOffsets.get(node.location.y)) {
+                            if (destroyedTree.visitedLogs.yOffsets.has(node.block.location.y) && destroyedTree.visitedLogs.yOffsets.get(node.block.location.y)) {
                                 if (blockOutline?.isValid()) {
                                     blockOutline.playAnimation('animation.block_outline.spawn_particle');
-                                    destroyedTree.visitedLogs.yOffsets.set(node.location.y, false);
+                                    destroyedTree.visitedLogs.yOffsets.set(node.block.location.y, false);
                                 }
                             }
-                            system.waitTicks(3).then(() => dimension.setBlockType(node.location, MinecraftBlockTypes.Air));
+                            system.waitTicks(3).then(() => dimension.setBlockType(node.block.location, MinecraftBlockTypes.Air));
                         }
                     });
                     system.clearJob(t);
                     resolve();
                 })());
             })).then(() => {
-                const totalDamage = size * unbreakingDamage;
-                const postDamagedDurability = itemDurability.damage + totalDamage;
-                if (postDamagedDurability + 1 === itemDurability.maxDurability) {
-                    equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
-                }
-                else if (postDamagedDurability > itemDurability.maxDurability) {
-                    currentHeldAxe.lockMode = ItemLockMode.none;
-                    return;
-                }
-                else if (postDamagedDurability < itemDurability.maxDurability) {
-                    itemDurability.damage = itemDurability.damage + totalDamage;
-                    currentHeldAxe.lockMode = ItemLockMode.none;
-                    equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
-                }
                 for (const group of stackDistribution(size)) {
                     system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
                 }
@@ -140,86 +141,106 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             const unbreakingMultiplier = (100 / (level + 1)) / 100;
             const unbreakingDamage = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
             const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
-            const blockOutline = player.dimension.getEntities({ closest: 1, maxDistance: 1, type: "yn:block_outline", location: blockInteracted.bottomCenter() })[0];
             const cooldown = currentHeldAxe.getComponent(ItemCooldownComponent.componentId);
             try {
-                if (blockOutline?.isValid()) {
-                    let inspectedTree;
-                    if (!visitedLogs)
-                        return;
-                    const tempResult = await new Promise((inspectTreePromiseResolve) => {
-                        const tMain = system.runJob((function* (inspectTreePromiseResolve) {
-                            const possibleVisitedLogs = [];
-                            for (let i = 0; i < visitedLogs.length; i++) {
-                                const currentInspectedTree = visitedLogs[i];
-                                const interactedTreeNode = currentInspectedTree.visitedLogs.source.getNode(blockInteracted.location);
-                                if (interactedTreeNode) {
-                                    possibleVisitedLogs.push({ result: currentInspectedTree, index: i });
-                                }
+                if (!visitedLogs)
+                    return;
+                const tempResult = await new Promise((inspectTreePromiseResolve) => {
+                    const tMain = system.runJob((function* (inspectTreePromiseResolve) {
+                        const possibleVisitedLogs = [];
+                        for (let i = 0; i < visitedLogs.length; i++) {
+                            const currentInspectedTree = visitedLogs[i];
+                            const interactedTreeNode = currentInspectedTree.visitedLogs.source.getNode(blockInteracted);
+                            if (interactedTreeNode) {
+                                possibleVisitedLogs.push({ result: currentInspectedTree, index: i });
                             }
-                            if (!possibleVisitedLogs.length)
-                                return system.clearJob(tMain);
-                            const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
-                            const index = latestPossibleInspectedTree.index;
-                            inspectedTree = latestPossibleInspectedTree.result;
-                            if (!inspectedTree)
-                                return system.clearJob(tMain);
-                            for (const blockOutline of inspectedTree.visitedLogs.blockOutlines) {
-                                if (!blockOutline?.isValid()) {
-                                    let { x, y, z } = blockOutline.lastLocation;
-                                    x -= 0.5;
-                                    z -= 0.5;
-                                    inspectedTree.visitedLogs.source.removeNode({ x, y, z });
-                                }
-                                yield;
+                        }
+                        if (!possibleVisitedLogs.length) {
+                            inspectTreePromiseResolve({ result: null, index: -1 });
+                            return system.clearJob(tMain);
+                        }
+                        const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
+                        const index = latestPossibleInspectedTree.index;
+                        const initialTreeInspection = latestPossibleInspectedTree.result;
+                        for (const node of initialTreeInspection.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
+                            if (!node.block?.isValid() || !isLogIncluded(node.block.typeId)) {
+                                initialTreeInspection.visitedLogs.source.removeNode(node.block);
                             }
-                            if (inspectedTree.initialSize === inspectedTree.visitedLogs.source.getSize()) {
-                                system.clearJob(tMain);
-                                inspectTreePromiseResolve({ result: inspectedTree.visitedLogs, index: index });
-                            }
-                            const tempResult = {
-                                blockOutlines: [],
-                                source: new Graph(),
-                                yOffsets: new Map(),
-                                trunk: {
-                                    centroid: {
-                                        x: 0,
-                                        z: 0
-                                    },
-                                    size: 0
-                                }
-                            };
-                            for (const node of inspectedTree.visitedLogs.source.traverseIterative(blockInteracted.location, "BFS")) {
-                                if (node) {
-                                    tempResult.blockOutlines.push(inspectedTree.visitedLogs.blockOutlines[node.index]);
-                                    tempResult.source.addNode(node);
-                                    tempResult.yOffsets.set(node.location.y, false);
-                                }
-                                yield;
-                            }
+                            yield;
+                        }
+                        if (initialTreeInspection.initialSize === initialTreeInspection.visitedLogs.source.getSize()) {
                             system.clearJob(tMain);
-                            inspectTreePromiseResolve({ result: tempResult, index: index });
-                        })(inspectTreePromiseResolve));
-                    });
-                    const newInspectedSubTree = {
-                        initialSize: tempResult.result.source.getSize(),
+                            inspectTreePromiseResolve({ result: initialTreeInspection.visitedLogs, index: index });
+                        }
+                        const finalizedTreeInspection = {
+                            blockOutlines: [],
+                            source: new Graph(),
+                            yOffsets: new Map(),
+                            trunk: {
+                                centroid: {
+                                    x: 0,
+                                    z: 0
+                                },
+                                size: 0
+                            }
+                        };
+                        for (const node of initialTreeInspection.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
+                            if (node.block?.isValid()) {
+                                finalizedTreeInspection.blockOutlines.push(initialTreeInspection.visitedLogs.blockOutlines[node.index]);
+                                finalizedTreeInspection.source.addNode(node);
+                                finalizedTreeInspection.yOffsets.set(node.block.location.y, false);
+                            }
+                            yield;
+                        }
+                        const newInspectedSubTree = {
+                            initialSize: finalizedTreeInspection.source.getSize(),
+                            isDone: false,
+                            visitedLogs: finalizedTreeInspection
+                        };
+                        const currentChangedIndex = visitedLogs.findIndex((result) => newInspectedSubTree.visitedLogs.source.isEqual(initialTreeInspection.visitedLogs.source) && !result.isDone);
+                        if (currentChangedIndex === -1) {
+                            if (newInspectedSubTree.initialSize > 0)
+                                visitedLogs.push(newInspectedSubTree);
+                            system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond).then(async (_) => {
+                                if (!visitedLogs[tempResult.index])
+                                    return;
+                                if (!visitedLogs[tempResult.index].isDone)
+                                    resetOutlinedTrees(newInspectedSubTree);
+                            });
+                        }
+                        else {
+                            visitedLogs[tempResult.index] = newInspectedSubTree;
+                        }
+                        system.clearJob(tMain);
+                        inspectTreePromiseResolve({ result: finalizedTreeInspection, index: index });
+                    })(inspectTreePromiseResolve));
+                });
+                if (tempResult.index === -1) {
+                    if (cooldown.getCooldownTicksRemaining(player) !== 0)
+                        return;
+                    const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
+                    cooldown.startCooldown(player);
+                    const t = system.runJob((function* () {
+                        for (const blockOutline of treeCollectedResult.blockOutlines) {
+                            if (blockOutline?.isValid())
+                                blockOutline.triggerEvent('is_tree_choppable');
+                            yield;
+                        }
+                        system.clearJob(t);
+                    })());
+                    const result = {
+                        visitedLogs: treeCollectedResult,
                         isDone: false,
-                        visitedLogs: tempResult.result
+                        initialSize: treeCollectedResult.source.getSize(),
                     };
-                    const currentChangedIndex = visitedLogs.findIndex((result) => newInspectedSubTree.visitedLogs.source.isEqual(inspectedTree.visitedLogs.source) && !result.isDone);
-                    if (currentChangedIndex === -1) {
-                        if (newInspectedSubTree.initialSize > 0)
-                            visitedLogs.push(newInspectedSubTree);
-                        system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond).then(async (_) => {
-                            if (!visitedLogs[tempResult.index])
-                                return;
-                            if (!visitedLogs[tempResult.index].isDone)
-                                resetOutlinedTrees(newInspectedSubTree);
-                        });
-                    }
-                    else {
-                        visitedLogs[tempResult.index] = newInspectedSubTree;
-                    }
+                    if (result.initialSize > 0)
+                        visitedLogs.push(result);
+                    system.runTimeout(async () => {
+                        if (!result.isDone)
+                            resetOutlinedTrees(result);
+                    }, blockOutlinesDespawnTimer * TicksPerSecond);
+                }
+                else {
                     const size = tempResult.result.source.getSize();
                     const totalDamage = size * unbreakingDamage;
                     const totalDurabilityConsumed = currentDurability + totalDamage;
@@ -282,31 +303,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     }).catch((error) => {
                         Logger.error("Form Error: ", error, error.stack);
                     });
-                }
-                else {
-                    if (cooldown.getCooldownTicksRemaining(player) !== 0)
-                        return;
-                    const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
-                    cooldown.startCooldown(player);
-                    const t = system.runJob((function* () {
-                        for (const blockOutline of treeCollectedResult.blockOutlines) {
-                            if (blockOutline?.isValid())
-                                blockOutline.triggerEvent('is_tree_choppable');
-                            yield;
-                        }
-                        system.clearJob(t);
-                    })());
-                    const result = {
-                        visitedLogs: treeCollectedResult,
-                        isDone: false,
-                        initialSize: treeCollectedResult.source.getSize(),
-                    };
-                    if (result.initialSize > 0)
-                        visitedLogs.push(result);
-                    system.runTimeout(async () => {
-                        if (!result.isDone)
-                            resetOutlinedTrees(result);
-                    }, blockOutlinesDespawnTimer * TicksPerSecond);
                 }
             }
             catch (e) {
