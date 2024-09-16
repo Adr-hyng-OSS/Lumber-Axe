@@ -79,7 +79,7 @@ export class Configuration {
     // Only good for read-only Dropdowns
     Object.values(serverConfigurationCopy).forEach((builder, index) => {
       const isNotDropdown = (builder.values.length === 0);
-      if (typeof builder.defaultValue === "boolean") {
+      if (typeof builder.defaultValue === "boolean" && isNotDropdown) {
         cachedConfigurationValues[index] = builder.defaultValue;
         form.toggle({rawtext: [{translate: builder.name}]}, cachedConfigurationValues[index] as boolean);
       } 
@@ -89,7 +89,7 @@ export class Configuration {
       }
     });
 
-    form.show(this.player).then((result: ModalFormResponse) => {1
+    form.show(this.player).then((result: ModalFormResponse) => {
       if (!result.formValues) return;
       const hadChanges: boolean = !cachedConfigurationValues.every((element, index) => element === result.formValues[index]);
       if (result.canceled || result.cancelationReason === FormCancelationReason.UserClosed || result.cancelationReason === FormCancelationReason.UserBusy) {

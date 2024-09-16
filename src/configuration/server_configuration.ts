@@ -24,6 +24,10 @@ export const serverConfiguration = {
    */
   excludedLog: new FormBuilder("LumberAxe.configuration.log_exclude_manager").createDropdown(["Empty"], ""),
   /**
+   * Enable/Disable Progressive Chopping, which makes you chop trees slightly longer, but nice to see.
+   */
+  progressiveChopping: new FormBuilder("LumberAxe.configuration.not_implemented").createToggle(true),
+  /**
    * Shows the script initialization message log upon player joining, default is true.
    */
   ShowMessageUponJoin: new FormBuilder("LumberAxe.server.show_message_on_join").createToggle(true),

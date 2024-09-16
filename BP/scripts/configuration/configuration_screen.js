@@ -71,7 +71,7 @@ export class Configuration {
         const cachedConfigurationValues = [];
         Object.values(serverConfigurationCopy).forEach((builder, index) => {
             const isNotDropdown = (builder.values.length === 0);
-            if (typeof builder.defaultValue === "boolean") {
+            if (typeof builder.defaultValue === "boolean" && isNotDropdown) {
                 cachedConfigurationValues[index] = builder.defaultValue;
                 form.toggle({ rawtext: [{ translate: builder.name }] }, cachedConfigurationValues[index]);
             }
@@ -81,7 +81,6 @@ export class Configuration {
             }
         });
         form.show(this.player).then((result) => {
-            1;
             if (!result.formValues)
                 return;
             const hadChanges = !cachedConfigurationValues.every((element, index) => element === result.formValues[index]);
