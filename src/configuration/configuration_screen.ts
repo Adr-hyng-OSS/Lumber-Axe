@@ -74,30 +74,32 @@ export class Configuration {
     
     this.loadServer();
 
-    const cachedConfigurationValues: Array<number | boolean | string> = [];
+    const cachedConfigurationValues: Array<{result: number | boolean | string, index: number}> = [];
     
     // Only good for read-only Dropdowns
     Object.values(serverConfigurationCopy).forEach((builder, index) => {
       const isNotDropdown = (builder.values.length === 0);
       if (typeof builder.defaultValue === "boolean" && isNotDropdown) {
-        cachedConfigurationValues[index] = builder.defaultValue;
-        form.toggle({rawtext: [{translate: builder.name}]}, cachedConfigurationValues[index] as boolean);
+        cachedConfigurationValues.push({result: builder.defaultValue, index});
+        form.toggle({rawtext: [{translate: builder.name}]}, builder.defaultValue as boolean);
       } 
       else if (typeof builder.defaultValue === "string" && isNotDropdown) {
-        cachedConfigurationValues[index] = builder.defaultValue;
-        form.textField({rawtext: [{translate: builder.name}]}, cachedConfigurationValues[index], builder.defaultValue);
+        cachedConfigurationValues.push({result: builder.defaultValue, index});
+        form.textField({rawtext: [{translate: builder.name}]}, builder.defaultValue, builder.defaultValue);
       }
     });
 
     form.show(this.player).then((result: ModalFormResponse) => {
       if (!result.formValues) return;
-      const hadChanges: boolean = !cachedConfigurationValues.every((element, index) => element === result.formValues[index]);
+      const hadChanges: boolean = !cachedConfigurationValues.every(({result: element, index: index}, i) => element === result.formValues[i]);
       if (result.canceled || result.cancelationReason === FormCancelationReason.UserClosed || result.cancelationReason === FormCancelationReason.UserBusy) {
         return;
       }
       if (hadChanges) {
         result.formValues.forEach((newValue, formIndex) => {
-          const key = Object.keys(serverConfigurationCopy)[formIndex];
+          // I think it's not updating the right formindex from the serverConfiguration
+          const index = cachedConfigurationValues[formIndex].index;
+          const key = Object.keys(serverConfigurationCopy)[index];
           const builder = serverConfigurationCopy[key] as FormBuilder<any>;
           switch (typeof newValue) {
             case "boolean":

@@ -22,7 +22,7 @@
   },
   "progressiveChopping": {
     "description": "Enable/Disable Progressive Chopping, which makes you chop trees slightly longer, but nice to see.",
-    "name": "LumberAxe.configuration.not_implemented",
+    "name": "LumberAxe.server.progressive_chopping",
     "default": true
   },
   "ShowMessageUponJoin": {

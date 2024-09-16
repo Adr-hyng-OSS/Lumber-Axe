@@ -108,7 +108,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       }
     }
     const t = system.runJob( (function* () {
-      if(!(<boolean>serverConfigurationCopy.progressiveChopping.defaultValue)) {
+      if(!(serverConfigurationCopy.progressiveChopping.defaultValue)) {
         for(const yOffset of trunkYCoordinates) {
           if(currentBlockOffset % DustPerNumberOfBlocks === 0) {
               const molang = new MolangVariableMap();

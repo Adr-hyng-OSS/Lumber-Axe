@@ -3,9 +3,9 @@ import { cloneConfiguration } from "./configuration_handler";
 export const serverConfiguration = {
     durabilityDamagePerBlock: new FormBuilder("LumberAxe.server.durability_damage_per_block").createTextField("3"),
     chopLimit: new FormBuilder("LumberAxe.server.chop_limit").createTextField("300"),
-    includedLog: new FormBuilder("LumberAxe.configuration.log_include_manager").createDropdown(["Empty"], ""),
-    excludedLog: new FormBuilder("LumberAxe.configuration.log_exclude_manager").createDropdown(["Empty"], ""),
-    progressiveChopping: new FormBuilder("LumberAxe.configuration.not_implemented").createToggle(true),
+    includedLog: new FormBuilder("LumberAxe.configuration.log_include_manager").createDropdown(['Empty'], "Empty"),
+    excludedLog: new FormBuilder("LumberAxe.configuration.log_exclude_manager").createDropdown(['Empty'], "Empty"),
+    progressiveChopping: new FormBuilder("LumberAxe.server.progressive_chopping").createToggle(true),
     ShowMessageUponJoin: new FormBuilder("LumberAxe.server.show_message_on_join").createToggle(true),
     debug: new FormBuilder("Debug Mode").createToggle(true),
 };

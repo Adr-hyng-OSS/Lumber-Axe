@@ -72,24 +72,25 @@ export class Configuration {
         Object.values(serverConfigurationCopy).forEach((builder, index) => {
             const isNotDropdown = (builder.values.length === 0);
             if (typeof builder.defaultValue === "boolean" && isNotDropdown) {
-                cachedConfigurationValues[index] = builder.defaultValue;
-                form.toggle({ rawtext: [{ translate: builder.name }] }, cachedConfigurationValues[index]);
+                cachedConfigurationValues.push({ result: builder.defaultValue, index });
+                form.toggle({ rawtext: [{ translate: builder.name }] }, builder.defaultValue);
             }
             else if (typeof builder.defaultValue === "string" && isNotDropdown) {
-                cachedConfigurationValues[index] = builder.defaultValue;
-                form.textField({ rawtext: [{ translate: builder.name }] }, cachedConfigurationValues[index], builder.defaultValue);
+                cachedConfigurationValues.push({ result: builder.defaultValue, index });
+                form.textField({ rawtext: [{ translate: builder.name }] }, builder.defaultValue, builder.defaultValue);
             }
         });
         form.show(this.player).then((result) => {
             if (!result.formValues)
                 return;
-            const hadChanges = !cachedConfigurationValues.every((element, index) => element === result.formValues[index]);
+            const hadChanges = !cachedConfigurationValues.every(({ result: element, index: index }, i) => element === result.formValues[i]);
             if (result.canceled || result.cancelationReason === FormCancelationReason.UserClosed || result.cancelationReason === FormCancelationReason.UserBusy) {
                 return;
             }
             if (hadChanges) {
                 result.formValues.forEach((newValue, formIndex) => {
-                    const key = Object.keys(serverConfigurationCopy)[formIndex];
+                    const index = cachedConfigurationValues[formIndex].index;
+                    const key = Object.keys(serverConfigurationCopy)[index];
                     const builder = serverConfigurationCopy[key];
                     switch (typeof newValue) {
                         case "boolean":
