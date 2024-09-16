@@ -7,6 +7,7 @@ import { Graph } from 'utils/graph';
 world.afterEvents.playerSpawn.subscribe((e) => {
     if (!e.initialSpawn)
         return;
+    e.player.configuration.loadServer();
     if (!serverConfigurationCopy.ShowMessageUponJoin.defaultValue)
         return;
     SendMessageTo(e.player, {

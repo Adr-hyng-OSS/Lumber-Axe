@@ -83,7 +83,7 @@ export class Configuration {
         form.show(this.player).then((result) => {
             if (!result.formValues)
                 return;
-            const hadChanges = !cachedConfigurationValues.every(({ result: element, index: index }, i) => element === result.formValues[i]);
+            const hadChanges = !cachedConfigurationValues.every(({ result: element }, i) => element === result.formValues[i]);
             if (result.canceled || result.cancelationReason === FormCancelationReason.UserClosed || result.cancelationReason === FormCancelationReason.UserBusy) {
                 return;
             }

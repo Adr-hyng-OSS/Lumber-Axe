@@ -91,13 +91,12 @@ export class Configuration {
 
     form.show(this.player).then((result: ModalFormResponse) => {
       if (!result.formValues) return;
-      const hadChanges: boolean = !cachedConfigurationValues.every(({result: element, index: index}, i) => element === result.formValues[i]);
+      const hadChanges: boolean = !cachedConfigurationValues.every(({result: element}, i) => element === result.formValues[i]);
       if (result.canceled || result.cancelationReason === FormCancelationReason.UserClosed || result.cancelationReason === FormCancelationReason.UserBusy) {
         return;
       }
       if (hadChanges) {
         result.formValues.forEach((newValue, formIndex) => {
-          // I think it's not updating the right formindex from the serverConfiguration
           const index = cachedConfigurationValues[formIndex].index;
           const key = Object.keys(serverConfigurationCopy)[index];
           const builder = serverConfigurationCopy[key] as FormBuilder<any>;
