@@ -30,12 +30,14 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             const blockTypeId = currentBreakBlock.type.id;
             if (!player.isSurvival())
                 return;
-            currentHeldAxe.lockMode = ItemLockMode.slot;
-            const inventory = player.getComponent(EntityInventoryComponent.componentId).container;
             if (!isLogIncluded(blockTypeId)) {
                 axe.damageDurability(1);
                 return;
             }
+            currentHeldAxe.lockMode = ItemLockMode.slot;
+            const inventory = player.getComponent(EntityInventoryComponent.componentId).container;
+            inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
+            axe.damageDurability(2);
             const itemDurability = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId);
             const enchantments = currentHeldAxe.getComponent(ItemEnchantableComponent.componentId);
             const level = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
@@ -65,13 +67,12 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             const size = visited.getSize() - 1;
             if (!visited)
                 return;
-            if (size <= 1)
-                return axe.damageDurability(2);
             if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + ""))
                 return resetOutlinedTrees(destroyedTree, true);
             const totalDamage = size * unbreakingDamage;
             const postDamagedDurability = itemDurability.damage + totalDamage;
             if (postDamagedDurability + 1 === itemDurability.maxDurability) {
+                player.playSound("random.break");
                 inventory.setItem(currentHeldAxeSlot, undefined);
             }
             else if (postDamagedDurability > itemDurability.maxDurability) {
@@ -80,9 +81,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             }
             else if (postDamagedDurability < itemDurability.maxDurability) {
                 itemDurability.damage = itemDurability.damage + totalDamage;
-                currentHeldAxe.lockMode = ItemLockMode.none;
-                if (inventory.getSlot(currentHeldAxeSlot).isValid())
-                    inventory.setItem(currentHeldAxeSlot, currentHeldAxe.clone());
+                const heldTemp = currentHeldAxe.clone();
+                heldTemp.lockMode = ItemLockMode.none;
+                inventory.setItem(currentHeldAxeSlot, heldTemp);
             }
             const trunkYCoordinates = Array.from(destroyedTree.visitedLogs.yOffsets.keys()).sort((a, b) => a - b);
             let currentBlockOffset = 0;

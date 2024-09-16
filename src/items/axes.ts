@@ -1,4 +1,4 @@
-import { Block, BlockPermutation, EntityEquippableComponent, EntityInventoryComponent, EquipmentSlot, ItemCooldownComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, Player, system, TicksPerSecond, world } from "@minecraft/server";
+import { Block, BlockPermutation, Entity, EntityEquippableComponent, EntityInventoryComponent, EquipmentSlot, ItemCooldownComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, Player, system, TicksPerSecond, world } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
 import { axeEquipments, blockOutlinesDespawnTimer, forceShow, getTreeLogs, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult, visitedLogs} from "index"
 import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
@@ -29,12 +29,14 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         const currentBreakBlock: BlockPermutation = arg.minedBlockPermutation;
         const blockTypeId: string = currentBreakBlock.type.id;
         if(!player.isSurvival()) return;
-        currentHeldAxe.lockMode = ItemLockMode.slot; // It's not locking....
-        const inventory = (player.getComponent(EntityInventoryComponent.componentId) as EntityInventoryComponent).container;
         if (!isLogIncluded(blockTypeId)) {
             axe.damageDurability(1);
             return;
         } 
+        currentHeldAxe.lockMode = ItemLockMode.slot;
+        const inventory = (player.getComponent(EntityInventoryComponent.componentId) as EntityInventoryComponent).container;
+        inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
+        axe.damageDurability(2);
         const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
         const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
         const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
@@ -68,11 +70,11 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         const size = visited.getSize() - 1;
 
         if(!visited) return;
-        if(size <= 1) return axe.damageDurability(2);
         if(size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "")) return resetOutlinedTrees(destroyedTree, true);
         const totalDamage: number = size * unbreakingDamage;
         const postDamagedDurability: number = itemDurability.damage + totalDamage;
         if (postDamagedDurability + 1 === itemDurability.maxDurability) {
+            player.playSound("random.break");
             inventory.setItem(currentHeldAxeSlot, undefined);
         } else if (postDamagedDurability > itemDurability.maxDurability) {
             currentHeldAxe.lockMode = ItemLockMode.none;
@@ -80,8 +82,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         } 
         else if (postDamagedDurability < itemDurability.maxDurability){
             itemDurability.damage = itemDurability.damage +  totalDamage;
-            currentHeldAxe.lockMode = ItemLockMode.none;
-            if(inventory.getSlot(currentHeldAxeSlot).isValid()) inventory.setItem(currentHeldAxeSlot, currentHeldAxe.clone());
+            const heldTemp = currentHeldAxe.clone();
+            heldTemp.lockMode = ItemLockMode.none;
+            inventory.setItem(currentHeldAxeSlot, heldTemp);
         }
         // Dust Particle (VFX)
         const trunkYCoordinates = Array.from(destroyedTree.visitedLogs.yOffsets.keys()).sort((a, b) => a - b);
@@ -121,7 +124,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 dimension.spawnItem(new ItemStack(blockTypeId, group), location);
                 yield;
             }
-
             system.clearJob(t);
         })());
     },
