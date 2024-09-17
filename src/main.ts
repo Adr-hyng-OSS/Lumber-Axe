@@ -1,5 +1,5 @@
-import { world, PlayerLeaveAfterEvent, ScriptEventCommandMessageAfterEvent, system, ScriptEventSource, Player, BlockPermutation, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, PlayerBreakBlockBeforeEvent } from '@minecraft/server';
-import { ADDON_IDENTIFIER, axeEquipments, getTreeLogs, InteractedTreeResult, isLogIncluded, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult} from "./index"
+import { world, PlayerLeaveAfterEvent, ScriptEventCommandMessageAfterEvent, system, ScriptEventSource, Player, BlockPermutation, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, PlayerBreakBlockBeforeEvent, Block, VectorXZ } from '@minecraft/server';
+import { ADDON_IDENTIFIER, axeEquipments, getTreeLogs, getTreeTrunkSize, InteractedTreeResult, isLogIncluded, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult} from "./index"
 import { Logger } from 'utils/logger';
 import './items/axes';
 import { MinecraftEnchantmentTypes, MinecraftBlockTypes } from 'modules/vanilla-types/index';
@@ -69,7 +69,30 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     };
   
     // Use Cache again :,D 
+
+    const molang = new MolangVariableMap();
+    console.warn(blockInteracted?.typeId);
+    const brokenTreeTrunk = await getTreeTrunkSize(blockInteracted, blockTypeId);
+    const DustPerNumberOfBlocks = 2;
+    // Get the topmost
+    molang.setFloat('trunk_size', brokenTreeTrunk.size);
+    let isTreeDoneTraversing = false;
+    const topMostBlock = blockInteracted.dimension.getTopmostBlock(brokenTreeTrunk.center);
+    let currentY = blockInteracted.y;
+    let currentYOffset = 0;
+    const it = system.runInterval(() => {
+      // Get the first block, and based on that it will get the height.
+      if(isTreeDoneTraversing || currentY >= topMostBlock.y) system.clearRun(it);
+      if(currentYOffset % DustPerNumberOfBlocks === 0) {
+        console.warn("RUNNED DUST?");
+        dimension.spawnParticle('yn:tree_dust', {x: brokenTreeTrunk.center.x, y: currentY, z: brokenTreeTrunk.center.z}, molang);
+      }
+      currentY++;
+      currentYOffset++;
+    }, 1);
+
     const choppedTree = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false) as VisitedBlockResult);
+    isTreeDoneTraversing = true;
     SendMessageTo(player, {rawtext: [{text: "Tree is fully traversed. "}]});
     destroyedTree.visitedLogs = choppedTree;
     visited = choppedTree.source;
@@ -95,7 +118,6 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     // Dust Particle (VFX)
     const trunkYCoordinates = Array.from(destroyedTree.visitedLogs.yOffsets.keys()).sort((a, b) => a - b);
     let currentBlockOffset = 0;
-    const DustPerNumberOfBlocks = 2;
     if(<boolean>serverConfigurationCopy.progressiveChopping.defaultValue){
       for(const yOffset of trunkYCoordinates) {
           if(currentBlockOffset % DustPerNumberOfBlocks === 0) {

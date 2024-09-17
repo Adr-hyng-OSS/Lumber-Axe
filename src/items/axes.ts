@@ -1,11 +1,12 @@
-import { Block, EntityEquippableComponent, ItemCooldownComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemStack, MolangVariableMap, Player, system, TicksPerSecond, world } from "@minecraft/server";
+import { Block, BlockSignComponent, Dimension, EntityEquippableComponent, ItemCooldownComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemStack, MolangVariableMap, Player, system, TicksPerSecond, VectorXZ, world } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
-import { axeEquipments, blockOutlinesDespawnTimer, forceShow, getTreeLogs, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, resetOutlinedTrees, serverConfigurationCopy, VisitedBlockResult, visitedLogs} from "index"
+import { axeEquipments, forceShow, getTreeLogs, getTreeTrunkSize, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, resetOutlinedTrees, serverConfigurationCopy, VisitedBlockResult, visitedLogs} from "index"
 import { MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
 import { Logger } from "utils/logger";
 
 import "classes/player";
 import { Graph } from "utils/graph";
+export let BLOCK_OUTLINES_DESPAWN_CD = 0;
 
 world.beforeEvents.worldInitialize.subscribe((registry) => {
   registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
@@ -37,6 +38,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
 
         const cooldown = (currentHeldAxe.getComponent(ItemCooldownComponent.componentId) as ItemCooldownComponent);
+        BLOCK_OUTLINES_DESPAWN_CD = cooldown.cooldownTicks / TicksPerSecond;
         try {
             // Check also, if this tree is already being interacted. By checking this current blockOutline (node), if it's being interacted.
             if(!visitedLogs) return;
@@ -108,7 +110,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const currentChangedIndex = visitedLogs.findIndex((result) => newInspectedSubTree.visitedLogs.source.isEqual(initialTreeInspection.visitedLogs.source) && !result.isDone);
                     if(currentChangedIndex === -1) {
                         if(newInspectedSubTree.initialSize > 0) visitedLogs.push(newInspectedSubTree);
-                        system.waitTicks(blockOutlinesDespawnTimer * TicksPerSecond).then(async (_) => {
+                        system.waitTicks(BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond).then(async (_) => {
                             if(!visitedLogs[tempResult.index]) return;
                             if(!visitedLogs[tempResult.index].isDone) resetOutlinedTrees(newInspectedSubTree);
                         });
@@ -122,19 +124,53 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
 
             if(tempResult.index === -1) {
                 if(cooldown.getCooldownTicksRemaining(player) !== 0) return;
+                const molangVariable = new MolangVariableMap();
+                // Get the bottom most log (TODO)
+                const interactedTreeTrunk = await getTreeTrunkSize(blockInteracted, blockInteracted.typeId);
+
+                const topMostBlock = blockInteracted.dimension.getTopmostBlock(interactedTreeTrunk.center);
+                cooldown.startCooldown(player);
+                const trunkSizeToParticleRadiusParser = {
+                    1: 1.5,
+                    2: 2,
+                    3: 2.5,
+                    4: 2.5,
+                    5: 3.5,
+                    6: 3.5,
+                    7: 3.5,
+                    8: 3.5,
+                    9: 3.5
+                }
+                const trunkHeight = (topMostBlock.y - blockInteracted.y) + 1;
+                let isTreeDoneTraversing = false;
+                if(trunkHeight > 5) {
+                    const it = system.runInterval(() => {
+                        // Get the first block, and based on that it will get the height.
+                        if(isTreeDoneTraversing) system.clearRun(it);
+                        molangVariable.setFloat('radius', trunkSizeToParticleRadiusParser[interactedTreeTrunk.size]);
+                        molangVariable.setFloat('height', trunkHeight);
+                        molangVariable.setColorRGB('color', {red: 1.0, green: 1.0, blue: 1.0}); // Change color based on property??
+                        player.dimension.spawnParticle('yn:inspecting_indicator', {
+                            x: interactedTreeTrunk.center.x, 
+                            y: blockInteracted.y, 
+                            z: interactedTreeTrunk.center.z
+                        }, molangVariable);
+                    }, 5);
+                }
+
                 const currentTime = system.currentTick;
                 const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
-                const t = system.runInterval(() => {
-                    // Get the first block, and based on that it will get the height.
-                    if(system.currentTick >= currentTime + (blockOutlinesDespawnTimer * TicksPerSecond)) system.clearRun(t);
-                    const molangVariable = new MolangVariableMap();
-                    const treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
-                    molangVariable.setFloat('radius', treeCollectedResult.trunk.size == 1 ? 0.75 : 1.5);
-                    molangVariable.setFloat('depth', -(treeOffsets.length));
-                    molangVariable.setColorRGB('color', {red: 1.0, green: 1.0, blue: 1.0}); // Change color based on property??
-                    player.dimension.spawnParticle('yn:inspecting_indicator', {x: treeCollectedResult.trunk.centroid.x, y: treeOffsets[0], z: treeCollectedResult.trunk.centroid.z}, molangVariable);
-                }, 5);
-                cooldown.startCooldown(player);
+                isTreeDoneTraversing = true;
+                if(trunkHeight > 5) {
+                    const t = system.runInterval(() => {
+                        if(system.currentTick >= currentTime + (BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond) && result.isDone) system.clearRun(t);
+                        const treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
+                        molangVariable.setFloat('radius', trunkSizeToParticleRadiusParser[treeCollectedResult.trunk.size]);
+                        molangVariable.setFloat('height', treeOffsets.length);
+                        molangVariable.setColorRGB('color', {red: 0.0, green: 1.0, blue: 0.0}); // Change color based on property??
+                        player.dimension.spawnParticle('yn:inspecting_indicator', {x: treeCollectedResult.trunk.centroid.x, y: treeOffsets[0], z: treeCollectedResult.trunk.centroid.z}, molangVariable);
+                    }, 5);
+                }
                 const result: InteractedTreeResult = {
                     visitedLogs: treeCollectedResult, 
                     isDone: false,
@@ -143,7 +179,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 if(result.initialSize > 0) visitedLogs.push(result);
                 system.runTimeout(async () => { 
                     if(!result.isDone) resetOutlinedTrees(result);
-                }, blockOutlinesDespawnTimer * TicksPerSecond);
+                }, BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond);
             } else {
                 const size = tempResult.result.source.getSize();
                 const totalDamage: number = size * unbreakingDamage;

@@ -3,14 +3,14 @@ import { Block, Dimension, Entity, Vector3, VectorXZ, system } from "@minecraft/
 import { validLogBlocks, serverConfigurationCopy, VisitedBlockResult } from "../index";
 import { Graph } from "utils/graph";
 
-function isLogIncluded(blockTypeId: string): boolean {
+export function isLogIncluded(blockTypeId: string): boolean {
     if(serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
     if(serverConfigurationCopy.includedLog.values.includes(blockTypeId) || validLogBlocks.test(blockTypeId)) return true;
     return false;
 }
 
 
-async function getTreeLogs(
+export async function getTreeLogs(
     dimension: Dimension, 
     location: Vector3, 
     blockTypeId: string, 
@@ -18,6 +18,7 @@ async function getTreeLogs(
     isInspectingTree: boolean = true
 ): Promise<VisitedBlockResult> {
     return new Promise<VisitedBlockResult>((resolve) => {
+        console.warn("RUNNED");
         const graph = new Graph();
         const blockOutlines: Entity[] = [];
         const yOffsets: Map<number, boolean> = new Map();
@@ -112,7 +113,7 @@ async function getTreeLogs(
                 const outline = dimension.spawnEntity('yn:block_outline', { x: centroidLog.x, y: bottomMostBlock, z: centroidLog.z });
                 outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
                 outline.triggerEvent('not_persistent');
-                outline.triggerEvent('active_outline');
+                // outline.triggerEvent('active_outline');
                 blockOutlines.push(outline);
                 yield;
             }
@@ -177,6 +178,33 @@ function groupAdjacentBlocks(visited: Set<string>): string[][] {
     return groups;
 }
 
+export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): Promise<{center: VectorXZ, size: number}> {
+    // (TODO) Use Floodfill instead of this to get the adjacent blocks
+    return new Promise<{center: VectorXZ, size: number}>((fetchedTrunkSizeResolved) => {
+        let i = 0;
+        let centroidLog: VectorXZ = {
+            x: 0, 
+            z: 0
+        };
+       const t = system.runJob((function*(){
+           for (let x = -2; x <= 2; x++) {
+               for (let z = -2; z <= 2; z++) {
+                   const _neighborBlock = blockInteracted.offset({ x: x, y: 0, z: z });
+                   if (!_neighborBlock?.isValid() || !isLogIncluded(_neighborBlock?.typeId)) continue;
+                   if (_neighborBlock.typeId !== blockTypeId) continue;
+                   centroidLog.x += _neighborBlock.x;
+                   centroidLog.z += _neighborBlock.z;
+                   i++;
+                   yield;
+               }
+               yield;
+           }
+           centroidLog.x = (centroidLog.x / i) + 0.5;
+           centroidLog.z = (centroidLog.z / i) + 0.5;
+           system.clearJob(t);
+           fetchedTrunkSizeResolved({center: centroidLog, size: i});
+       })());
+    });
+}
 
 
-export {isLogIncluded, getTreeLogs}

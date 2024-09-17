@@ -12,8 +12,6 @@ export const validLogBlocks: RegExp = /(_log|crimson_stem|warped_stem)$/;
 export const playerInteractionMap: Map<string, boolean> = new Map();
 export const playerInteractedTimeLogMap: Map<string, number> = new Map();
 export const axeEquipments: string[] = Object.values(MyCustomItemTypes);
-
-export const blockOutlinesDespawnTimer = 5;
 export const visitedLogs: InteractedTreeResult[] = [];
 
 

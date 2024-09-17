@@ -9,7 +9,6 @@ export const validLogBlocks = /(_log|crimson_stem|warped_stem)$/;
 export const playerInteractionMap = new Map();
 export const playerInteractedTimeLogMap = new Map();
 export const axeEquipments = Object.values(MyCustomItemTypes);
-export const blockOutlinesDespawnTimer = 5;
 export const visitedLogs = [];
 export function resetOutlinedTrees(result, instantDespawn = false) {
     if (result.isDone)

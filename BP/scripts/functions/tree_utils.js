@@ -1,15 +1,16 @@
 import { system } from "@minecraft/server";
 import { validLogBlocks, serverConfigurationCopy } from "../index";
 import { Graph } from "utils/graph";
-function isLogIncluded(blockTypeId) {
+export function isLogIncluded(blockTypeId) {
     if (serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_'))
         return false;
     if (serverConfigurationCopy.includedLog.values.includes(blockTypeId) || validLogBlocks.test(blockTypeId))
         return true;
     return false;
 }
-async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, isInspectingTree = true) {
+export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, isInspectingTree = true) {
     return new Promise((resolve) => {
+        console.warn("RUNNED");
         const graph = new Graph();
         const blockOutlines = [];
         const yOffsets = new Map();
@@ -86,7 +87,6 @@ async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, isInspec
                 const outline = dimension.spawnEntity('yn:block_outline', { x: centroidLog.x, y: bottomMostBlock, z: centroidLog.z });
                 outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
                 outline.triggerEvent('not_persistent');
-                outline.triggerEvent('active_outline');
                 blockOutlines.push(outline);
                 yield;
             }
@@ -141,4 +141,32 @@ function groupAdjacentBlocks(visited) {
     }
     return groups;
 }
-export { isLogIncluded, getTreeLogs };
+export function getTreeTrunkSize(blockInteracted, blockTypeId) {
+    return new Promise((fetchedTrunkSizeResolved) => {
+        let i = 0;
+        let centroidLog = {
+            x: 0,
+            z: 0
+        };
+        const t = system.runJob((function* () {
+            for (let x = -2; x <= 2; x++) {
+                for (let z = -2; z <= 2; z++) {
+                    const _neighborBlock = blockInteracted.offset({ x: x, y: 0, z: z });
+                    if (!_neighborBlock?.isValid() || !isLogIncluded(_neighborBlock?.typeId))
+                        continue;
+                    if (_neighborBlock.typeId !== blockTypeId)
+                        continue;
+                    centroidLog.x += _neighborBlock.x;
+                    centroidLog.z += _neighborBlock.z;
+                    i++;
+                    yield;
+                }
+                yield;
+            }
+            centroidLog.x = (centroidLog.x / i) + 0.5;
+            centroidLog.z = (centroidLog.z / i) + 0.5;
+            system.clearJob(t);
+            fetchedTrunkSizeResolved({ center: centroidLog, size: i });
+        })());
+    });
+}
