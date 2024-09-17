@@ -50,7 +50,7 @@
       ],
       "minecraft:tags": {
         "tags": [
-          "minecraft:transformable_items"
+          "minecraft:is_tool"
         ]
       },
       "minecraft:max_stack_size": 1,

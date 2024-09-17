@@ -1,5 +1,5 @@
 import { world, PlayerLeaveAfterEvent, ScriptEventCommandMessageAfterEvent, system, ScriptEventSource, Player, BlockPermutation, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, PlayerBreakBlockBeforeEvent, Block, VectorXZ } from '@minecraft/server';
-import { ADDON_IDENTIFIER, axeEquipments, getTreeLogs, getTreeTrunkSize, InteractedTreeResult, isLogIncluded, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult} from "./index"
+import { ADDON_IDENTIFIER, axeEquipments, getTreeLogs, getTreeTrunkSize, InteractedTreeResult, isLogIncluded, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult, visitedLogs} from "./index"
 import { Logger } from 'utils/logger';
 import './items/axes';
 import { MinecraftEnchantmentTypes, MinecraftBlockTypes } from 'modules/vanilla-types/index';
@@ -38,6 +38,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       system.run(() => axe.damageDurability(1));
       return;
   }
+  player.configuration.loadServer();
   system.run(async () => {
     currentHeldAxe.lockMode = ItemLockMode.slot;
     const inventory = (player.getComponent(EntityInventoryComponent.componentId) as EntityInventoryComponent).container;
@@ -68,38 +69,87 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         }
     };
   
-    // Use Cache again :,D 
-
+    // (TODO) Use Cache again :,D 
     const molang = new MolangVariableMap();
     const brokenTreeTrunk = await getTreeTrunkSize(blockInteracted, blockTypeId);
-    const DustPerNumberOfBlocks = 2;
     // Get the topmost
-    molang.setFloat('trunk_size', brokenTreeTrunk.size);
     let isTreeDoneTraversing = false;
-    console.warn(blockInteracted?.typeId, blockTypeId, brokenTreeTrunk.center.x, brokenTreeTrunk.size);
     const topMostBlock = blockInteracted.dimension.getTopmostBlock(brokenTreeTrunk.center);
-    let currentY = blockInteracted.y;
-    let currentYOffset = 0;
-    const it = system.runInterval(() => {
-      // Get the first block, and based on that it will get the height.
-      if(isTreeDoneTraversing || currentY >= topMostBlock.y) system.clearRun(it);
-      if(currentYOffset % DustPerNumberOfBlocks === 0) {
-        console.warn("RUNNED DUST?");
-        dimension.spawnParticle('yn:tree_dust', {x: brokenTreeTrunk.center.x, y: currentY, z: brokenTreeTrunk.center.z}, molang);
-      }
-      currentY++;
-      currentYOffset++;
-    }, 1);
+    const bottomMostBlock = await new Promise<Block>((getBottomMostBlockResolved) => {
+      let _bottom = blockInteracted.below();
+      const _t = system.runInterval(() => {
+          if(!isLogIncluded(blockInteracted.typeId) || blockInteracted.typeId !== _bottom.typeId) {
+            system.clearRun(_t);
+            getBottomMostBlockResolved(_bottom);
+            return;
+          }
+          _bottom = _bottom.below();
+      });
+    });
+    const mainTreeTrunkHeight = (topMostBlock.y - bottomMostBlock.y);
+    const isValidVerticalTree = mainTreeTrunkHeight > 2;
+
+    const treeDustParseMap = {
+      1: 3.25,
+      2: 4,
+      3: 4,
+      4: 4,
+      5: 7,
+      6: 7,
+      7: 7,
+      8: 7,
+      9: 7
+    }
+    if(isValidVerticalTree) {
+      let dustCount = 1;
+      molang.setFloat('trunk_size', dustCount);
+      player.playSound('hit.stem');
+      dimension.spawnParticle('yn:tree_dust', {x: brokenTreeTrunk.center.x, y: blockInteracted.y, z: brokenTreeTrunk.center.z}, molang);
+      const it = system.runInterval(() => {
+        // Get the first block, and based on that it will get the height.
+        molang.setFloat('trunk_size', dustCount = dustCount + 0.25);
+        if(isTreeDoneTraversing) {
+          system.clearRun(it);
+          return;
+        };
+        player.playSound('hit.stem');
+        dimension.spawnParticle('yn:tree_dust', {x: brokenTreeTrunk.center.x, y: blockInteracted.y, z: brokenTreeTrunk.center.z}, molang);
+      }, 15);
+    }
+
+    // Getting the cache, if it has, to remove the particle.
+    // Filter by getting the graph that has this node.
+    const possibleVisitedLogs: {result: InteractedTreeResult, index: number}[] = [];
+    for(let i = 0; i < visitedLogs.length; i++) {
+        const currentInspectedTree = visitedLogs[i];
+        const interactedTreeNode = currentInspectedTree.visitedLogs.source.getNode(blockInteracted);
+        if(interactedTreeNode) {
+            possibleVisitedLogs.push({result: currentInspectedTree, index: i});
+        }
+    }
+
+    if(possibleVisitedLogs.length) {
+      // After filtering check get that tree that this player has inspected, get the latest one.
+      const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
+      const index = latestPossibleInspectedTree.index;
+      const initialTreeInspection = latestPossibleInspectedTree.result;
+      visitedLogs!.splice(index, 1);
+      initialTreeInspection!.isDone = true;
+    }
 
     const choppedTree = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false) as VisitedBlockResult);
     isTreeDoneTraversing = true;
-    SendMessageTo(player, {rawtext: [{text: "Tree is fully traversed. "}]});
     destroyedTree.visitedLogs = choppedTree;
     visited = choppedTree.source;
     const size = visited.getSize() - 1;
   
     if(!visited) return;
-    if(size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "")) return resetOutlinedTrees(destroyedTree, true);
+    if(size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "")) {
+      currentHeldAxe.lockMode = ItemLockMode.none;
+      inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
+      SendMessageTo(player, {rawtext: [{text: "Cannot chop the whole tree due to limitation. "}]});
+      return resetOutlinedTrees(destroyedTree, true);
+    }
     const totalDamage: number = size * unbreakingDamage;
     const postDamagedDurability: number = itemDurability.damage + totalDamage;
     if (postDamagedDurability + 1 === itemDurability.maxDurability) {
@@ -108,8 +158,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     } else if (postDamagedDurability > itemDurability.maxDurability) {
         currentHeldAxe.lockMode = ItemLockMode.none;
         return; 
-    } 
-    else if (postDamagedDurability < itemDurability.maxDurability){
+    } else if (postDamagedDurability < itemDurability.maxDurability) {
         itemDurability.damage = itemDurability.damage +  totalDamage;
         const heldTemp = currentHeldAxe.clone();
         heldTemp.lockMode = ItemLockMode.none;
@@ -117,23 +166,26 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     }
     // Dust Particle (VFX)
     const trunkYCoordinates = Array.from(destroyedTree.visitedLogs.yOffsets.keys()).sort((a, b) => a - b);
+    molang.setFloat('trunk_size', treeDustParseMap[brokenTreeTrunk.size]);
     let currentBlockOffset = 0;
-    if(<boolean>serverConfigurationCopy.progressiveChopping.defaultValue){
+    if(<boolean>serverConfigurationCopy.progressiveChopping.defaultValue && isValidVerticalTree){
       for(const yOffset of trunkYCoordinates) {
-          if(currentBlockOffset % DustPerNumberOfBlocks === 0) {
-              await system.waitTicks(3);
+          if(currentBlockOffset % 2 === 0) {
+              await system.waitTicks(10);
+              const loc = {x: destroyedTree.visitedLogs.trunk.centroid.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.centroid.z};
+              player.playSound('mob.irongolem.crack', {location: loc});
               const molang = new MolangVariableMap();
               molang.setFloat('trunk_size', destroyedTree.visitedLogs.trunk.size);
-              dimension.spawnParticle('yn:tree_dust', {x: destroyedTree.visitedLogs.trunk.centroid.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.centroid.z}, molang);
+              dimension.spawnParticle('yn:tree_dust', loc, molang);
           }
           destroyedTree.visitedLogs.yOffsets.set(yOffset, true);
           currentBlockOffset++;
       }
     }
     const t = system.runJob( (function* () {
-      if(!(serverConfigurationCopy.progressiveChopping.defaultValue)) {
+      if(!(serverConfigurationCopy.progressiveChopping.defaultValue) && isValidVerticalTree) {
         for(const yOffset of trunkYCoordinates) {
-          if(currentBlockOffset % DustPerNumberOfBlocks === 0) {
+          if(currentBlockOffset % 2 === 0) {
               const molang = new MolangVariableMap();
               molang.setFloat('trunk_size', destroyedTree.visitedLogs.trunk.size);
               dimension.spawnParticle('yn:tree_dust', {x: destroyedTree.visitedLogs.trunk.centroid.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.centroid.z}, molang);
@@ -147,11 +199,11 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         if (node) {
           // If there's setDestroy that cancels the dropped item, just use that instead of this.
           // Custom Destroy Particle
-          const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
           if (
             destroyedTree.visitedLogs.yOffsets.has(node.block.location.y) &&
             destroyedTree.visitedLogs.yOffsets.get(node.block.location.y)
           ) {
+            const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
             if (blockOutline?.isValid()) {
               blockOutline.playAnimation('animation.block_outline.spawn_particle');
               destroyedTree.visitedLogs.yOffsets.set(node.block.location.y, false);
@@ -161,11 +213,12 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         }
         yield;
       }
+      player.playSound('dig.cave_vines');
 
-      for (const group of stackDistribution(size)) {
-        dimension.spawnItem(new ItemStack(blockTypeId, group), location);
-        yield;
-      }
+      // for (const group of stackDistribution(size)) {
+      //   dimension.spawnItem(new ItemStack(blockTypeId, group), location);
+      //   yield;
+      // }
       system.clearJob(t);
     })());
   });

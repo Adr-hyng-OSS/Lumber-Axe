@@ -2,6 +2,7 @@ import { Block, Dimension, Entity, Vector3, VectorXZ, system } from "@minecraft/
 
 import { validLogBlocks, serverConfigurationCopy, VisitedBlockResult } from "../index";
 import { Graph } from "utils/graph";
+import { Vec3 } from "utils/VectorUtils";
 
 export function isLogIncluded(blockTypeId: string): boolean {
     if(serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
@@ -35,27 +36,6 @@ export async function getTreeLogs(
             // Should spawn outline is indicator for inspection or breaking tree.
             // Inspection = True
             // Breaking = False
-
-            // Gets the center of the trunk.
-            let trunkNumberOfBlocks: number = isInspectingTree ? 0 : 1;
-            let centroidLog: VectorXZ = {
-                x: isInspectingTree ? 0 : firstBlock.x, 
-                z: isInspectingTree ? 0 : firstBlock.z
-            };
-            for (let x = location.x - 2; x <= location.x + 2; x++) {
-                for (let z = location.z - 2; z <= location.z + 2; z++) {
-                    const _neighborBlock = dimension.getBlock({ x: x, y: location.y, z: z });
-                    if (!_neighborBlock?.isValid() || !isLogIncluded(_neighborBlock?.typeId)) continue;
-                    if (_neighborBlock.typeId !== blockTypeId) continue;
-                    centroidLog.x += _neighborBlock.x;
-                    centroidLog.z += _neighborBlock.z;
-                    trunkNumberOfBlocks++;
-                    yield;
-                }
-                yield;
-            }
-            centroidLog.x = (centroidLog.x / trunkNumberOfBlocks) + 0.5;
-            centroidLog.z = (centroidLog.z / trunkNumberOfBlocks) + 0.5;
 
             while (queue.length > 0) {
                 const size = graph.getSize();
@@ -94,6 +74,27 @@ export async function getTreeLogs(
                 yield;
             }
 
+            // Gets the center of the trunk.
+            let trunkNumberOfBlocks: number = isInspectingTree ? 0 : 1;
+            let centroidLog: VectorXZ = {
+                x: isInspectingTree ? 0 : firstBlock.x, 
+                z: isInspectingTree ? 0 : firstBlock.z
+            };
+            for (let x = -2; x <= 2; x++) {
+                for (let z = -2; z <= 2; z++) {
+                    const _neighborBlock = firstBlock.offset({ x: x, y: 0, z: z });
+                    if (!_neighborBlock?.isValid() || !isLogIncluded(_neighborBlock?.typeId)) continue;
+                    if (_neighborBlock.typeId !== blockTypeId) continue;
+                    centroidLog.x += _neighborBlock.x;
+                    centroidLog.z += _neighborBlock.z;
+                    trunkNumberOfBlocks++;
+                    yield;
+                }
+                yield;
+            }
+            centroidLog.x = (centroidLog.x / trunkNumberOfBlocks) + 0.5;
+            centroidLog.z = (centroidLog.z / trunkNumberOfBlocks) + 0.5;
+
             // Create Block Entity based on the trunk. 
             // (Create particle spawner entities when you are chopping it down for dust, and destroy particle, else just for inpsection particle)
             if(!isInspectingTree) {
@@ -105,7 +106,10 @@ export async function getTreeLogs(
                 }
                 // After all is traversed, start timer.
                 for(const blockOutline of blockOutlines) {
-                    if(blockOutline?.isValid()) blockOutline.triggerEvent('not_persistent');
+                    if(blockOutline?.isValid()) {
+                        blockOutline.triggerEvent('not_persistent');
+                        // blockOutline.triggerEvent('active_outline');
+                    }
                     yield;
                 }
             } else {
@@ -201,7 +205,7 @@ export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): P
             }
             if(i === 0) {
                 i = 1;
-                centroidLog = blockInteracted.center();
+                centroidLog = blockInteracted.location;
             }
             centroidLog.x = (centroidLog.x / i) + 0.5;
             centroidLog.z = (centroidLog.z / i) + 0.5;
@@ -212,3 +216,4 @@ export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): P
 }
 
 
+    

@@ -1,11 +1,12 @@
-import { EntityComponentTypes, ItemStack, MolangVariableMap } from "@minecraft/server";
+import { EntityComponentTypes, ItemStack } from "@minecraft/server";
 import { CommandHandler } from "commands/command_handler";
 import { SendMessageTo } from "utils/utilities";
-import { axeEquipments } from "constant";
+import { axeEquipments, visitedLogs } from "constant";
 var REQUIRED_PARAMETER;
 (function (REQUIRED_PARAMETER) {
     REQUIRED_PARAMETER["GET"] = "get";
     REQUIRED_PARAMETER["TEST"] = "test";
+    REQUIRED_PARAMETER["RELOAD"] = "reload";
 })(REQUIRED_PARAMETER || (REQUIRED_PARAMETER = {}));
 const command = {
     name: 'dev_helper',
@@ -18,6 +19,7 @@ const command = {
         Usage:
         > ${CommandHandler.prefix}${this.name} ${REQUIRED_PARAMETER.GET} = GETS an enchanted fishing rod for development.
         > ${CommandHandler.prefix}${this.name} ${REQUIRED_PARAMETER.TEST} = TEST a Working-in-progress features.
+        > ${CommandHandler.prefix}${this.name} ${REQUIRED_PARAMETER.TEST} = Reloads the addon.
         `).replaceAll("        ", "");
     },
     execute(player, args) {
@@ -41,11 +43,9 @@ const command = {
                 }
                 break;
             case REQUIRED_PARAMETER.TEST:
-                const molangVariable = new MolangVariableMap();
-                molangVariable.setFloat('radius', 1);
-                molangVariable.setFloat('depth', -5);
-                molangVariable.setColorRGB('color', { red: 1.0, green: 1.0, blue: 1.0 });
-                player.dimension.spawnParticle('yn:inspecting_indicator', { x: parseFloat(args[1] + ""), y: parseFloat(args[2] + ""), z: parseFloat(args[3] + "") }, molangVariable);
+                console.warn(visitedLogs.length);
+                break;
+            case REQUIRED_PARAMETER.RELOAD:
                 break;
             default:
                 break;

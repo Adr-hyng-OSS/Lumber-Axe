@@ -29,6 +29,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             playerInteractedTimeLogMap.set(player.id, system.currentTick);
             if ((oldLog + 5) >= system.currentTick)
                 return;
+            player.configuration.loadServer();
             const itemDurability = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId);
             const enchantments = currentHeldAxe.getComponent(ItemEnchantableComponent.componentId);
             const level = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
@@ -117,6 +118,20 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         return;
                     const molangVariable = new MolangVariableMap();
                     let isTreeDoneTraversing = false;
+                    let treeOffsets = [];
+                    let result = {
+                        visitedLogs: {
+                            blockOutlines: [],
+                            source: new Graph(),
+                            trunk: {
+                                centroid: { x: 0, z: 0 },
+                                size: 0
+                            },
+                            yOffsets: new Map()
+                        },
+                        isDone: false,
+                        initialSize: 0,
+                    };
                     const interactedTreeTrunk = await getTreeTrunkSize(blockInteracted, blockInteracted.typeId);
                     const topMostBlock = blockInteracted.dimension.getTopmostBlock(interactedTreeTrunk.center);
                     const bottomMostBlock = await new Promise((getBottomMostBlockResolved) => {
@@ -145,12 +160,22 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const trunkHeight = (topMostBlock.y - bottomMostBlock.y);
                     if (trunkHeight > 3) {
                         const it = system.runInterval(() => {
-                            if (isTreeDoneTraversing)
+                            if (system.currentTick >= currentTime + (BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond) || result?.isDone) {
                                 system.clearRun(it);
-                            molangVariable.setFloat('radius', trunkSizeToParticleRadiusParser[interactedTreeTrunk.size]);
-                            molangVariable.setFloat('height', trunkHeight);
-                            molangVariable.setFloat('max_age', 1);
-                            molangVariable.setColorRGB('color', { red: 1.0, green: 1.0, blue: 1.0 });
+                                return;
+                            }
+                            if (isTreeDoneTraversing) {
+                                molangVariable.setFloat('radius', trunkSizeToParticleRadiusParser[treeCollectedResult.trunk.size]);
+                                molangVariable.setFloat('height', treeOffsets.length);
+                                molangVariable.setFloat('max_age', 1);
+                                molangVariable.setColorRGB('color', { red: 0.0, green: 1.0, blue: 0.0 });
+                            }
+                            else {
+                                molangVariable.setFloat('radius', trunkSizeToParticleRadiusParser[interactedTreeTrunk.size]);
+                                molangVariable.setFloat('height', trunkHeight);
+                                molangVariable.setFloat('max_age', 1);
+                                molangVariable.setColorRGB('color', { red: 1.0, green: 1.0, blue: 1.0 });
+                            }
                             player.dimension.spawnParticle('yn:inspecting_indicator', {
                                 x: interactedTreeTrunk.center.x,
                                 y: bottomMostBlock.y,
@@ -162,16 +187,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                     isTreeDoneTraversing = true;
                     if (trunkHeight > 3) {
-                        const treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
-                        const t = system.runInterval(() => {
-                            if (system.currentTick >= currentTime + (BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond) && result.isDone)
-                                system.clearRun(t);
-                            molangVariable.setFloat('radius', trunkSizeToParticleRadiusParser[treeCollectedResult.trunk.size]);
-                            molangVariable.setFloat('height', treeOffsets.length);
-                            molangVariable.setFloat('max_age', 1);
-                            molangVariable.setColorRGB('color', { red: 0.0, green: 1.0, blue: 0.0 });
-                            player.dimension.spawnParticle('yn:inspecting_indicator', { x: treeCollectedResult.trunk.centroid.x, y: treeOffsets[0], z: treeCollectedResult.trunk.centroid.z }, molangVariable);
-                        }, 5);
+                        treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
                     }
                     else {
                         const t = system.runJob((function* () {
@@ -186,17 +202,18 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             system.clearJob(t);
                         })());
                     }
-                    const result = {
+                    result = {
                         visitedLogs: treeCollectedResult,
                         isDone: false,
                         initialSize: treeCollectedResult.source.getSize(),
                     };
                     if (result.initialSize > 0)
                         visitedLogs.push(result);
-                    system.runTimeout(async () => {
-                        if (!result.isDone)
+                    system.runTimeout(() => {
+                        console.warn("DONE");
+                        if (!result?.isDone)
                             resetOutlinedTrees(result);
-                    }, BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond);
+                    }, (BLOCK_OUTLINES_DESPAWN_CD - 2) * TicksPerSecond);
                 }
                 else {
                     const size = tempResult.result.source.getSize();
