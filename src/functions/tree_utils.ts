@@ -113,13 +113,13 @@ export async function getTreeLogs(
                     yield;
                 }
             } else {
-                const bottomMostBlock = Array.from(yOffsets.keys()).sort((a, b) => a - b)[0];
-                const outline = dimension.spawnEntity('yn:block_outline', { x: centroidLog.x, y: bottomMostBlock, z: centroidLog.z });
-                outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
-                outline.triggerEvent('not_persistent');
-                // outline.triggerEvent('active_outline');
-                blockOutlines.push(outline);
-                yield;
+                // const bottomMostBlock = Array.from(yOffsets.keys()).sort((a, b) => a - b)[0];
+                // const outline = dimension.spawnEntity('yn:block_outline', { x: centroidLog.x, y: bottomMostBlock, z: centroidLog.z });
+                // outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
+                // outline.triggerEvent('not_persistent');
+                // // outline.triggerEvent('active_outline');
+                // blockOutlines.push(outline);
+                // yield;
             }
             queue = [];
             system.clearJob(traversingTreeInterval);

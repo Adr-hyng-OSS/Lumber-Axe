@@ -1,5 +1,5 @@
 import { world, system, ScriptEventSource, Player, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, MolangVariableMap } from '@minecraft/server';
-import { ADDON_IDENTIFIER, axeEquipments, getTreeLogs, getTreeTrunkSize, isLogIncluded, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, visitedLogs } from "./index";
+import { ADDON_IDENTIFIER, axeEquipments, getTreeLogs, getTreeTrunkSize, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, visitedLogs } from "./index";
 import { Logger } from 'utils/logger';
 import './items/axes';
 import { MinecraftEnchantmentTypes, MinecraftBlockTypes } from 'modules/vanilla-types/index';
@@ -39,6 +39,32 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         system.run(() => axe.damageDurability(1));
         return;
     }
+    const oldLog = playerInteractedTimeLogMap.get(player.id) ?? system.currentTick;
+    playerInteractedTimeLogMap.set(player.id, system.currentTick);
+    if ((oldLog + 20) >= system.currentTick) {
+        arg.cancel = true;
+        return;
+    }
+    const possibleVisitedLogs = [];
+    for (let i = 0; i < visitedLogs.length; i++) {
+        const currentInspectedTree = visitedLogs[i];
+        const interactedTreeNode = currentInspectedTree.visitedLogs.source.getNode(blockInteracted);
+        if (interactedTreeNode) {
+            possibleVisitedLogs.push({ result: currentInspectedTree, index: i });
+        }
+    }
+    if (possibleVisitedLogs.length) {
+        const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
+        const index = latestPossibleInspectedTree.index;
+        const initialTreeInspection = latestPossibleInspectedTree.result;
+        if (initialTreeInspection.isBeingChopped) {
+            arg.cancel = true;
+            return;
+        }
+        visitedLogs.splice(index, 1);
+        initialTreeInspection.isDone = true;
+        SendMessageTo(player, { rawtext: [{ text: "CACHED + " + system.currentTick }] });
+    }
     player.configuration.loadServer();
     system.run(async () => {
         currentHeldAxe.lockMode = ItemLockMode.slot;
@@ -52,6 +78,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         const unbreakingDamage = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
         let visited;
         let destroyedTree = {
+            isBeingChopped: false,
             initialSize: 0,
             isDone: false,
             visitedLogs: {
@@ -96,14 +123,14 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
             9: 7
         };
         if (isValidVerticalTree) {
-            let dustCount = 1;
+            let dustCount = 1.5;
             molang.setFloat('trunk_size', dustCount);
             player.playSound('hit.stem');
             dimension.spawnParticle('yn:tree_dust', { x: brokenTreeTrunk.center.x, y: blockInteracted.y, z: brokenTreeTrunk.center.z }, molang);
-            const it = system.runInterval(() => {
-                molang.setFloat('trunk_size', dustCount = dustCount + 0.25);
+            const t = system.runInterval(() => {
+                molang.setFloat('trunk_size', dustCount += 0.25);
                 if (isTreeDoneTraversing) {
-                    system.clearRun(it);
+                    system.clearRun(t);
                     return;
                 }
                 ;
@@ -111,33 +138,20 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                 dimension.spawnParticle('yn:tree_dust', { x: brokenTreeTrunk.center.x, y: blockInteracted.y, z: brokenTreeTrunk.center.z }, molang);
             }, 15);
         }
-        const possibleVisitedLogs = [];
-        for (let i = 0; i < visitedLogs.length; i++) {
-            const currentInspectedTree = visitedLogs[i];
-            const interactedTreeNode = currentInspectedTree.visitedLogs.source.getNode(blockInteracted);
-            if (interactedTreeNode) {
-                possibleVisitedLogs.push({ result: currentInspectedTree, index: i });
-            }
-        }
-        if (possibleVisitedLogs.length) {
-            const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
-            const index = latestPossibleInspectedTree.index;
-            const initialTreeInspection = latestPossibleInspectedTree.result;
-            visitedLogs.splice(index, 1);
-            initialTreeInspection.isDone = true;
-        }
         const choppedTree = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false);
         isTreeDoneTraversing = true;
         destroyedTree.visitedLogs = choppedTree;
+        destroyedTree.isBeingChopped = true;
         visited = choppedTree.source;
         const size = visited.getSize() - 1;
+        visitedLogs.push(destroyedTree);
         if (!visited)
             return;
         if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "")) {
             currentHeldAxe.lockMode = ItemLockMode.none;
             inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
             SendMessageTo(player, { rawtext: [{ text: "Cannot chop the whole tree due to limitation. " }] });
-            return resetOutlinedTrees(destroyedTree, true);
+            return resetOutlinedTrees(destroyedTree);
         }
         const totalDamage = size * unbreakingDamage;
         const postDamagedDurability = itemDurability.damage + totalDamage;
@@ -200,6 +214,8 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                 yield;
             }
             player.playSound('dig.cave_vines');
+            if (!destroyedTree?.isDone)
+                resetOutlinedTrees(destroyedTree);
             system.clearJob(t);
         })());
     });

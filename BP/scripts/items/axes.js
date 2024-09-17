@@ -5,7 +5,6 @@ import { MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
 import { Logger } from "utils/logger";
 import "classes/player";
 import { Graph } from "utils/graph";
-export let BLOCK_OUTLINES_DESPAWN_CD = 0;
 world.beforeEvents.worldInitialize.subscribe((registry) => {
     registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
         onHitEntity(arg) {
@@ -39,7 +38,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             const unbreakingDamage = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
             const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
             const cooldown = currentHeldAxe.getComponent(ItemCooldownComponent.componentId);
-            BLOCK_OUTLINES_DESPAWN_CD = cooldown.cooldownTicks / TicksPerSecond;
+            let BLOCK_OUTLINES_DESPAWN_CD = cooldown.cooldownTicks / TicksPerSecond;
             try {
                 if (!visitedLogs)
                     return;
@@ -60,6 +59,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
                         const index = latestPossibleInspectedTree.index;
                         const initialTreeInspection = latestPossibleInspectedTree.result;
+                        if (initialTreeInspection.isBeingChopped) {
+                            inspectTreePromiseResolve({ result: null, index: -100 });
+                            return system.clearJob(tMain);
+                        }
                         for (const node of initialTreeInspection.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
                             if (!node.block?.isValid() || !isLogIncluded(node.block.typeId)) {
                                 initialTreeInspection.visitedLogs.source.removeNode(node.block);
@@ -91,6 +94,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             yield;
                         }
                         const newInspectedSubTree = {
+                            isBeingChopped: false,
                             initialSize: finalizedTreeInspection.source.getSize(),
                             isDone: false,
                             visitedLogs: finalizedTreeInspection
@@ -120,6 +124,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     let isTreeDoneTraversing = false;
                     let treeOffsets = [];
                     let result = {
+                        isBeingChopped: false,
                         visitedLogs: {
                             blockOutlines: [],
                             source: new Graph(),
@@ -203,6 +208,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         })());
                     }
                     result = {
+                        isBeingChopped: false,
                         visitedLogs: treeCollectedResult,
                         isDone: false,
                         initialSize: treeCollectedResult.source.getSize(),
@@ -210,12 +216,11 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     if (result.initialSize > 0)
                         visitedLogs.push(result);
                     system.runTimeout(() => {
-                        console.warn("DONE");
                         if (!result?.isDone)
                             resetOutlinedTrees(result);
                     }, (BLOCK_OUTLINES_DESPAWN_CD - 2) * TicksPerSecond);
                 }
-                else {
+                else if (tempResult.index >= 0) {
                     const size = tempResult.result.source.getSize();
                     const totalDamage = size * unbreakingDamage;
                     const totalDurabilityConsumed = currentDurability + totalDamage;

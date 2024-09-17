@@ -6,7 +6,6 @@ import { Logger } from "utils/logger";
 
 import "classes/player";
 import { Graph } from "utils/graph";
-export let BLOCK_OUTLINES_DESPAWN_CD = 0;
 
 world.beforeEvents.worldInitialize.subscribe((registry) => {
   registry.itemComponentRegistry.registerCustomComponent('yn:tool_durability', {
@@ -39,7 +38,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
 
         const cooldown = (currentHeldAxe.getComponent(ItemCooldownComponent.componentId) as ItemCooldownComponent);
-        BLOCK_OUTLINES_DESPAWN_CD = cooldown.cooldownTicks / TicksPerSecond;
+        let BLOCK_OUTLINES_DESPAWN_CD = cooldown.cooldownTicks / TicksPerSecond;
         try {
             // Check also, if this tree is already being interacted. By checking this current blockOutline (node), if it's being interacted.
             if(!visitedLogs) return;
@@ -64,6 +63,11 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
                     const index = latestPossibleInspectedTree.index;
                     const initialTreeInspection = latestPossibleInspectedTree.result;
+
+                    if(initialTreeInspection.isBeingChopped) {
+                        inspectTreePromiseResolve({result: null, index: -100});
+                        return system.clearJob(tMain);
+                    }
 
                     // Remove some nodes in the graph that is not existing anymore. So, it can update its branches or neighbors
                     for(const node of initialTreeInspection.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
@@ -103,6 +107,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
 
                     // Just appending the sub-tree as a separate tree.
                     const newInspectedSubTree: InteractedTreeResult = {
+                        isBeingChopped: false,
                         initialSize: finalizedTreeInspection.source.getSize(),
                         isDone: false, 
                         visitedLogs: finalizedTreeInspection
@@ -130,6 +135,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 let isTreeDoneTraversing = false;
                 let treeOffsets: number[] = [];
                 let result: InteractedTreeResult = {
+                    isBeingChopped: false,
                     visitedLogs: { 
                         blockOutlines: [], 
                         source: new Graph(), 
@@ -220,16 +226,16 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     })());
                 }
                 result = {
+                    isBeingChopped: false,
                     visitedLogs: treeCollectedResult, 
                     isDone: false,
                     initialSize: treeCollectedResult.source.getSize(),
                 };
                 if(result.initialSize > 0) visitedLogs.push(result);
                 system.runTimeout(() => { 
-                    console.warn("DONE");
                     if(!result?.isDone) resetOutlinedTrees(result);
                 }, (BLOCK_OUTLINES_DESPAWN_CD-2) * TicksPerSecond);
-            } else {
+            } else if (tempResult.index >= 0) {
                 const size = tempResult.result.source.getSize();
                 const totalDamage: number = size * unbreakingDamage;
                 const totalDurabilityConsumed: number = currentDurability + totalDamage;

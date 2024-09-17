@@ -1,5 +1,5 @@
-import { world, PlayerLeaveAfterEvent, ScriptEventCommandMessageAfterEvent, system, ScriptEventSource, Player, BlockPermutation, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, PlayerBreakBlockBeforeEvent, Block, VectorXZ } from '@minecraft/server';
-import { ADDON_IDENTIFIER, axeEquipments, getTreeLogs, getTreeTrunkSize, InteractedTreeResult, isLogIncluded, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult, visitedLogs} from "./index"
+import { world, PlayerLeaveAfterEvent, ScriptEventCommandMessageAfterEvent, system, ScriptEventSource, Player, BlockPermutation, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, PlayerBreakBlockBeforeEvent, Block, VectorXZ, TicksPerSecond, ItemCooldownComponent } from '@minecraft/server';
+import { ADDON_IDENTIFIER, axeEquipments, getTreeLogs, getTreeTrunkSize, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult, visitedLogs} from "./index"
 import { Logger } from 'utils/logger';
 import './items/axes';
 import { MinecraftEnchantmentTypes, MinecraftBlockTypes } from 'modules/vanilla-types/index';
@@ -38,6 +38,39 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       system.run(() => axe.damageDurability(1));
       return;
   }
+  const oldLog = playerInteractedTimeLogMap.get(player.id) ?? system.currentTick;
+  playerInteractedTimeLogMap.set(player.id, system.currentTick);
+  if ((oldLog + 20) >= system.currentTick) {
+    arg.cancel = true;
+    return;
+  }
+
+  // execute positioned 
+
+  // Getting the cache, if it has, to remove the particle.
+  // Filter by getting the graph that has this node.
+  const possibleVisitedLogs: {result: InteractedTreeResult, index: number}[] = [];
+  for(let i = 0; i < visitedLogs.length; i++) {
+      const currentInspectedTree = visitedLogs[i];
+      const interactedTreeNode = currentInspectedTree.visitedLogs.source.getNode(blockInteracted);
+      if(interactedTreeNode) {
+          possibleVisitedLogs.push({result: currentInspectedTree, index: i});
+      }
+  }
+
+  if(possibleVisitedLogs.length) {
+    // After filtering check get that tree that this player has inspected, get the latest one.
+    const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
+    const index = latestPossibleInspectedTree.index;
+    const initialTreeInspection = latestPossibleInspectedTree.result;
+    if(initialTreeInspection.isBeingChopped) {
+      arg.cancel = true;
+      return;
+    }
+    visitedLogs!.splice(index, 1);
+    initialTreeInspection!.isDone = true;
+    SendMessageTo(player, {rawtext: [ {text: "CACHED + " + system.currentTick}]});  
+  }
   player.configuration.loadServer();
   system.run(async () => {
     currentHeldAxe.lockMode = ItemLockMode.slot;
@@ -53,26 +86,26 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     
     // This should be the temporary container where it doesn't copy the reference from the original player's visitedNodes.
     let destroyedTree :InteractedTreeResult = {
-        initialSize: 0,
-        isDone: false,
-        visitedLogs: {
-        blockOutlines: [], 
-        source: new Graph(),
-        yOffsets: new Map(),
-        trunk: {
-            centroid: {
-            x: 0, 
-            z: 0
-            }, 
-            size: 0
-        }
-        }
+      isBeingChopped: false,
+      initialSize: 0,
+      isDone: false,
+      visitedLogs: {
+      blockOutlines: [], 
+      source: new Graph(),
+      yOffsets: new Map(),
+      trunk: {
+          centroid: {
+          x: 0, 
+          z: 0
+          }, 
+          size: 0
+      }
+      }
     };
   
     // (TODO) Use Cache again :,D 
     const molang = new MolangVariableMap();
     const brokenTreeTrunk = await getTreeTrunkSize(blockInteracted, blockTypeId);
-    // Get the topmost
     let isTreeDoneTraversing = false;
     const topMostBlock = blockInteracted.dimension.getTopmostBlock(brokenTreeTrunk.center);
     const bottomMostBlock = await new Promise<Block>((getBottomMostBlockResolved) => {
@@ -101,15 +134,15 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       9: 7
     }
     if(isValidVerticalTree) {
-      let dustCount = 1;
+      let dustCount = 1.5;
       molang.setFloat('trunk_size', dustCount);
       player.playSound('hit.stem');
       dimension.spawnParticle('yn:tree_dust', {x: brokenTreeTrunk.center.x, y: blockInteracted.y, z: brokenTreeTrunk.center.z}, molang);
-      const it = system.runInterval(() => {
+      const t = system.runInterval(() => {
         // Get the first block, and based on that it will get the height.
-        molang.setFloat('trunk_size', dustCount = dustCount + 0.25);
+        molang.setFloat('trunk_size', dustCount += 0.25);
         if(isTreeDoneTraversing) {
-          system.clearRun(it);
+          system.clearRun(t);
           return;
         };
         player.playSound('hit.stem');
@@ -117,38 +150,20 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       }, 15);
     }
 
-    // Getting the cache, if it has, to remove the particle.
-    // Filter by getting the graph that has this node.
-    const possibleVisitedLogs: {result: InteractedTreeResult, index: number}[] = [];
-    for(let i = 0; i < visitedLogs.length; i++) {
-        const currentInspectedTree = visitedLogs[i];
-        const interactedTreeNode = currentInspectedTree.visitedLogs.source.getNode(blockInteracted);
-        if(interactedTreeNode) {
-            possibleVisitedLogs.push({result: currentInspectedTree, index: i});
-        }
-    }
-
-    if(possibleVisitedLogs.length) {
-      // After filtering check get that tree that this player has inspected, get the latest one.
-      const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
-      const index = latestPossibleInspectedTree.index;
-      const initialTreeInspection = latestPossibleInspectedTree.result;
-      visitedLogs!.splice(index, 1);
-      initialTreeInspection!.isDone = true;
-    }
-
     const choppedTree = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false) as VisitedBlockResult);
     isTreeDoneTraversing = true;
     destroyedTree.visitedLogs = choppedTree;
+    destroyedTree.isBeingChopped = true;
     visited = choppedTree.source;
     const size = visited.getSize() - 1;
+    visitedLogs.push(destroyedTree);
   
     if(!visited) return;
     if(size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "")) {
       currentHeldAxe.lockMode = ItemLockMode.none;
       inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
       SendMessageTo(player, {rawtext: [{text: "Cannot chop the whole tree due to limitation. "}]});
-      return resetOutlinedTrees(destroyedTree, true);
+      return resetOutlinedTrees(destroyedTree);
     }
     const totalDamage: number = size * unbreakingDamage;
     const postDamagedDurability: number = itemDurability.damage + totalDamage;
@@ -219,6 +234,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       //   dimension.spawnItem(new ItemStack(blockTypeId, group), location);
       //   yield;
       // }
+      if(!destroyedTree?.isDone) resetOutlinedTrees(destroyedTree);
       system.clearJob(t);
     })());
   });

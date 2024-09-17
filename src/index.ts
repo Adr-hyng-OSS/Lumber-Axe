@@ -27,4 +27,5 @@ export type InteractedTreeResult = {
   initialSize: number;
   visitedLogs: VisitedBlockResult;
   isDone: boolean;
+  isBeingChopped: boolean;
 }
