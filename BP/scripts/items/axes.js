@@ -133,7 +133,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     cooldown.startCooldown(player);
                     const trunkSizeToParticleRadiusParser = {
                         1: 1.5,
-                        2: 2,
+                        2: 2.5,
                         3: 2.5,
                         4: 2.5,
                         5: 3.5,
@@ -162,10 +162,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                     isTreeDoneTraversing = true;
                     if (trunkHeight > 3) {
+                        const treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
                         const t = system.runInterval(() => {
                             if (system.currentTick >= currentTime + (BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond) && result.isDone)
                                 system.clearRun(t);
-                            const treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
                             molangVariable.setFloat('radius', trunkSizeToParticleRadiusParser[treeCollectedResult.trunk.size]);
                             molangVariable.setFloat('height', treeOffsets.length);
                             molangVariable.setFloat('max_age', 1);

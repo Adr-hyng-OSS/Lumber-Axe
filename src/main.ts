@@ -71,12 +71,12 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     // Use Cache again :,D 
 
     const molang = new MolangVariableMap();
-    console.warn(blockInteracted?.typeId);
     const brokenTreeTrunk = await getTreeTrunkSize(blockInteracted, blockTypeId);
     const DustPerNumberOfBlocks = 2;
     // Get the topmost
     molang.setFloat('trunk_size', brokenTreeTrunk.size);
     let isTreeDoneTraversing = false;
+    console.warn(blockInteracted?.typeId, blockTypeId, brokenTreeTrunk.center.x, brokenTreeTrunk.size);
     const topMostBlock = blockInteracted.dimension.getTopmostBlock(brokenTreeTrunk.center);
     let currentY = blockInteracted.y;
     let currentYOffset = 0;

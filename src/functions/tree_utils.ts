@@ -186,24 +186,28 @@ export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): P
             x: 0, 
             z: 0
         };
-       const t = system.runJob((function*(){
-           for (let x = -2; x <= 2; x++) {
-               for (let z = -2; z <= 2; z++) {
-                   const _neighborBlock = blockInteracted.offset({ x: x, y: 0, z: z });
-                   if (!_neighborBlock?.isValid() || !isLogIncluded(_neighborBlock?.typeId)) continue;
-                   if (_neighborBlock.typeId !== blockTypeId) continue;
-                   centroidLog.x += _neighborBlock.x;
-                   centroidLog.z += _neighborBlock.z;
-                   i++;
-                   yield;
-               }
-               yield;
-           }
-           centroidLog.x = (centroidLog.x / i) + 0.5;
-           centroidLog.z = (centroidLog.z / i) + 0.5;
-           system.clearJob(t);
-           fetchedTrunkSizeResolved({center: centroidLog, size: i});
-       })());
+        const t = system.runJob((function*(){
+            for (let x = -2; x <= 2; x++) {
+                for (let z = -2; z <= 2; z++) {
+                    const _neighborBlock = blockInteracted.offset({ x: x, y: 0, z: z });
+                    if (!_neighborBlock?.isValid() || !isLogIncluded(_neighborBlock?.typeId)) continue;
+                    if (_neighborBlock.typeId !== blockTypeId) continue;
+                    centroidLog.x += _neighborBlock.x;
+                    centroidLog.z += _neighborBlock.z;
+                    i++;
+                    yield;
+                }
+                yield;
+            }
+            if(i === 0) {
+                i = 1;
+                centroidLog = blockInteracted.center();
+            }
+            centroidLog.x = (centroidLog.x / i) + 0.5;
+            centroidLog.z = (centroidLog.z / i) + 0.5;
+            system.clearJob(t);
+            fetchedTrunkSizeResolved({center: centroidLog, size: i});
+        })());
     });
 }
 

@@ -127,6 +127,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 const molangVariable = new MolangVariableMap();
                 // Get the bottom most log (TODO)
                 let isTreeDoneTraversing = false;
+                // Instead of getting the center from all the available trunks, just make it so that
+                // 1 = center of inteacted block
+                // 2 - 4 = center of these 4 blocks
+                // 5 - 9 = center of all of these 9 blocks.
                 const interactedTreeTrunk = await getTreeTrunkSize(blockInteracted, blockInteracted.typeId);
                 const topMostBlock = blockInteracted.dimension.getTopmostBlock(interactedTreeTrunk.center);
                 const bottomMostBlock = await new Promise<Block>((getBottomMostBlockResolved) => {
@@ -140,11 +144,11 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         _bottom = _bottom.below();
                     });
                 });
-
+                
                 cooldown.startCooldown(player);
                 const trunkSizeToParticleRadiusParser = {
                     1: 1.5,
-                    2: 2,
+                    2: 2.5,
                     3: 2.5,
                     4: 2.5,
                     5: 3.5,
@@ -174,9 +178,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                 isTreeDoneTraversing = true;
                 if(trunkHeight > 3) {
+                    const treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
                     const t = system.runInterval(() => {
                         if(system.currentTick >= currentTime + (BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond) && result.isDone) system.clearRun(t);
-                        const treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
                         molangVariable.setFloat('radius', trunkSizeToParticleRadiusParser[treeCollectedResult.trunk.size]);
                         molangVariable.setFloat('height', treeOffsets.length);
                         molangVariable.setFloat('max_age', 1);

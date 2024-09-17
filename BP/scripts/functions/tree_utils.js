@@ -163,6 +163,10 @@ export function getTreeTrunkSize(blockInteracted, blockTypeId) {
                 }
                 yield;
             }
+            if (i === 0) {
+                i = 1;
+                centroidLog = blockInteracted.center();
+            }
             centroidLog.x = (centroidLog.x / i) + 0.5;
             centroidLog.z = (centroidLog.z / i) + 0.5;
             system.clearJob(t);
