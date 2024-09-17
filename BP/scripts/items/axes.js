@@ -116,8 +116,20 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     if (cooldown.getCooldownTicksRemaining(player) !== 0)
                         return;
                     const molangVariable = new MolangVariableMap();
+                    let isTreeDoneTraversing = false;
                     const interactedTreeTrunk = await getTreeTrunkSize(blockInteracted, blockInteracted.typeId);
                     const topMostBlock = blockInteracted.dimension.getTopmostBlock(interactedTreeTrunk.center);
+                    const bottomMostBlock = await new Promise((getBottomMostBlockResolved) => {
+                        let _bottom = blockInteracted.below();
+                        const _t = system.runInterval(() => {
+                            if (!isLogIncluded(blockInteracted.typeId) || blockInteracted.typeId !== _bottom.typeId) {
+                                system.clearRun(_t);
+                                getBottomMostBlockResolved(_bottom);
+                                return;
+                            }
+                            _bottom = _bottom.below();
+                        });
+                    });
                     cooldown.startCooldown(player);
                     const trunkSizeToParticleRadiusParser = {
                         1: 1.5,
@@ -130,18 +142,18 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         8: 3.5,
                         9: 3.5
                     };
-                    const trunkHeight = (topMostBlock.y - blockInteracted.y) + 1;
-                    let isTreeDoneTraversing = false;
-                    if (trunkHeight > 5) {
+                    const trunkHeight = (topMostBlock.y - bottomMostBlock.y);
+                    if (trunkHeight > 3) {
                         const it = system.runInterval(() => {
                             if (isTreeDoneTraversing)
                                 system.clearRun(it);
                             molangVariable.setFloat('radius', trunkSizeToParticleRadiusParser[interactedTreeTrunk.size]);
                             molangVariable.setFloat('height', trunkHeight);
+                            molangVariable.setFloat('max_age', 1);
                             molangVariable.setColorRGB('color', { red: 1.0, green: 1.0, blue: 1.0 });
                             player.dimension.spawnParticle('yn:inspecting_indicator', {
                                 x: interactedTreeTrunk.center.x,
-                                y: blockInteracted.y,
+                                y: bottomMostBlock.y,
                                 z: interactedTreeTrunk.center.z
                             }, molangVariable);
                         }, 5);
@@ -149,16 +161,30 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const currentTime = system.currentTick;
                     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                     isTreeDoneTraversing = true;
-                    if (trunkHeight > 5) {
+                    if (trunkHeight > 3) {
                         const t = system.runInterval(() => {
                             if (system.currentTick >= currentTime + (BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond) && result.isDone)
                                 system.clearRun(t);
                             const treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
                             molangVariable.setFloat('radius', trunkSizeToParticleRadiusParser[treeCollectedResult.trunk.size]);
                             molangVariable.setFloat('height', treeOffsets.length);
+                            molangVariable.setFloat('max_age', 1);
                             molangVariable.setColorRGB('color', { red: 0.0, green: 1.0, blue: 0.0 });
                             player.dimension.spawnParticle('yn:inspecting_indicator', { x: treeCollectedResult.trunk.centroid.x, y: treeOffsets[0], z: treeCollectedResult.trunk.centroid.z }, molangVariable);
                         }, 5);
+                    }
+                    else {
+                        const t = system.runJob((function* () {
+                            for (const node of treeCollectedResult.source.traverseIterative(blockInteracted, "BFS")) {
+                                molangVariable.setFloat('radius', 1.1);
+                                molangVariable.setFloat('height', 0.99);
+                                molangVariable.setFloat('max_age', BLOCK_OUTLINES_DESPAWN_CD);
+                                molangVariable.setColorRGB('color', { red: 0.0, green: 1.0, blue: 0.0 });
+                                player.dimension.spawnParticle('yn:inspecting_indicator', { x: node.block.bottomCenter().x, y: node.block.y, z: node.block.bottomCenter().z }, molangVariable);
+                                yield;
+                            }
+                            system.clearJob(t);
+                        })());
                     }
                     const result = {
                         visitedLogs: treeCollectedResult,
