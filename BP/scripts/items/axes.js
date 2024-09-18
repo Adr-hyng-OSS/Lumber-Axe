@@ -20,7 +20,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
             const currentHeldAxe = arg.itemStack;
             const blockInteracted = arg.block;
             const player = arg.source;
-            if (!axeEquipments.includes(currentHeldAxe.typeId) || !isLogIncluded(blockInteracted.typeId))
+            if (!axeEquipments.includes(currentHeldAxe.typeId) || !isLogIncluded(blockInteracted.typeId, blockInteracted.typeId))
                 return;
             const oldLog = playerInteractedTimeLogMap.get(player.id);
             playerInteractedTimeLogMap.set(player.id, system.currentTick);
@@ -62,7 +62,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             return system.clearJob(tMain);
                         }
                         for (const node of initialTreeInspection.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
-                            if (!node.block?.isValid() || !isLogIncluded(node.block.typeId)) {
+                            if (!node.block?.isValid() || !isLogIncluded(blockInteracted.typeId, node.block.typeId)) {
                                 initialTreeInspection.visitedLogs.source.removeNode(node.block);
                             }
                             yield;
@@ -140,7 +140,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const bottomMostBlock = await new Promise((getBottomMostBlockResolved) => {
                         let _bottom = blockInteracted.below();
                         const _t = system.runInterval(() => {
-                            if (!isLogIncluded(blockInteracted.typeId) || blockInteracted.typeId !== _bottom.typeId) {
+                            if (!isLogIncluded(blockInteracted.typeId, _bottom.typeId)) {
                                 system.clearRun(_t);
                                 getBottomMostBlockResolved(_bottom);
                                 return;
@@ -188,6 +188,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         }, 5);
                     }
                     const currentTime = system.currentTick;
+                    console.warn(trunkHeight);
                     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, +serverConfigurationCopy.chopLimit.defaultValue);
                     isTreeDoneTraversing = true;
                     if (isValidVerticalTree) {

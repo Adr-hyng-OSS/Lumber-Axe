@@ -2,7 +2,7 @@ import { system } from "@minecraft/server";
 import { serverConfigurationCopy } from "../index";
 import { Graph } from "utils/graph";
 import { Vec3 } from "utils/VectorUtils";
-export function isLogIncluded(blockTypeId, rootBlockTypeId) {
+export function isLogIncluded(rootBlockTypeId, blockTypeId) {
     const validLogBlocks = /(_log|_wood|crimson_stem|warped_stem)$/;
     function extractLogFamily(blockTypeId) {
         const parts = blockTypeId.split('_');
@@ -10,7 +10,11 @@ export function isLogIncluded(blockTypeId, rootBlockTypeId) {
     }
     if (serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_'))
         return false;
-    if (serverConfigurationCopy.includedLog.values.includes(blockTypeId) || validLogBlocks.test(blockTypeId))
+    const extractedLogFamily = extractLogFamily(rootBlockTypeId);
+    const blockFamily = extractLogFamily(blockTypeId);
+    const isSameFamily = blockFamily === extractedLogFamily;
+    if ((serverConfigurationCopy.includedLog.values.includes(blockTypeId) ||
+        validLogBlocks.test(blockTypeId)) && isSameFamily)
         return true;
     return false;
 }
@@ -36,8 +40,6 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
                     continue;
                 yOffsets.set(block.y, false);
                 for (const neighborBlock of getBlockNear(block)) {
-                    if (neighborBlock.typeId !== blockTypeId)
-                        continue;
                     const serializedLocation = JSON.stringify(neighborBlock.location);
                     let neighborNode = graph.getNode(neighborBlock) ?? graph.addNode(neighborBlock);
                     if (mainNode.neighbors.has(neighborNode))
@@ -106,7 +108,7 @@ function* getBlockNear(initialBlock, radius = 1) {
                 if (centerX === x && centerY === y && centerZ === z)
                     continue;
                 _block = initialBlock.offset({ x, y, z });
-                if (!_block?.isValid() || !isLogIncluded(_block?.typeId))
+                if (!_block?.isValid() || !isLogIncluded(initialBlock.typeId, _block?.typeId))
                     continue;
                 yield _block;
             }
@@ -144,7 +146,7 @@ export function getTreeTrunkSize(blockInteracted, blockTypeId) {
         const t = system.runJob((function* () {
             while (queue.length > 0) {
                 const currentBlock = queue.shift();
-                if ((!currentBlock || !currentBlock.isValid() || currentBlock.typeId !== blockTypeId) && !Vec3.equals(blockInteracted, currentBlock))
+                if ((!currentBlock || !currentBlock.isValid()) && !Vec3.equals(blockInteracted, currentBlock))
                     continue;
                 const blockKey = JSON.stringify({ x: currentBlock.x, z: currentBlock.z });
                 if (visited.has(blockKey))
@@ -153,14 +155,14 @@ export function getTreeTrunkSize(blockInteracted, blockTypeId) {
                 centroidLog.x += currentBlock.x;
                 centroidLog.z += currentBlock.z;
                 i++;
-                for (let y = 0; y <= 1; y++) {
+                for (let y = -1; y <= 1; y++) {
                     for (let x = -1; x <= 1; x++) {
                         for (let z = -1; z <= 1; z++) {
                             if (x === 0 && z === 0 && y === 0)
                                 continue;
                             const neighborBlock = currentBlock.offset({ x: x, y: y, z: z });
                             const neighborLoc = JSON.stringify({ x: neighborBlock.x, z: neighborBlock.z });
-                            if (!neighborBlock?.isValid() || visited.has(neighborLoc))
+                            if (!neighborBlock?.isValid() || visited.has(neighborLoc) || !isLogIncluded(blockTypeId, neighborBlock.typeId))
                                 continue;
                             queue.push(neighborBlock);
                             yield;

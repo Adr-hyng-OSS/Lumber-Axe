@@ -161,17 +161,17 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     const totalDamage: number = initialSize * unbreakingDamage;
     const postDamagedDurability: number = itemDurability.damage + totalDamage;
     if (postDamagedDurability + 1 === itemDurability.maxDurability) {
-        player.playSound("random.break");
-        inventory.setItem(currentHeldAxeSlot, undefined);
+      player.playSound("random.break");
+      inventory.setItem(currentHeldAxeSlot, undefined);
     } else if (postDamagedDurability > itemDurability.maxDurability) {
-        currentHeldAxe.lockMode = ItemLockMode.none;
-        inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
-        return; 
+      currentHeldAxe.lockMode = ItemLockMode.none;
+      inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
+      return; 
     } else if (postDamagedDurability < itemDurability.maxDurability) {
-        itemDurability.damage = itemDurability.damage +  totalDamage;
-        const heldTemp = currentHeldAxe.clone();
-        heldTemp.lockMode = ItemLockMode.none;
-        inventory.setItem(currentHeldAxeSlot, heldTemp);
+      itemDurability.damage = itemDurability.damage +  totalDamage;
+      const heldTemp = currentHeldAxe.clone();
+      heldTemp.lockMode = ItemLockMode.none;
+      inventory.setItem(currentHeldAxeSlot, heldTemp);
     }
 
     // Dust Particle (VFX)
@@ -211,7 +211,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         if (node) {
           // If there's setDestroy that cancels the dropped item, just use that instead of this.
           // Custom Destroy Particle
-          if(node.block.typeId === blockTypeId) {
+          if(isLogIncluded(blockTypeId, node.block.typeId)) {
             size++;
             if (
               destroyedTree.visitedLogs.yOffsets.has(node.block.location.y) &&

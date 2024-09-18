@@ -4,17 +4,18 @@ import { serverConfigurationCopy, VisitedBlockResult, TrunkBlockResult } from ".
 import { Graph } from "utils/graph";
 import { Vec3 } from "utils/VectorUtils";
 
-export function isLogIncluded(blockTypeId: string, rootBlockTypeId?: string): boolean {
+export function isLogIncluded(rootBlockTypeId: string, blockTypeId: string): boolean {
     const validLogBlocks: RegExp = /(_log|_wood|crimson_stem|warped_stem)$/;
     function extractLogFamily(blockTypeId: string): string {
         const parts = blockTypeId.split('_');
         return parts.slice(0, -1).join('_');
     }
-    // if(rootBlockTypeId) {
-    //     const extractedLogFamily = extractLogFamily(rootBlockTypeId);
-    // }
     if(serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
-    if(serverConfigurationCopy.includedLog.values.includes(blockTypeId) || validLogBlocks.test(blockTypeId)) return true;
+    const extractedLogFamily = extractLogFamily(rootBlockTypeId);
+    const blockFamily = extractLogFamily(blockTypeId);
+    const isSameFamily = blockFamily === extractedLogFamily;
+    if((serverConfigurationCopy.includedLog.values.includes(blockTypeId) ||
+       validLogBlocks.test(blockTypeId)) && isSameFamily ) return true;
     return false;
 }
 
@@ -56,7 +57,6 @@ export async function getTreeLogs(
                 
                 // First, gather all valid neighbors
                 for (const neighborBlock of getBlockNear(block)) {
-                    if (neighborBlock.typeId !== blockTypeId) continue;
                     const serializedLocation = JSON.stringify(neighborBlock.location);
                     let neighborNode = graph.getNode(neighborBlock) ?? graph.addNode(neighborBlock);
 
@@ -138,7 +138,7 @@ function* getBlockNear(initialBlock: Block, radius: number = 1): Generator<Block
             for (let z = centerZ - radius; z <= centerZ + radius; z++) {
                 if (centerX === x && centerY === y && centerZ === z) continue;
                 _block = initialBlock.offset({x, y, z});
-                if (!_block?.isValid() || !isLogIncluded(_block?.typeId)) continue;
+                if (!_block?.isValid() || !isLogIncluded(initialBlock.typeId, _block?.typeId)) continue;
                 yield _block;
             }
         }
@@ -185,7 +185,7 @@ export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): P
         const t = system.runJob((function* () {
             while (queue.length > 0) {
                 const currentBlock = queue.shift();
-                if ((!currentBlock || !currentBlock.isValid() || currentBlock.typeId !== blockTypeId) && !Vec3.equals(blockInteracted, currentBlock)) continue;
+                if ((!currentBlock || !currentBlock.isValid()) && !Vec3.equals(blockInteracted, currentBlock)) continue;
                 const blockKey = JSON.stringify({x: currentBlock.x, z: currentBlock.z} as VectorXZ);
                 if (visited.has(blockKey)) continue;
                 visited.add(blockKey);
@@ -196,13 +196,13 @@ export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): P
                 i++;
 
                 // Add the neighboring blocks within radius 1 (cardinal + diagonal)
-                for (let y = 0; y <= 1; y++) {
+                for (let y = -1; y <= 1; y++) {
                     for (let x = -1; x <= 1; x++) {
                         for (let z = -1; z <= 1; z++) {
                             if (x === 0 && z === 0 && y === 0) continue; // Skip the current block itself
                             const neighborBlock = currentBlock.offset({ x: x, y: y, z: z });
                             const neighborLoc = JSON.stringify({x: neighborBlock.x, z: neighborBlock.z} as VectorXZ);
-                            if (!neighborBlock?.isValid() || visited.has(neighborLoc)) continue;
+                            if (!neighborBlock?.isValid() || visited.has(neighborLoc) || !isLogIncluded(blockTypeId, neighborBlock.typeId)) continue;
                             queue.push(neighborBlock);
                             yield;
                         }

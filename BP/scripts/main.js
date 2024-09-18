@@ -199,7 +199,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                 if (Vec3.equals(node.block, blockInteracted.location))
                     continue;
                 if (node) {
-                    if (node.block.typeId === blockTypeId) {
+                    if (isLogIncluded(blockTypeId, node.block.typeId)) {
                         size++;
                         if (destroyedTree.visitedLogs.yOffsets.has(node.block.location.y) &&
                             destroyedTree.visitedLogs.yOffsets.get(node.block.location.y) && isValidVerticalTree) {

@@ -20,7 +20,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         const currentHeldAxe: ItemStack = arg.itemStack;
         const blockInteracted: Block = arg.block;
         const player: Player = arg.source as Player;
-        if (!axeEquipments.includes(currentHeldAxe.typeId) || !isLogIncluded(blockInteracted.typeId)) return;
+        if (!axeEquipments.includes(currentHeldAxe.typeId) || !isLogIncluded(blockInteracted.typeId, blockInteracted.typeId)) return;
         const oldLog = playerInteractedTimeLogMap.get(player.id);
         playerInteractedTimeLogMap.set(player.id, system.currentTick);
         if ((oldLog + 5) >= system.currentTick) return;
@@ -68,7 +68,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
 
                     // Remove some nodes in the graph that is not existing anymore. So, it can update its branches or neighbors
                     for(const node of initialTreeInspection.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
-                        if(!node.block?.isValid() || !isLogIncluded(node.block.typeId)) {
+                        if(!node.block?.isValid() || !isLogIncluded(blockInteracted.typeId, node.block.typeId)) {
                             initialTreeInspection.visitedLogs.source.removeNode(node.block);
                         }
                         yield;
@@ -150,7 +150,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 const bottomMostBlock = await new Promise<Block>((getBottomMostBlockResolved) => {
                     let _bottom = blockInteracted.below();
                     const _t = system.runInterval(() => {
-                        if(!isLogIncluded(blockInteracted.typeId) || blockInteracted.typeId !== _bottom.typeId) {
+                        if(!isLogIncluded(blockInteracted.typeId, _bottom.typeId)) {
                             system.clearRun(_t);
                             getBottomMostBlockResolved(_bottom);
                             return;
@@ -200,6 +200,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 }
 
                 const currentTime = system.currentTick;
+                console.warn(trunkHeight);
                 const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, +serverConfigurationCopy.chopLimit.defaultValue);
                 isTreeDoneTraversing = true;
                 if(isValidVerticalTree) {
