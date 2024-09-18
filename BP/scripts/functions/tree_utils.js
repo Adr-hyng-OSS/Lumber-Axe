@@ -10,11 +10,9 @@ export function isLogIncluded(blockTypeId) {
 }
 export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, isInspectingTree = true) {
     return new Promise((resolve) => {
-        console.warn("RUNNED");
-        const graph = new Graph();
-        const blockOutlines = [];
-        const yOffsets = new Map();
         let queue = [];
+        const graph = new Graph();
+        const yOffsets = new Map();
         const visited = new Set();
         const traversingTreeInterval = system.runJob(function* () {
             const firstBlock = dimension.getBlock(location);
@@ -48,22 +46,29 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
                 }
                 yield;
             }
+            const blockOutlines = [];
+            const trunkGraph = new Graph();
+            for (const node of graph.traverseIterative(firstBlock, "BFS")) {
+                if (node)
+                    trunkGraph.addNode(node);
+                yield;
+            }
             let trunkNumberOfBlocks = isInspectingTree ? 0 : 1;
             let centroidLog = {
                 x: isInspectingTree ? 0 : firstBlock.x,
                 z: isInspectingTree ? 0 : firstBlock.z
             };
-            for (let x = -2; x <= 2; x++) {
-                for (let z = -2; z <= 2; z++) {
-                    const _neighborBlock = firstBlock.offset({ x: x, y: 0, z: z });
-                    if (!_neighborBlock?.isValid() || !isLogIncluded(_neighborBlock?.typeId))
-                        continue;
-                    if (_neighborBlock.typeId !== blockTypeId)
-                        continue;
-                    centroidLog.x += _neighborBlock.x;
-                    centroidLog.z += _neighborBlock.z;
-                    trunkNumberOfBlocks++;
-                    yield;
+            for (const node of trunkGraph.traverseIterative(firstBlock, "BFS")) {
+                if (node) {
+                    if ((firstBlock.y + 1) === node.block.y)
+                        trunkGraph.removeNode(node.block);
+                    else if ((firstBlock.y - 1) === node.block.y)
+                        trunkGraph.removeNode(node.block);
+                    else if (firstBlock.y === node.block.y) {
+                        centroidLog.x += node.block.x;
+                        centroidLog.z += node.block.z;
+                        trunkNumberOfBlocks++;
+                    }
                 }
                 yield;
             }
@@ -83,7 +88,6 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
                     yield;
                 }
             }
-            queue = [];
             system.clearJob(traversingTreeInterval);
             resolve({
                 source: graph,
@@ -91,7 +95,7 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
                 yOffsets,
                 trunk: {
                     size: trunkNumberOfBlocks,
-                    centroid: centroidLog
+                    center: centroidLog
                 }
             });
         }());

@@ -13,7 +13,7 @@ export * from "items/axes";
 
 export type TrunkBlockResult = {
   size: number;
-  centroid: VectorXZ;
+  center: VectorXZ;
 }
 
 export type VisitedBlockResult = {

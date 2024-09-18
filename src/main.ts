@@ -87,9 +87,9 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       source: new Graph(),
       yOffsets: new Map(),
       trunk: {
-          centroid: {
-          x: 0, 
-          z: 0
+          center: {
+            x: 0, 
+            z: 0
           }, 
           size: 0
       }
@@ -183,7 +183,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       for(const yOffset of trunkYCoordinates) {
         if(currentBlockOffset % 2 === 0) {
           await system.waitTicks(10);
-          const loc = {x: destroyedTree.visitedLogs.trunk.centroid.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.centroid.z};
+          const loc = {x: destroyedTree.visitedLogs.trunk.center.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.center.z};
           player.playSound('mob.irongolem.crack', {location: loc});
           const molang = new MolangVariableMap();
           molang.setFloat('trunk_size', treeDustParseMap[destroyedTree.visitedLogs.trunk.size]);
@@ -199,7 +199,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
           if(currentBlockOffset % 2 === 0) {
             const molang = new MolangVariableMap();
             molang.setFloat('trunk_size', treeDustParseMap[destroyedTree.visitedLogs.trunk.size]);
-            dimension.spawnParticle('yn:tree_dust', {x: destroyedTree.visitedLogs.trunk.centroid.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.centroid.z}, molang);
+            dimension.spawnParticle('yn:tree_dust', {x: destroyedTree.visitedLogs.trunk.center.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.center.z}, molang);
           }
           destroyedTree.visitedLogs.yOffsets.set(yOffset, true);
           currentBlockOffset++;

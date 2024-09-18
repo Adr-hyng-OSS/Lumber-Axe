@@ -1,6 +1,6 @@
 import { Block, Dimension, Entity, Vector3, VectorXZ, system } from "@minecraft/server";
 
-import { validLogBlocks, serverConfigurationCopy, VisitedBlockResult } from "../index";
+import { validLogBlocks, serverConfigurationCopy, VisitedBlockResult, TrunkBlockResult } from "../index";
 import { Graph } from "utils/graph";
 
 export function isLogIncluded(blockTypeId: string): boolean {
@@ -18,13 +18,10 @@ export async function getTreeLogs(
     isInspectingTree: boolean = true
 ): Promise<VisitedBlockResult> {
     return new Promise<VisitedBlockResult>((resolve) => {
-        console.warn("RUNNED");
-        const graph = new Graph();
-        const blockOutlines: Entity[] = [];
-        const yOffsets: Map<number, boolean> = new Map();
-
         let queue: Block[] = [];
-        const visited = new Set<string>(); // To track visited locations
+        const graph = new Graph();
+        const yOffsets: Map<number, boolean> = new Map();
+        const visited: Set<string> = new Set();
 
         const traversingTreeInterval: number = system.runJob(function* () {
             const firstBlock = dimension.getBlock(location);
@@ -73,21 +70,33 @@ export async function getTreeLogs(
                 yield;
             }
 
+            //--- STARTLINE
+            const blockOutlines: Entity[] = [];
+
+            // Copy the graph
+            
+            const trunkGraph = new Graph();
+            for(const node of graph.traverseIterative(firstBlock, "BFS")) {
+                if(node) trunkGraph.addNode(node);
+                yield;
+            }
+
             // Gets the center of the trunk.
             let trunkNumberOfBlocks: number = isInspectingTree ? 0 : 1;
             let centroidLog: VectorXZ = {
                 x: isInspectingTree ? 0 : firstBlock.x, 
                 z: isInspectingTree ? 0 : firstBlock.z
             };
-            for (let x = -2; x <= 2; x++) {
-                for (let z = -2; z <= 2; z++) {
-                    const _neighborBlock = firstBlock.offset({ x: x, y: 0, z: z });
-                    if (!_neighborBlock?.isValid() || !isLogIncluded(_neighborBlock?.typeId)) continue;
-                    if (_neighborBlock.typeId !== blockTypeId) continue;
-                    centroidLog.x += _neighborBlock.x;
-                    centroidLog.z += _neighborBlock.z;
-                    trunkNumberOfBlocks++;
-                    yield;
+            for(const node of trunkGraph.traverseIterative(firstBlock, "BFS")) {
+                if(node) {
+                    // Cut the upper section.
+                    if((firstBlock.y + 1) === node.block.y) trunkGraph.removeNode(node.block);
+                    else if((firstBlock.y - 1) === node.block.y) trunkGraph.removeNode(node.block);
+                    else if(firstBlock.y === node.block.y) {
+                        centroidLog.x += node.block.x;
+                        centroidLog.z += node.block.z;
+                        trunkNumberOfBlocks++;
+                    }
                 }
                 yield;
             }
@@ -112,7 +121,6 @@ export async function getTreeLogs(
                     yield;
                 }
             }
-            queue = [];
             system.clearJob(traversingTreeInterval);
             resolve({
                 source: graph, 
@@ -120,7 +128,7 @@ export async function getTreeLogs(
                 yOffsets, 
                 trunk: {
                     size: trunkNumberOfBlocks,
-                    centroid: centroidLog
+                    center: centroidLog
                 }
             });
         }());
@@ -173,9 +181,9 @@ function groupAdjacentBlocks(visited: Set<string>): string[][] {
     return groups;
 }
 
-export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): Promise<{center: VectorXZ, size: number}> {
+export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): Promise<TrunkBlockResult> {
     // (TODO) Use Floodfill instead of this to get the adjacent blocks
-    return new Promise<{center: VectorXZ, size: number}>((fetchedTrunkSizeResolved) => {
+    return new Promise<TrunkBlockResult>((fetchedTrunkSizeResolved) => {
         let i = 0;
         let centroidLog: VectorXZ = {
             x: 0, 
