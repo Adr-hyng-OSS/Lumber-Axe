@@ -21,14 +21,12 @@ export function isLogIncluded(rootBlockTypeId, blockTypeId) {
 export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, isInspectingTree = true) {
     const firstBlock = dimension.getBlock(location);
     const visitedTree = await new Promise((resolve) => {
-        let queue = [];
         const graph = new Graph();
+        const queue = [firstBlock];
         const yOffsets = new Map();
-        const visited = new Set();
+        const visited = new Set([JSON.stringify(firstBlock.location)]);
         const traversingTreeInterval = system.runJob(function* () {
-            queue.push(firstBlock);
             graph.addNode(firstBlock);
-            visited.add(JSON.stringify(firstBlock.location));
             while (queue.length > 0) {
                 const size = graph.getSize();
                 if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || size >= maxNeeded) {
@@ -39,7 +37,7 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
                 if (!mainNode)
                     continue;
                 yOffsets.set(block.y, false);
-                for (const neighborBlock of getBlockNear(block)) {
+                for (const neighborBlock of getBlockNear(blockTypeId, block)) {
                     const serializedLocation = JSON.stringify(neighborBlock.location);
                     let neighborNode = graph.getNode(neighborBlock) ?? graph.addNode(neighborBlock);
                     if (mainNode.neighbors.has(neighborNode))
@@ -70,7 +68,6 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
     const trunk = await getTreeTrunkSize(firstBlock, blockTypeId);
     return new Promise((resolve) => {
         const t = system.runJob((function* () {
-            console.warn(trunk.center.x, trunk.center.z, trunk.size);
             if (!isInspectingTree) {
                 for (const yOffset of visitedTree.yOffsets.keys()) {
                     const outline = dimension.spawnEntity('yn:block_outline', { x: trunk.center.x, y: yOffset, z: trunk.center.z });
@@ -97,7 +94,7 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
         })());
     });
 }
-function* getBlockNear(initialBlock, radius = 1) {
+function* getBlockNear(initialBlockTypeID, initialBlock, radius = 1) {
     const centerX = 0;
     const centerY = 0;
     const centerZ = 0;
@@ -108,7 +105,7 @@ function* getBlockNear(initialBlock, radius = 1) {
                 if (centerX === x && centerY === y && centerZ === z)
                     continue;
                 _block = initialBlock.offset({ x, y, z });
-                if (!_block?.isValid() || !isLogIncluded(initialBlock.typeId, _block?.typeId))
+                if (!_block?.isValid() || !isLogIncluded(initialBlockTypeID, _block?.typeId))
                     continue;
                 yield _block;
             }

@@ -29,14 +29,12 @@ export async function getTreeLogs(
 ): Promise<VisitedBlockResult> {
     const firstBlock = dimension.getBlock(location);
     const visitedTree = await new Promise<VisitedBlockResult>((resolve) => {
-        let queue: Block[] = [];
         const graph = new Graph();
+        const queue: Block[] = [firstBlock];
         const yOffsets: Map<number, boolean> = new Map();
-        const visited: Set<string> = new Set();
+        const visited: Set<string> = new Set([JSON.stringify(firstBlock.location)]);
         const traversingTreeInterval: number = system.runJob(function* () {
-            queue.push(firstBlock);
             graph.addNode(firstBlock);
-            visited.add(JSON.stringify(firstBlock.location));
 
             // Should spawn outline is indicator for inspection or breaking tree.
             // Inspection = True
@@ -56,7 +54,7 @@ export async function getTreeLogs(
                 yOffsets.set(block.y, false);
                 
                 // First, gather all valid neighbors
-                for (const neighborBlock of getBlockNear(block)) {
+                for (const neighborBlock of getBlockNear(blockTypeId, block)) {
                     const serializedLocation = JSON.stringify(neighborBlock.location);
                     let neighborNode = graph.getNode(neighborBlock) ?? graph.addNode(neighborBlock);
 
@@ -97,7 +95,6 @@ export async function getTreeLogs(
         const t = system.runJob((function*(){
             // Create Block Entity based on the trunk. 
             // (Create particle spawner entities when you are chopping it down for dust, and destroy particle, else just for inpsection particle)
-            console.warn(trunk.center.x, trunk.center.z, trunk.size);
             if(!isInspectingTree) {
                 for(const yOffset of visitedTree.yOffsets.keys()) {
                     const outline = dimension.spawnEntity('yn:block_outline', { x: trunk.center.x, y: yOffset, z: trunk.center.z });
@@ -128,7 +125,7 @@ export async function getTreeLogs(
 
 
 
-function* getBlockNear(initialBlock: Block, radius: number = 1): Generator<Block, any, unknown> {
+function* getBlockNear(initialBlockTypeID: string, initialBlock: Block, radius: number = 1): Generator<Block, any, unknown> {
     const centerX: number = 0;
     const centerY: number = 0;
     const centerZ: number = 0;
@@ -138,7 +135,7 @@ function* getBlockNear(initialBlock: Block, radius: number = 1): Generator<Block
             for (let z = centerZ - radius; z <= centerZ + radius; z++) {
                 if (centerX === x && centerY === y && centerZ === z) continue;
                 _block = initialBlock.offset({x, y, z});
-                if (!_block?.isValid() || !isLogIncluded(initialBlock.typeId, _block?.typeId)) continue;
+                if (!_block?.isValid() || !isLogIncluded(initialBlockTypeID, _block?.typeId)) continue;
                 yield _block;
             }
         }
