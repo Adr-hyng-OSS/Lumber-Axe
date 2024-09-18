@@ -1,10 +1,18 @@
 import { Block, Dimension, Entity, Vector3, VectorXZ, system } from "@minecraft/server";
 
-import { validLogBlocks, serverConfigurationCopy, VisitedBlockResult, TrunkBlockResult } from "../index";
+import { serverConfigurationCopy, VisitedBlockResult, TrunkBlockResult } from "../index";
 import { Graph } from "utils/graph";
 import { Vec3 } from "utils/VectorUtils";
 
-export function isLogIncluded(blockTypeId: string): boolean {
+export function isLogIncluded(blockTypeId: string, rootBlockTypeId?: string): boolean {
+    const validLogBlocks: RegExp = /(_log|_wood|crimson_stem|warped_stem)$/;
+    function extractLogFamily(blockTypeId: string): string {
+        const parts = blockTypeId.split('_');
+        return parts.slice(0, -1).join('_');
+    }
+    // if(rootBlockTypeId) {
+    //     const extractedLogFamily = extractLogFamily(rootBlockTypeId);
+    // }
     if(serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
     if(serverConfigurationCopy.includedLog.values.includes(blockTypeId) || validLogBlocks.test(blockTypeId)) return true;
     return false;

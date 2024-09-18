@@ -200,7 +200,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 }
 
                 const currentTime = system.currentTick;
-                const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
+                const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, +serverConfigurationCopy.chopLimit.defaultValue);
                 isTreeDoneTraversing = true;
                 if(isValidVerticalTree) {
                     treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
@@ -247,7 +247,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             translate: `LumberAxe.form.treeSizeAbrev.text`
                         },
                         {
-                            text: ` ${size !== 0 ? size : 1}${canBeChopped ? "" : "+" } `
+                            text: ` ${size !== 0 ? (canBeChopped ? size : reachableLogs + 1) : 1}${canBeChopped ? "" : "+" } `
                         },
                         {
                             translate: `LumberAxe.form.treeSizeAbrevLogs.text`
@@ -257,20 +257,20 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     {
                         rawtext: [
                         {
-                            translate: `LumberAxe.form.durabilityAbrev.text`
+                            text: `${tempResult.result.yOffsets.size} ` // Get the height of the trunk excluding the branches.
                         },
                         {
-                            text: ` ${currentDurability}`
+                            translate: `LumberAxe.form.trunkHeightAbrev.text`
                         }
                     ]}, "textures/InfoUI/axe_durability.png")
                 .button(
                     {
                         rawtext: [
                         {
-                            translate: `LumberAxe.form.maxDurabilityAbrev.text`
+                            translate: (maxDurability - totalDurabilityConsumed) > 0 ? `LumberAxe.form.surplusAmountAbrev.text` : 'LumberAxe.form.deficitAmountAbrev.text',
                         },
                         {
-                            text: ` ${maxDurability}`
+                            text: ` ${(maxDurability - totalDurabilityConsumed) > 0 ? '+' : ''}${maxDurability - totalDurabilityConsumed}`
                         }
                     ]}, "textures/InfoUI/required_durability.png")
                 .button(

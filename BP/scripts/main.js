@@ -36,7 +36,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         return;
     if (!player.isSurvival())
         return;
-    if (!isLogIncluded(blockTypeId)) {
+    if (!isLogIncluded(blockTypeId, blockTypeId)) {
         system.run(() => axe.damageDurability(1));
         return;
     }
@@ -95,7 +95,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         const bottomMostBlock = await new Promise((getBottomMostBlockResolved) => {
             let _bottom = blockInteracted.below();
             const _t = system.runInterval(() => {
-                if (!isLogIncluded(blockInteracted.typeId) || blockInteracted.typeId !== _bottom.typeId) {
+                if (!isLogIncluded(blockInteracted.typeId, _bottom.typeId)) {
                     system.clearRun(_t);
                     getBottomMostBlockResolved(_bottom);
                     return;

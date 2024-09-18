@@ -8,11 +8,12 @@ item.yn:netherite_lumber_axe.name=Netherite Lumber Axe
 
 
 ## Form-UI
-LumberAxe.form.title.text=LOG INFORMATION
-LumberAxe.form.treeSizeAbrev.text=HAS
-LumberAxe.form.treeSizeAbrevLogs.text=LOG/S
-LumberAxe.form.durabilityAbrev.text=DMG
-LumberAxe.form.maxDurabilityAbrev.text=MAX
+LumberAxe.form.title.text=Tree Status Overview
+LumberAxe.form.treeSizeAbrev.text=Has
+LumberAxe.form.treeSizeAbrevLogs.text=Log/s
+LumberAxe.form.trunkHeightAbrev.text=Block/s High
+LumberAxe.form.surplusAmountAbrev.text=Surplus
+LumberAxe.form.deficitAmountAbrev.text=Deficit
 LumberAxe.form.canBeChopped.text=§aChoppable
 LumberAxe.form.cannotBeChopped.text=§cCannot be chopped
 
