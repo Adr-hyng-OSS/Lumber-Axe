@@ -25,18 +25,18 @@
 					"temp.blue = 1;",
 					"variable.dig_particle_texture_coordinate = query.surface_particle_texture_coordinate;",
 					"variable.dig_particle_texture_size = query.surface_particle_texture_size;", 
-					"variable.dig_particle_color = query.surface_particle_color;"
+					"variable.dig_particle_color = query.surface_particle_color;",
+					"variable.trunk_size = 1;"
 				],
 				"pre_animation": [
 					"temp.red = 1;",
 					"temp.green = 1;",
-					"temp.blue = 1;",
-					"query.property('yn:color_state') == 0 ? {t.red = 1; t.green = 1; t.blue = 1};",
-					"query.property('yn:color_state') == 1 ? {t.red = 0; t.green = 1; t.blue = 0};",
-					"query.property('yn:color_state') == 2 ? {t.red = 1; t.green = 0; t.blue = 0};"
+					"temp.blue = 1;"
 				],
 				"scale": "query.variant == 1 ? (1.0) : (0.0)",
-				"animate": ["render"]
+				"animate": [
+					"render"
+				]
 			},
 			"animations": {
 				"render": "animation.block_outline.render_scale",

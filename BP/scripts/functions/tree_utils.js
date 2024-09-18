@@ -83,8 +83,6 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
                     yield;
                 }
             }
-            else {
-            }
             queue = [];
             system.clearJob(traversingTreeInterval);
             resolve({

@@ -2,7 +2,6 @@ import { Block, Dimension, Entity, Vector3, VectorXZ, system } from "@minecraft/
 
 import { validLogBlocks, serverConfigurationCopy, VisitedBlockResult } from "../index";
 import { Graph } from "utils/graph";
-import { Vec3 } from "utils/VectorUtils";
 
 export function isLogIncluded(blockTypeId: string): boolean {
     if(serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
@@ -112,14 +111,6 @@ export async function getTreeLogs(
                     }
                     yield;
                 }
-            } else {
-                // const bottomMostBlock = Array.from(yOffsets.keys()).sort((a, b) => a - b)[0];
-                // const outline = dimension.spawnEntity('yn:block_outline', { x: centroidLog.x, y: bottomMostBlock, z: centroidLog.z });
-                // outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
-                // outline.triggerEvent('not_persistent');
-                // // outline.triggerEvent('active_outline');
-                // blockOutlines.push(outline);
-                // yield;
             }
             queue = [];
             system.clearJob(traversingTreeInterval);

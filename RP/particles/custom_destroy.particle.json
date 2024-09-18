@@ -24,10 +24,10 @@
 		},
 		"components": {
 			"minecraft:emitter_initialization": {
-				"creation_expression": "temp.start_texture_color_r = 0.11;temp.start_texture_color_g = 0.11;temp.start_texture_color_b = 0.11;temp.start_texture_color_a = 0.11;"
+				"creation_expression": "temp.start_texture_color_r = 0.11;temp.start_texture_color_g = 0.11;temp.start_texture_color_b = 0.11;temp.start_texture_color_a = 0.11;temp.trunk_size = 1;"
 			},
 			"minecraft:emitter_rate_instant": {
-				"num_particles": "Math.random(15, 25)"
+				"num_particles": "Math.random(5, 15) * (t.trunk_size * (v.trunk_size > 1 ? 2:1))"
 			},
 			"minecraft:emitter_lifetime_once": {
 				"active_time": 0.1
@@ -38,11 +38,11 @@
 				"direction": "outwards"
 			},
 			"minecraft:particle_initialization": {
-				"per_render_expression": "temp.start_texture_color_r = Math.clamp(variable.dig_particle_color.r, 0, 1);temp.start_texture_color_g = Math.clamp(variable.dig_particle_color.g, 0, 1);temp.start_texture_color_b = Math.clamp(variable.dig_particle_color.b, 0, 1);temp.start_texture_color_a = Math.clamp(variable.dig_particle_color.a, 0, 1);"
+				"per_render_expression": "temp.start_texture_color_r = Math.clamp(variable.dig_particle_color.r, 0, 1);temp.start_texture_color_g = Math.clamp(variable.dig_particle_color.g, 0, 1);temp.start_texture_color_b = Math.clamp(variable.dig_particle_color.b, 0, 1);temp.start_texture_color_a = Math.clamp(variable.dig_particle_color.a, 0, 1);temp.trunk_size = v.trunk_size;"
 			},
 			"minecraft:particle_lifetime_expression": {
 				"max_lifetime": "Math.random(1.0, 2.5)",
-				"expiration_expression": "(t.start_texture_color_r <= 0.01 && t.start_texture_color_g <= 0.01 && t.start_texture_color_b <= 0.01) && variable.kill == 1"
+				"expiration_expression": "((t.start_texture_color_r <= 0.01 && t.start_texture_color_g <= 0.01 && t.start_texture_color_b <= 0.01) && variable.kill == 1) && !query.is_in_ui"
 			},
 			"minecraft:particle_initial_speed": 2,
 			"minecraft:particle_motion_dynamic": {

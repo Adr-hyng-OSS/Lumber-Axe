@@ -7,11 +7,11 @@
 			"is_spawnable": true,
 			"is_summonable": true,
 			"properties": {
-        "yn:color_state": {
+        "yn:trunk_size": {
           "type": "int",
           "client_sync": true,
-          "default": 0,
-					"range": [0, 3]
+          "default": 1,
+					"range": [0, 32]
         }
       }
 		},

@@ -18,7 +18,7 @@
 			"particle_effects": {
 				"0.1": {
 					"effect": "destroy_block",
-					"pre_effect_script": "variable.dig_particle_texture_coordinate = query.surface_particle_texture_coordinate; variable.dig_particle_texture_size = query.surface_particle_texture_size; variable.dig_particle_color = query.surface_particle_color;"
+					"pre_effect_script": "variable.trunk_size=q.property('yn:trunk_size');variable.dig_particle_texture_coordinate = query.surface_particle_texture_coordinate; variable.dig_particle_texture_size = query.surface_particle_texture_size; variable.dig_particle_color = query.surface_particle_color;"
 				}
 			}
 		}

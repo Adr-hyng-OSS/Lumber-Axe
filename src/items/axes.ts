@@ -16,9 +16,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
       const axe = (player.getComponent(EntityEquippableComponent.componentId) as EntityEquippableComponent);
       axe.damageDurability(1);
     },
-    async onMineBlock(arg) {
-        
-    },
     async onUseOn(arg) {
         const currentHeldAxe: ItemStack = arg.itemStack;
         const blockInteracted: Block = arg.block;
