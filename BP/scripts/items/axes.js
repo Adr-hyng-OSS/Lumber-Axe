@@ -160,8 +160,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         8: 3.5,
                         9: 3.5
                     };
-                    const trunkHeight = (topMostBlock.y - bottomMostBlock.y);
+                    const trunkHeight = (topMostBlock.y - (bottomMostBlock.y + 1));
                     const isValidVerticalTree = trunkHeight > 2;
+                    console.warn(trunkHeight, isValidVerticalTree, topMostBlock.y, bottomMostBlock.y + 1, interactedTreeTrunk.size, trunkHeight);
                     if (isValidVerticalTree) {
                         const it = system.runInterval(() => {
                             if (system.currentTick >= currentTime + (BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond) || result?.isDone) {
@@ -190,8 +191,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const currentTime = system.currentTick;
                     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                     isTreeDoneTraversing = true;
-                    interactedTreeTrunk = treeCollectedResult.trunk;
-                    console.warn(trunkHeight, isValidVerticalTree, topMostBlock.y, bottomMostBlock.y, interactedTreeTrunk.size);
                     if (isValidVerticalTree) {
                         treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
                     }

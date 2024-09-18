@@ -145,10 +145,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     isDone: false,
                     initialSize: 0,
                 };
-                // Instead of getting the center from all the available trunks, just make it so that
-                // 1 = center of inteacted block
-                // 2 - 4 = center of these 4 blocks
-                // 5 - 9 = center of all of these 9 blocks.
                 let interactedTreeTrunk = await getTreeTrunkSize(blockInteracted, blockInteracted.typeId);
                 const topMostBlock = blockInteracted.dimension.getTopmostBlock(interactedTreeTrunk.center);
                 const bottomMostBlock = await new Promise<Block>((getBottomMostBlockResolved) => {
@@ -175,8 +171,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     8: 3.5,
                     9: 3.5
                 }
-                const trunkHeight = (topMostBlock.y - bottomMostBlock.y);
+                const trunkHeight = (topMostBlock.y - (bottomMostBlock.y + 1));
                 const isValidVerticalTree = trunkHeight > 2;
+                console.warn(trunkHeight, isValidVerticalTree, topMostBlock.y, bottomMostBlock.y + 1, interactedTreeTrunk.size, trunkHeight);
                 if(isValidVerticalTree) {
                     const it = system.runInterval(() => {
                         // Get the first block, and based on that it will get the height.
@@ -206,9 +203,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 const currentTime = system.currentTick;
                 const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                 isTreeDoneTraversing = true;
-                interactedTreeTrunk = treeCollectedResult.trunk;
-                // (TODO) After traversing, align the center with the accurate one.
-                console.warn(trunkHeight, isValidVerticalTree, topMostBlock.y, bottomMostBlock.y, interactedTreeTrunk.size);
                 if(isValidVerticalTree) {
                     treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
                 } else {

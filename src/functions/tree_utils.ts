@@ -17,14 +17,13 @@ export async function getTreeLogs(
     maxNeeded: number, 
     isInspectingTree: boolean = true
 ): Promise<VisitedBlockResult> {
-    return new Promise<VisitedBlockResult>((resolve) => {
+    const firstBlock = dimension.getBlock(location);
+    const visitedTree = await new Promise<VisitedBlockResult>((resolve) => {
         let queue: Block[] = [];
         const graph = new Graph();
         const yOffsets: Map<number, boolean> = new Map();
         const visited: Set<string> = new Set();
-
         const traversingTreeInterval: number = system.runJob(function* () {
-            const firstBlock = dimension.getBlock(location);
             queue.push(firstBlock);
             graph.addNode(firstBlock);
             visited.add(JSON.stringify(firstBlock.location));
@@ -70,44 +69,28 @@ export async function getTreeLogs(
                 yield;
             }
 
-            //--- STARTLINE
-            const blockOutlines: Entity[] = [];
-
-            // Copy the graph
-            
-            const trunkGraph = new Graph();
-            for(const node of graph.traverseIterative(firstBlock, "BFS")) {
-                if(node) trunkGraph.addNode(node);
-                yield;
-            }
-
-            // Gets the center of the trunk.
-            let trunkNumberOfBlocks: number = isInspectingTree ? 0 : 1;
-            let centroidLog: VectorXZ = {
-                x: isInspectingTree ? 0 : firstBlock.x, 
-                z: isInspectingTree ? 0 : firstBlock.z
-            };
-            for(const node of trunkGraph.traverseIterative(firstBlock, "BFS")) {
-                if(node) {
-                    // Cut the upper section.
-                    if((firstBlock.y + 1) === node.block.y) trunkGraph.removeNode(node.block);
-                    else if((firstBlock.y - 1) === node.block.y) trunkGraph.removeNode(node.block);
-                    else if(firstBlock.y === node.block.y) {
-                        centroidLog.x += node.block.x;
-                        centroidLog.z += node.block.z;
-                        trunkNumberOfBlocks++;
-                    }
+            system.clearJob(traversingTreeInterval);
+            resolve({
+                source: graph, 
+                blockOutlines: [], 
+                yOffsets, 
+                trunk: {
+                    size: 0,
+                    center: {x: 0, z: 0}
                 }
-                yield;
-            }
-            centroidLog.x = (centroidLog.x / trunkNumberOfBlocks) + 0.5;
-            centroidLog.z = (centroidLog.z / trunkNumberOfBlocks) + 0.5;
+            });
+        }());
+    });
 
+    const blockOutlines: Entity[] = [];
+    const trunk = await getTreeTrunkSize(firstBlock, blockTypeId);
+    return new Promise<VisitedBlockResult>((resolve) => {
+        const t = system.runJob((function*(){
             // Create Block Entity based on the trunk. 
             // (Create particle spawner entities when you are chopping it down for dust, and destroy particle, else just for inpsection particle)
             if(!isInspectingTree) {
-                for(const yOffset of yOffsets.keys()) {
-                    const outline = dimension.spawnEntity('yn:block_outline', { x: centroidLog.x, y: yOffset, z: centroidLog.z });
+                for(const yOffset of visitedTree.yOffsets.keys()) {
+                    const outline = dimension.spawnEntity('yn:block_outline', { x: trunk.center.x, y: yOffset, z: trunk.center.z });
                     outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
                     blockOutlines.push(outline);
                     yield;
@@ -116,22 +99,20 @@ export async function getTreeLogs(
                 for(const blockOutline of blockOutlines) {
                     if(blockOutline?.isValid()) {
                         blockOutline.triggerEvent('not_persistent');
-                        // blockOutline.triggerEvent('active_outline');
+                        blockOutline.triggerEvent('active_outline');
                     }
                     yield;
                 }
             }
-            system.clearJob(traversingTreeInterval);
+            system.clearJob(t);
             resolve({
-                source: graph, 
-                blockOutlines, 
-                yOffsets, 
-                trunk: {
-                    size: trunkNumberOfBlocks,
-                    center: centroidLog
-                }
+                source: visitedTree.source,
+                blockOutlines: blockOutlines,
+                trunk: trunk,
+                yOffsets: visitedTree.yOffsets
             });
-        }());
+            return;
+        })());
     });
 }
 
@@ -182,37 +163,61 @@ function groupAdjacentBlocks(visited: Set<string>): string[][] {
 }
 
 export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): Promise<TrunkBlockResult> {
-    // (TODO) Use Floodfill instead of this to get the adjacent blocks
     return new Promise<TrunkBlockResult>((fetchedTrunkSizeResolved) => {
         let i = 0;
         let centroidLog: VectorXZ = {
             x: 0, 
             z: 0
         };
-        const t = system.runJob((function*(){
-            for (let x = -2; x <= 2; x++) {
-                for (let z = -2; z <= 2; z++) {
-                    const _neighborBlock = blockInteracted.offset({ x: x, y: 0, z: z });
-                    if (!_neighborBlock?.isValid() || !isLogIncluded(_neighborBlock?.typeId)) continue;
-                    if (_neighborBlock.typeId !== blockTypeId) continue;
-                    centroidLog.x += _neighborBlock.x;
-                    centroidLog.z += _neighborBlock.z;
-                    i++;
+
+        const visited = new Set<string>(); // To avoid revisiting blocks
+        const queue: Block[] = [blockInteracted]; // Queue for the floodfill process
+
+        const t = system.runJob((function* () {
+            while (queue.length > 0) {
+                const currentBlock = queue.shift();
+                if (!currentBlock || !currentBlock.isValid() || currentBlock.typeId !== blockTypeId) continue;
+
+                const blockKey = JSON.stringify({x: currentBlock.x, z: currentBlock.z} as VectorXZ);
+                if (visited.has(blockKey)) continue;
+                visited.add(blockKey);
+
+                // Accumulate the log coordinates to calculate the centroid
+                centroidLog.x += currentBlock.x;
+                centroidLog.z += currentBlock.z;
+                i++;
+
+                // Add the neighboring blocks within radius 1 (cardinal + diagonal)
+                for (let y = 0; y <= 1; y++) {
+                    for (let x = -1; x <= 1; x++) {
+                        for (let z = -1; z <= 1; z++) {
+                            if (x === 0 && z === 0 && y === 0) continue; // Skip the current block itself
+                            const neighborBlock = currentBlock.offset({ x: x, y: y, z: z });
+                            const neighborLoc = JSON.stringify({x: neighborBlock.x, z: neighborBlock.z} as VectorXZ);
+                            if (!neighborBlock?.isValid() || visited.has(neighborLoc)) continue;
+                            queue.push(neighborBlock);
+                            yield;
+                        }
+                        yield;
+                    }
                     yield;
                 }
                 yield;
             }
-            if(i <= 1) {
+
+            // If only one block found, the centroid is the original block's location
+            if (i <= 1) {
                 i = 1;
                 centroidLog = blockInteracted.location;
             }
+
+            // Compute the average position of the logs
             centroidLog.x = (centroidLog.x / i) + 0.5;
             centroidLog.z = (centroidLog.z / i) + 0.5;
+
             system.clearJob(t);
-            fetchedTrunkSizeResolved({center: centroidLog, size: i});
+            fetchedTrunkSizeResolved({ center: centroidLog, size: i });
+            return;
         })());
     });
 }
-
-
-    

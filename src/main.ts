@@ -207,6 +207,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         }
       }
       let size = 1;
+      console.warn(destroyedTree.visitedLogs.source.getSize(), destroyedTree.visitedLogs.blockOutlines.length, destroyedTree.visitedLogs.yOffsets.size);
       for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
         if(Vec3.equals(node.block, blockInteracted.location)) continue;
         if (node) {
@@ -228,17 +229,18 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
             system.waitTicks(3).then(() => dimension.setBlockType(node.block.location, MinecraftBlockTypes.Air));
           } else {
             destroyedTree.visitedLogs.source.removeNode(node.block);
-            break;
+            // break;
           }
         }
         yield;
       }
+      console.warn(destroyedTree.visitedLogs.source.getSize(), size);
       player.playSound('dig.cave_vines');
 
-      for (const group of stackDistribution(size)) {
-        dimension.spawnItem(new ItemStack(blockTypeId, group), location);
-        yield;
-      }
+      // for (const group of stackDistribution(size)) {
+      //   dimension.spawnItem(new ItemStack(blockTypeId, group), location);
+      //   yield;
+      // }
 
       if(!destroyedTree?.isDone) resetOutlinedTrees(destroyedTree);
       system.clearJob(t);

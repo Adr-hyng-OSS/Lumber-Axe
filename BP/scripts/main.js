@@ -1,5 +1,5 @@
-import { world, system, ScriptEventSource, Player, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap } from '@minecraft/server';
-import { ADDON_IDENTIFIER, axeEquipments, getTreeLogs, getTreeTrunkSize, isLogIncluded, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, visitedLogs } from "./index";
+import { world, system, ScriptEventSource, Player, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, MolangVariableMap } from '@minecraft/server';
+import { ADDON_IDENTIFIER, axeEquipments, getTreeLogs, getTreeTrunkSize, isLogIncluded, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, visitedLogs } from "./index";
 import { Logger } from 'utils/logger';
 import './items/axes';
 import { MinecraftEnchantmentTypes, MinecraftBlockTypes } from 'modules/vanilla-types/index';
@@ -195,6 +195,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                 }
             }
             let size = 1;
+            console.warn(destroyedTree.visitedLogs.source.getSize(), destroyedTree.visitedLogs.blockOutlines.length, destroyedTree.visitedLogs.yOffsets.size);
             for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
                 if (Vec3.equals(node.block, blockInteracted.location))
                     continue;
@@ -214,16 +215,12 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                     }
                     else {
                         destroyedTree.visitedLogs.source.removeNode(node.block);
-                        break;
                     }
                 }
                 yield;
             }
+            console.warn(destroyedTree.visitedLogs.source.getSize(), size);
             player.playSound('dig.cave_vines');
-            for (const group of stackDistribution(size)) {
-                dimension.spawnItem(new ItemStack(blockTypeId, group), location);
-                yield;
-            }
             if (!destroyedTree?.isDone)
                 resetOutlinedTrees(destroyedTree);
             system.clearJob(t);
