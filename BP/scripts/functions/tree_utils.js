@@ -156,7 +156,7 @@ export function getTreeTrunkSize(blockInteracted, blockTypeId) {
                 }
                 yield;
             }
-            if (i === 0) {
+            if (i <= 1) {
                 i = 1;
                 centroidLog = blockInteracted.location;
             }

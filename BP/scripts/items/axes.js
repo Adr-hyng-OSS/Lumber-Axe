@@ -161,7 +161,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         9: 3.5
                     };
                     const trunkHeight = (topMostBlock.y - bottomMostBlock.y);
-                    if (trunkHeight > 3) {
+                    const isValidVerticalTree = trunkHeight > 2;
+                    console.warn(trunkHeight, isValidVerticalTree, topMostBlock.y, bottomMostBlock.y, interactedTreeTrunk.size);
+                    if (isValidVerticalTree) {
                         const it = system.runInterval(() => {
                             if (system.currentTick >= currentTime + (BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond) || result?.isDone) {
                                 system.clearRun(it);
@@ -181,7 +183,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                             }
                             player.dimension.spawnParticle('yn:inspecting_indicator', {
                                 x: interactedTreeTrunk.center.x,
-                                y: bottomMostBlock.y,
+                                y: bottomMostBlock.y + 1,
                                 z: interactedTreeTrunk.center.z
                             }, molangVariable);
                         }, 5);
@@ -189,7 +191,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     const currentTime = system.currentTick;
                     const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, reachableLogs + 1);
                     isTreeDoneTraversing = true;
-                    if (trunkHeight > 3) {
+                    if (isValidVerticalTree) {
                         treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
                     }
                     else {

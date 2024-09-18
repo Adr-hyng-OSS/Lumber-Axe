@@ -1,4 +1,4 @@
-import { Block, BlockSignComponent, Dimension, EntityEquippableComponent, ItemCooldownComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemStack, MolangVariableMap, Player, system, TicksPerSecond, VectorXZ, world } from "@minecraft/server";
+import { Block, EntityEquippableComponent, ItemCooldownComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemStack, MolangVariableMap, Player, system, TicksPerSecond, world } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
 import { axeEquipments, forceShow, getTreeLogs, getTreeTrunkSize, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, resetOutlinedTrees, serverConfigurationCopy, VisitedBlockResult, visitedLogs} from "index"
 import { MinecraftEnchantmentTypes } from "modules/vanilla-types/index";
@@ -176,7 +176,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     9: 3.5
                 }
                 const trunkHeight = (topMostBlock.y - bottomMostBlock.y);
-                if(trunkHeight > 3) {
+                const isValidVerticalTree = trunkHeight > 2;
+                console.warn(trunkHeight, isValidVerticalTree, topMostBlock.y, bottomMostBlock.y, interactedTreeTrunk.size);
+                if(isValidVerticalTree) {
                     const it = system.runInterval(() => {
                         // Get the first block, and based on that it will get the height.
                         if(system.currentTick >= currentTime + (BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond) || result?.isDone) {
@@ -196,7 +198,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                         }
                         player.dimension.spawnParticle('yn:inspecting_indicator', {
                             x: interactedTreeTrunk.center.x, 
-                            y: bottomMostBlock.y, 
+                            y: bottomMostBlock.y + 1, 
                             z: interactedTreeTrunk.center.z
                         }, molangVariable);
                     }, 5);
@@ -207,7 +209,7 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 isTreeDoneTraversing = true;
                 // (TODO) After traversing, align the center with the accurate one.
 
-                if(trunkHeight > 3) {
+                if(isValidVerticalTree) {
                     treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
                 } else {
                     const t = system.runJob((function*() {
