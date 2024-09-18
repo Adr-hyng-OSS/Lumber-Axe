@@ -206,7 +206,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
           yield;
         }
       }
-      let size = 1;
+      let size = 0;
       for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
         if(Vec3.equals(node.block, blockInteracted.location)) continue;
         if (node) {
@@ -235,10 +235,10 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       }
       player.playSound('dig.cave_vines');
 
-      // for (const group of stackDistribution(size)) {
-      //   dimension.spawnItem(new ItemStack(blockTypeId, group), location);
-      //   yield;
-      // }
+      for (const group of stackDistribution(size)) {
+        dimension.spawnItem(new ItemStack(blockTypeId, group), location);
+        yield;
+      }
 
       if(!destroyedTree?.isDone) resetOutlinedTrees(destroyedTree);
       system.clearJob(t);
