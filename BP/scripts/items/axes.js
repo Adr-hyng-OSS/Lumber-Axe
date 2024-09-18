@@ -162,7 +162,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                     };
                     const trunkHeight = (topMostBlock.y - (bottomMostBlock.y + 1));
                     const isValidVerticalTree = trunkHeight > 2;
-                    console.warn(trunkHeight, isValidVerticalTree, topMostBlock.y, bottomMostBlock.y + 1, interactedTreeTrunk.size, trunkHeight);
                     if (isValidVerticalTree) {
                         const it = system.runInterval(() => {
                             if (system.currentTick >= currentTime + (BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond) || result?.isDone) {

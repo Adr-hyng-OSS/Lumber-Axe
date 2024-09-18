@@ -173,7 +173,6 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 }
                 const trunkHeight = (topMostBlock.y - (bottomMostBlock.y + 1));
                 const isValidVerticalTree = trunkHeight > 2;
-                console.warn(trunkHeight, isValidVerticalTree, topMostBlock.y, bottomMostBlock.y + 1, interactedTreeTrunk.size, trunkHeight);
                 if(isValidVerticalTree) {
                     const it = system.runInterval(() => {
                         // Get the first block, and based on that it will get the height.

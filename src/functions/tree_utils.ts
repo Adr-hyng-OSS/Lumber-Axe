@@ -2,6 +2,7 @@ import { Block, Dimension, Entity, Vector3, VectorXZ, system } from "@minecraft/
 
 import { validLogBlocks, serverConfigurationCopy, VisitedBlockResult, TrunkBlockResult } from "../index";
 import { Graph } from "utils/graph";
+import { Vec3 } from "utils/VectorUtils";
 
 export function isLogIncluded(blockTypeId: string): boolean {
     if(serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
@@ -88,6 +89,7 @@ export async function getTreeLogs(
         const t = system.runJob((function*(){
             // Create Block Entity based on the trunk. 
             // (Create particle spawner entities when you are chopping it down for dust, and destroy particle, else just for inpsection particle)
+            console.warn(trunk.center.x, trunk.center.z, trunk.size);
             if(!isInspectingTree) {
                 for(const yOffset of visitedTree.yOffsets.keys()) {
                     const outline = dimension.spawnEntity('yn:block_outline', { x: trunk.center.x, y: yOffset, z: trunk.center.z });
@@ -169,15 +171,13 @@ export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): P
             x: 0, 
             z: 0
         };
-
         const visited = new Set<string>(); // To avoid revisiting blocks
         const queue: Block[] = [blockInteracted]; // Queue for the floodfill process
 
         const t = system.runJob((function* () {
             while (queue.length > 0) {
                 const currentBlock = queue.shift();
-                if (!currentBlock || !currentBlock.isValid() || currentBlock.typeId !== blockTypeId) continue;
-
+                if ((!currentBlock || !currentBlock.isValid() || currentBlock.typeId !== blockTypeId) && !Vec3.equals(blockInteracted, currentBlock)) continue;
                 const blockKey = JSON.stringify({x: currentBlock.x, z: currentBlock.z} as VectorXZ);
                 if (visited.has(blockKey)) continue;
                 visited.add(blockKey);
@@ -208,13 +208,12 @@ export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): P
             // If only one block found, the centroid is the original block's location
             if (i <= 1) {
                 i = 1;
-                centroidLog = blockInteracted.location;
+                centroidLog = blockInteracted.center();
+            } else {
+                // Compute the average position of the logs
+                centroidLog.x = (centroidLog.x / i) + 0.5;
+                centroidLog.z = (centroidLog.z / i) + 0.5;
             }
-
-            // Compute the average position of the logs
-            centroidLog.x = (centroidLog.x / i) + 0.5;
-            centroidLog.z = (centroidLog.z / i) + 0.5;
-
             system.clearJob(t);
             fetchedTrunkSizeResolved({ center: centroidLog, size: i });
             return;

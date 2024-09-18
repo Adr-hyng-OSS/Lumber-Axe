@@ -195,7 +195,6 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                 }
             }
             let size = 1;
-            console.warn(destroyedTree.visitedLogs.source.getSize(), destroyedTree.visitedLogs.blockOutlines.length, destroyedTree.visitedLogs.yOffsets.size);
             for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
                 if (Vec3.equals(node.block, blockInteracted.location))
                     continue;
@@ -215,11 +214,11 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                     }
                     else {
                         destroyedTree.visitedLogs.source.removeNode(node.block);
+                        break;
                     }
                 }
                 yield;
             }
-            console.warn(destroyedTree.visitedLogs.source.getSize(), size);
             player.playSound('dig.cave_vines');
             if (!destroyedTree?.isDone)
                 resetOutlinedTrees(destroyedTree);

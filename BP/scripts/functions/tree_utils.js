@@ -1,6 +1,7 @@
 import { system } from "@minecraft/server";
 import { validLogBlocks, serverConfigurationCopy } from "../index";
 import { Graph } from "utils/graph";
+import { Vec3 } from "utils/VectorUtils";
 export function isLogIncluded(blockTypeId) {
     if (serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_'))
         return false;
@@ -62,6 +63,7 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
     const trunk = await getTreeTrunkSize(firstBlock, blockTypeId);
     return new Promise((resolve) => {
         const t = system.runJob((function* () {
+            console.warn(trunk.center.x, trunk.center.z, trunk.size);
             if (!isInspectingTree) {
                 for (const yOffset of visitedTree.yOffsets.keys()) {
                     const outline = dimension.spawnEntity('yn:block_outline', { x: trunk.center.x, y: yOffset, z: trunk.center.z });
@@ -137,7 +139,7 @@ export function getTreeTrunkSize(blockInteracted, blockTypeId) {
         const t = system.runJob((function* () {
             while (queue.length > 0) {
                 const currentBlock = queue.shift();
-                if (!currentBlock || !currentBlock.isValid() || currentBlock.typeId !== blockTypeId)
+                if ((!currentBlock || !currentBlock.isValid() || currentBlock.typeId !== blockTypeId) && !Vec3.equals(blockInteracted, currentBlock))
                     continue;
                 const blockKey = JSON.stringify({ x: currentBlock.x, z: currentBlock.z });
                 if (visited.has(blockKey))
@@ -166,10 +168,12 @@ export function getTreeTrunkSize(blockInteracted, blockTypeId) {
             }
             if (i <= 1) {
                 i = 1;
-                centroidLog = blockInteracted.location;
+                centroidLog = blockInteracted.center();
             }
-            centroidLog.x = (centroidLog.x / i) + 0.5;
-            centroidLog.z = (centroidLog.z / i) + 0.5;
+            else {
+                centroidLog.x = (centroidLog.x / i) + 0.5;
+                centroidLog.z = (centroidLog.z / i) + 0.5;
+            }
             system.clearJob(t);
             fetchedTrunkSizeResolved({ center: centroidLog, size: i });
             return;
