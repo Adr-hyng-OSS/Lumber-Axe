@@ -1,3 +1,4 @@
+import { Vec3 } from "./VectorUtils";
 function hashBlock(block) {
     const prime = 31;
     let hash = 1;
@@ -27,8 +28,15 @@ export class Graph {
         this.nodes = new Map();
         this.hashes = [];
     }
-    getNode(block) {
-        return this.nodes.get(this.serializeLocation(block.location));
+    getNode(param) {
+        let node;
+        if (param instanceof Vec3) {
+            node = this.nodes.get(Vec3.toString(param));
+        }
+        else {
+            node = this.nodes.get(this.serializeLocation(param.location));
+        }
+        return node;
     }
     addNode(param) {
         if (param instanceof GraphNode) {

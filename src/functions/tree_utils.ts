@@ -7,7 +7,13 @@ import { Vec3 } from "utils/VectorUtils";
 export function isLogIncluded(rootBlockTypeId: string, blockTypeId: string): boolean {
     const validLogBlocks: RegExp = /(_log|_wood|crimson_stem|warped_stem)$/;
     function extractLogFamily(blockTypeId: string): string {
-        const parts = blockTypeId.split('_');
+        // Remove the namespace by splitting on the colon (':') and taking the second part
+        const [, cleanedBlockTypeId] = blockTypeId.split(':');
+
+        // Split the remaining string by underscores
+        const parts = cleanedBlockTypeId.split('_');
+
+        // Remove the last part (e.g., 'log', 'wood', 'stem')
         return parts.slice(0, -1).join('_');
     }
     if(serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;

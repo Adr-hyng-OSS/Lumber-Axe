@@ -246,7 +246,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
   });
 });
 
-world.afterEvents.itemUseOn.subscribe(async (arg) => {
+world.beforeEvents.itemUseOn.subscribe(async (arg) => {
   const currentHeldAxe: ItemStack = arg.itemStack;
   const blockInteracted: Block = arg.block;
   const player: Player = arg.source as Player;
@@ -404,6 +404,11 @@ world.afterEvents.itemUseOn.subscribe(async (arg) => {
       const trunkHeight = (topMostBlock.y - (bottomMostBlock.y + 1));
       const isValidVerticalTree = trunkHeight > 2;
       if(isValidVerticalTree) {
+        const {x: centerX, z: centerZ} = interactedTreeTrunk.center;
+        const centerBlockErrorCatch = blockInteracted.dimension.getBlock({x: centerX, y: blockInteracted.y, z: centerZ});
+        if(!isLogIncluded(blockInteracted.typeId, centerBlockErrorCatch.typeId)) {
+          interactedTreeTrunk.size++;
+        }
         const it = system.runInterval(() => {
           // Get the first block, and based on that it will get the height.
           if(system.currentTick >= currentTime + (BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond) || result?.isDone) {
@@ -432,9 +437,15 @@ world.afterEvents.itemUseOn.subscribe(async (arg) => {
       const currentTime = system.currentTick;
       const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, +serverConfigurationCopy.chopLimit.defaultValue);
       isTreeDoneTraversing = true;
-      console.warn(treeCollectedResult.trunk.size);
       if(isValidVerticalTree) {
         treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
+        // If center is empty, then just make the blockOutlines be the position of blockInteract and make radius increase by 1
+        // Possible error caught in Expansive Biomes Redwood Forest
+        const {x: centerX, z: centerZ} = treeCollectedResult.trunk.center;
+        const centerBlockErrorCatch = blockInteracted.dimension.getBlock({x: centerX, y: blockInteracted.y, z: centerZ});
+        if(!isLogIncluded(blockInteracted.typeId, centerBlockErrorCatch.typeId)) {
+          treeCollectedResult.trunk.size++;
+        }
       } else {
         const t = system.runJob((function*() {
           for(const node of treeCollectedResult.source.traverseIterative(blockInteracted, "BFS")) {

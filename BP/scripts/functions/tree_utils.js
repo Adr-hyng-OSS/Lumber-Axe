@@ -5,7 +5,8 @@ import { Vec3 } from "utils/VectorUtils";
 export function isLogIncluded(rootBlockTypeId, blockTypeId) {
     const validLogBlocks = /(_log|_wood|crimson_stem|warped_stem)$/;
     function extractLogFamily(blockTypeId) {
-        const parts = blockTypeId.split('_');
+        const [, cleanedBlockTypeId] = blockTypeId.split(':');
+        const parts = cleanedBlockTypeId.split('_');
         return parts.slice(0, -1).join('_');
     }
     if (serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_'))

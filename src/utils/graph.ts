@@ -1,4 +1,5 @@
-import { Block, Vector3 } from "@minecraft/server";
+import { Block, IPlayerSpawnAfterEventSignal, Vector3 } from "@minecraft/server";
+import { Vec3 } from "./VectorUtils";
 
 /**
  * Hash function for a Block based on its location (Vector3).
@@ -56,8 +57,16 @@ export class Graph {
         this.hashes = [];
     }
 
-    getNode(block: Block): GraphNode | undefined {
-        return this.nodes.get(this.serializeLocation(block.location));
+    getNode(param: Block): GraphNode | undefined;
+    getNode(param: Vec3): GraphNode | undefined;
+    getNode(param: Block | Vec3): GraphNode | undefined {
+        let node;
+        if(param instanceof Vec3) {
+            node = this.nodes.get(Vec3.toString(param));
+        } else {
+            node = this.nodes.get(this.serializeLocation((<Block>param).location));
+        }
+        return node;
     }
 
     addNode(block: Block): GraphNode;
