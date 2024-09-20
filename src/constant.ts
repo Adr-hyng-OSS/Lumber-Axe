@@ -1,7 +1,7 @@
 import { InteractedTreeResult } from "index";
 import { JsonDatabase } from "./utils/Database/con-database";
 import { MyCustomItemTypes } from 'items/CustomItemTypes';
-import { system } from "@minecraft/server";
+import { MolangVariableMap, system } from "@minecraft/server";
 
 export const ADDON_NAMESPACE: string = "yn"
 export const ADDON_NAME: string = "Lumber_Axe";
@@ -26,12 +26,12 @@ export function resetOutlinedTrees(result: InteractedTreeResult, instantDespawn:
   result.isDone = true;
   if(!instantDespawn) visitedLogs?.shift();
   const t = system.runJob((function*(){
-      for(const blockOutline of result.visitedLogs.blockOutlines) {
-          if(blockOutline?.isValid()) {
-              blockOutline.triggerEvent('despawn');
-          }
-          yield;
-      }
-      system.clearJob(t);
+    for(const blockOutline of result.visitedLogs.blockOutlines) {
+        if(blockOutline?.isValid()) {
+            blockOutline.triggerEvent('despawn');
+        }
+        yield;
+    }
+    system.clearJob(t);
   })());
 }

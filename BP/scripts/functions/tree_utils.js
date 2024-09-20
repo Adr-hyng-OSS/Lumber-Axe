@@ -71,7 +71,11 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
         const t = system.runJob((function* () {
             if (!isInspectingTree) {
                 for (const yOffset of visitedTree.yOffsets.keys()) {
-                    const outline = dimension.spawnEntity('yn:block_outline', { x: trunk.center.x, y: yOffset, z: trunk.center.z });
+                    const outline = dimension.spawnEntity('yn:block_outline', {
+                        x: trunk.center.x,
+                        y: yOffset,
+                        z: trunk.center.z
+                    });
                     outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
                     blockOutlines.push(outline);
                     yield;

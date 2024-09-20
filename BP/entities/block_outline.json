@@ -10,8 +10,12 @@
         "yn:trunk_size": {
           "type": "int",
           "client_sync": true,
-          "default": 1,
+          "default": 0,
 					"range": [0, 31]
+        },
+				"yn:is_in_air": {
+          "type": "bool",
+          "default": false
         }
       }
 		},
@@ -97,13 +101,32 @@
 						"event": "despawn"
 					}
 				}
+			},
+			"check_for_collision": {
+				"minecraft:environment_sensor": {
+					"triggers": [
+						{
+							"event": "on_air_detected",
+							"target": "self",
+							"filters": {
+								"test": "in_block",
+								"value": "minecraft:air"
+							}
+						}
+					]
+				}
 			}
 		},
 		
 		"events": {
 			"minecraft:entity_spawned": {
 				"remove": { "component_groups": [ "active_outline" ] },
-				"add": { "component_groups": [ "inactive_outline" ] }
+				"add": { "component_groups": [ "inactive_outline", "check_for_collision" ] }
+			},
+			"on_air_detected": {
+				"set_property": {
+					"yn:is_in_air": true
+				}
 			},
 			"despawn": {
 				"add": { "component_groups": [ "despawn" ] }

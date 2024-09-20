@@ -1,4 +1,4 @@
-import { world, PlayerLeaveAfterEvent, ScriptEventCommandMessageAfterEvent, system, ScriptEventSource, Player, BlockPermutation, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, PlayerBreakBlockBeforeEvent, Block, VectorXZ, TicksPerSecond, ItemCooldownComponent } from '@minecraft/server';
+import { world, PlayerLeaveAfterEvent, ScriptEventCommandMessageAfterEvent, system, ScriptEventSource, Player, BlockPermutation, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, PlayerBreakBlockBeforeEvent, Block, VectorXZ, TicksPerSecond, ItemCooldownComponent, EntityComponentTypes, EntityScaleComponent, Vector2, Vector3, Entity } from '@minecraft/server';
 import { ADDON_IDENTIFIER, axeEquipments, forceShow, getTreeLogs, getTreeTrunkSize, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult, visitedLogs} from "./index"
 import { Logger } from 'utils/logger';
 import './items/axes';
@@ -143,7 +143,11 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         dimension.spawnParticle('yn:tree_dust', {x: brokenTreeTrunk.center.x, y: blockInteracted.y, z: brokenTreeTrunk.center.z}, molang);
       }, 12);
     }
-    const choppedTree = (await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false) as VisitedBlockResult);
+    const choppedTree = (await getTreeLogs(
+      dimension, location, blockTypeId, 
+      (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, 
+      false
+    ) as VisitedBlockResult);
     isTreeDoneTraversing = true;
     destroyedTree.visitedLogs = choppedTree;
     destroyedTree.isBeingChopped = true;
@@ -156,7 +160,8 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       currentHeldAxe.lockMode = ItemLockMode.none;
       inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
       SendMessageTo(player, {rawtext: [{text: "Cannot chop the whole tree due to limitation. "}]});
-      return resetOutlinedTrees(destroyedTree);
+      resetOutlinedTrees(destroyedTree);
+      return;
     }
 
     const totalDamage: number = initialSize * unbreakingDamage;
@@ -193,7 +198,10 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         currentBlockOffset++;
       }
     }
-    const t = system.runJob( (function* () {
+    // /execute positioned -14462 84 11333 run fill ~1 ~ ~1 ~-1 ~10 ~-1 oak_log
+    
+    
+    system.runJob( (function* () {
       if(!(serverConfigurationCopy.progressiveChopping.defaultValue) && isValidVerticalTree) {
         for(const yOffset of trunkYCoordinates) {
           if(currentBlockOffset % 2 === 0) {
@@ -201,47 +209,44 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
             molang.setFloat('trunk_size', treeDustParseMap[destroyedTree.visitedLogs.trunk.size]);
             dimension.spawnParticle('yn:tree_dust', {x: destroyedTree.visitedLogs.trunk.center.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.center.z}, molang);
           }
-          destroyedTree.visitedLogs.yOffsets.set(yOffset, true);
           currentBlockOffset++;
-          yield;
         }
       }
       let size = 0;
+      const blockOutlineIterator = destroyedTree.visitedLogs.blockOutlines[Symbol.iterator]();
+      let blockOutlineIterResult = blockOutlineIterator.next();
+      while(!blockOutlineIterResult.done) {
+        const blockOutline: Entity = blockOutlineIterResult.value;
+        blockOutline.setProperty('yn:trunk_size', destroyedTree.visitedLogs.trunk.size);
+        blockOutlineIterResult = blockOutlineIterator.next();
+        yield;
+      }
       for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
+        yield;
         if(Vec3.equals(node.block, blockInteracted.location)) continue;
-        if (node) {
-          // If there's setDestroy that cancels the dropped item, just use that instead of this.
-          // Custom Destroy Particle
-          if(isLogIncluded(blockTypeId, node.block.typeId)) {
-            size++;
-            if (
-              destroyedTree.visitedLogs.yOffsets.has(node.block.location.y) &&
-              destroyedTree.visitedLogs.yOffsets.get(node.block.location.y) && isValidVerticalTree
-            ) {
-              const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
-              if (blockOutline?.isValid()) {
-                blockOutline.playAnimation('animation.block_outline.spawn_particle');
-                blockOutline.setProperty('yn:trunk_size', destroyedTree.visitedLogs.trunk.size);
-                destroyedTree.visitedLogs.yOffsets.set(node.block.location.y, false);
-              }
-            }
-            system.waitTicks(3).then(() => dimension.setBlockType(node.block.location, MinecraftBlockTypes.Air));
-          } else {
-            destroyedTree.visitedLogs.source.removeNode(node.block);
-            break;
-          }
+        if (!node) continue;
+        // If there's setDestroy that cancels the dropped item, just use that instead of this.
+        // Custom Destroy Particle
+        if(isLogIncluded(blockTypeId, node.block.typeId)) {
+          size++;
+          system.waitTicks(3).then(() => {
+            dimension.setBlockType(node.block.location, MinecraftBlockTypes.Air);
+          });
+        } else {
+          destroyedTree.visitedLogs.source.removeNode(node.block);
+          break;
         }
         yield;
       }
       player.playSound('dig.cave_vines');
 
-      for (const group of stackDistribution(size)) {
-        dimension.spawnItem(new ItemStack(blockTypeId, group), location);
-        yield;
-      }
+      // for (const group of stackDistribution(size)) {
+      //   dimension.spawnItem(new ItemStack(blockTypeId, group), location);
+      //   yield;
+      // }
 
       if(!destroyedTree?.isDone) resetOutlinedTrees(destroyedTree);
-      system.clearJob(t);
+      return;
     })());
   });
 });

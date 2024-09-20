@@ -103,7 +103,11 @@ export async function getTreeLogs(
             // (Create particle spawner entities when you are chopping it down for dust, and destroy particle, else just for inpsection particle)
             if(!isInspectingTree) {
                 for(const yOffset of visitedTree.yOffsets.keys()) {
-                    const outline = dimension.spawnEntity('yn:block_outline', { x: trunk.center.x, y: yOffset, z: trunk.center.z });
+                    const outline = dimension.spawnEntity('yn:block_outline', {
+                        x: trunk.center.x, 
+                        y: yOffset, 
+                        z: trunk.center.z
+                    });
                     outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
                     blockOutlines.push(outline);
                     yield;

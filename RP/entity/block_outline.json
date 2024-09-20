@@ -26,21 +26,28 @@
 					"variable.dig_particle_texture_coordinate = query.surface_particle_texture_coordinate;",
 					"variable.dig_particle_texture_size = query.surface_particle_texture_size;", 
 					"variable.dig_particle_color = query.surface_particle_color;",
-					"variable.trunk_size = 1;"
+					"variable.trunk_size = q.property('yn:trunk_size');"
 				],
 				"pre_animation": [
 					"temp.red = 1;",
 					"temp.green = 1;",
-					"temp.blue = 1;"
+					"temp.blue = 1;",
+					"variable.dig_particle_texture_coordinate = query.surface_particle_texture_coordinate;",
+					"variable.dig_particle_texture_size = query.surface_particle_texture_size;", 
+					"variable.dig_particle_color = query.surface_particle_color;",
+					"variable.trunk_size = q.property('yn:trunk_size');"
 				],
 				"scale": "query.variant == 1 ? (1.0) : (0.0)",
 				"animate": [
-					"render"
-				]
+					"render",
+					"particle_controller"
+				],
+				"should_update_effects_offscreen": "1.0"
 			},
 			"animations": {
 				"render": "animation.block_outline.render_scale",
-				"show_particles": "animation.block_outline.spawn_particle"
+				"show_destroy_block_anim": "animation.block_outline.spawn_particle",
+				"particle_controller": "controller.animation.block_outline.controller"
 			},
 			"particle_effects": {
         "destroy_block": "yn:custom_destroy",

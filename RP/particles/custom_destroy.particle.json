@@ -19,7 +19,7 @@
 				"type": "linear",
 				"input": "v.particle_age",
 				"horizontal_range": "v.particle_lifetime",
-				"nodes": [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+				"nodes": [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 			}
 		},
 		"components": {
@@ -33,7 +33,7 @@
 				"active_time": 0.1
 			},
 			"minecraft:emitter_shape_sphere": {
-				"offset": [0, 0.75, 0],
+				"offset": [0, 0.5, 0],
 				"radius": 1,
 				"direction": "outwards"
 			},

@@ -1,5 +1,5 @@
-import { world, system, ScriptEventSource, Player, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, TicksPerSecond, ItemCooldownComponent } from '@minecraft/server';
-import { ADDON_IDENTIFIER, axeEquipments, forceShow, getTreeLogs, getTreeTrunkSize, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, visitedLogs } from "./index";
+import { world, system, ScriptEventSource, Player, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, MolangVariableMap, TicksPerSecond, ItemCooldownComponent } from '@minecraft/server';
+import { ADDON_IDENTIFIER, axeEquipments, forceShow, getTreeLogs, getTreeTrunkSize, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, visitedLogs } from "./index";
 import { Logger } from 'utils/logger';
 import './items/axes';
 import { MinecraftEnchantmentTypes, MinecraftBlockTypes } from 'modules/vanilla-types/index';
@@ -146,7 +146,8 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
             currentHeldAxe.lockMode = ItemLockMode.none;
             inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
             SendMessageTo(player, { rawtext: [{ text: "Cannot chop the whole tree due to limitation. " }] });
-            return resetOutlinedTrees(destroyedTree);
+            resetOutlinedTrees(destroyedTree);
+            return;
         }
         const totalDamage = initialSize * unbreakingDamage;
         const postDamagedDurability = itemDurability.damage + totalDamage;
@@ -182,7 +183,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                 currentBlockOffset++;
             }
         }
-        const t = system.runJob((function* () {
+        system.runJob((function* () {
             if (!(serverConfigurationCopy.progressiveChopping.defaultValue) && isValidVerticalTree) {
                 for (const yOffset of trunkYCoordinates) {
                     if (currentBlockOffset % 2 === 0) {
@@ -190,44 +191,40 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                         molang.setFloat('trunk_size', treeDustParseMap[destroyedTree.visitedLogs.trunk.size]);
                         dimension.spawnParticle('yn:tree_dust', { x: destroyedTree.visitedLogs.trunk.center.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.center.z }, molang);
                     }
-                    destroyedTree.visitedLogs.yOffsets.set(yOffset, true);
                     currentBlockOffset++;
-                    yield;
                 }
             }
             let size = 0;
+            const blockOutlineIterator = destroyedTree.visitedLogs.blockOutlines[Symbol.iterator]();
+            let blockOutlineIterResult = blockOutlineIterator.next();
+            while (!blockOutlineIterResult.done) {
+                const blockOutline = blockOutlineIterResult.value;
+                blockOutline.setProperty('yn:trunk_size', destroyedTree.visitedLogs.trunk.size);
+                blockOutlineIterResult = blockOutlineIterator.next();
+                yield;
+            }
             for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
+                yield;
                 if (Vec3.equals(node.block, blockInteracted.location))
                     continue;
-                if (node) {
-                    if (isLogIncluded(blockTypeId, node.block.typeId)) {
-                        size++;
-                        if (destroyedTree.visitedLogs.yOffsets.has(node.block.location.y) &&
-                            destroyedTree.visitedLogs.yOffsets.get(node.block.location.y) && isValidVerticalTree) {
-                            const blockOutline = destroyedTree.visitedLogs.blockOutlines[node.index];
-                            if (blockOutline?.isValid()) {
-                                blockOutline.playAnimation('animation.block_outline.spawn_particle');
-                                blockOutline.setProperty('yn:trunk_size', destroyedTree.visitedLogs.trunk.size);
-                                destroyedTree.visitedLogs.yOffsets.set(node.block.location.y, false);
-                            }
-                        }
-                        system.waitTicks(3).then(() => dimension.setBlockType(node.block.location, MinecraftBlockTypes.Air));
-                    }
-                    else {
-                        destroyedTree.visitedLogs.source.removeNode(node.block);
-                        break;
-                    }
+                if (!node)
+                    continue;
+                if (isLogIncluded(blockTypeId, node.block.typeId)) {
+                    size++;
+                    system.waitTicks(3).then(() => {
+                        dimension.setBlockType(node.block.location, MinecraftBlockTypes.Air);
+                    });
+                }
+                else {
+                    destroyedTree.visitedLogs.source.removeNode(node.block);
+                    break;
                 }
                 yield;
             }
             player.playSound('dig.cave_vines');
-            for (const group of stackDistribution(size)) {
-                dimension.spawnItem(new ItemStack(blockTypeId, group), location);
-                yield;
-            }
             if (!destroyedTree?.isDone)
                 resetOutlinedTrees(destroyedTree);
-            system.clearJob(t);
+            return;
         })());
     });
 });
