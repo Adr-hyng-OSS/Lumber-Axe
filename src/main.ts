@@ -229,7 +229,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         // Custom Destroy Particle
         if(isLogIncluded(blockTypeId, node.block.typeId)) {
           size++;
-          system.waitTicks(3).then(() => {
+          system.waitTicks(1).then(() => {
             dimension.setBlockType(node.block.location, MinecraftBlockTypes.Air);
           });
         } else {
