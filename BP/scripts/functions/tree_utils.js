@@ -1,5 +1,5 @@
 import { system } from "@minecraft/server";
-import { serverConfigurationCopy } from "../index";
+import { serverConfigurationCopy, db, hashBlock } from "../index";
 import { Graph } from "utils/graph";
 import { Vec3 } from "utils/VectorUtils";
 export function isLogIncluded(rootBlockTypeId, blockTypeId) {
@@ -28,6 +28,7 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
         const visited = new Set([JSON.stringify(firstBlock.location)]);
         const traversingTreeInterval = system.runJob(function* () {
             graph.addNode(firstBlock);
+            db.set(`visited_${hashBlock(firstBlock)}`, true);
             while (queue.length > 0) {
                 const size = graph.getSize();
                 if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || size >= maxNeeded) {
@@ -41,6 +42,7 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
                 for (const neighborBlock of getBlockNear(blockTypeId, block)) {
                     const serializedLocation = JSON.stringify(neighborBlock.location);
                     let neighborNode = graph.getNode(neighborBlock) ?? graph.addNode(neighborBlock);
+                    db.set(`visited_${hashBlock(neighborBlock)}`, true);
                     if (mainNode.neighbors.has(neighborNode))
                         continue;
                     mainNode.addNeighbor(neighborNode);
@@ -52,6 +54,12 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
                     yield;
                 }
                 yield;
+            }
+            if (isInspectingTree) {
+                for (const node of graph.traverseIterative(firstBlock, "BFS")) {
+                    db.delete(`visited_${hashBlock(node.block)}`);
+                    yield;
+                }
             }
             system.clearJob(traversingTreeInterval);
             resolve({

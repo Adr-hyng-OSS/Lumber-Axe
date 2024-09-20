@@ -1,5 +1,5 @@
-import { world, system, ScriptEventSource, Player, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, MolangVariableMap, TicksPerSecond, ItemCooldownComponent } from '@minecraft/server';
-import { ADDON_IDENTIFIER, axeEquipments, forceShow, getTreeLogs, getTreeTrunkSize, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, visitedLogs } from "./index";
+import { world, system, ScriptEventSource, Player, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, TicksPerSecond, ItemCooldownComponent } from '@minecraft/server';
+import { ADDON_IDENTIFIER, axeEquipments, db, forceShow, getTreeLogs, getTreeTrunkSize, hashBlock, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, visitedLogs } from "./index";
 import { Logger } from 'utils/logger';
 import './items/axes';
 import { MinecraftEnchantmentTypes, MinecraftBlockTypes } from 'modules/vanilla-types/index';
@@ -41,8 +41,10 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         system.run(() => axe.damageDurability(1));
         return;
     }
-    const cooldown = currentHeldAxe.getComponent(ItemCooldownComponent.componentId);
-    let BLOCK_OUTLINES_DESPAWN_CD = cooldown.cooldownTicks / TicksPerSecond;
+    if (db.has(`visited_${hashBlock(blockInteracted)}`)) {
+        arg.cancel = true;
+        return;
+    }
     const possibleVisitedLogs = [];
     for (let i = 0; i < visitedLogs.length; i++) {
         const currentInspectedTree = visitedLogs[i];
@@ -147,8 +149,20 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
             currentHeldAxe.lockMode = ItemLockMode.none;
             inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
             SendMessageTo(player, { rawtext: [{ text: "Cannot chop the whole tree due to limitation. " }] });
-            resetOutlinedTrees(destroyedTree);
-            return;
+            return await new Promise((resolve) => {
+                system.runJob((function* () {
+                    for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
+                        yield;
+                        if (!node)
+                            continue;
+                        db.delete(`visited_${hashBlock(node.block)}`);
+                        yield;
+                    }
+                    resetOutlinedTrees(destroyedTree);
+                    resolve();
+                    return;
+                })());
+            });
         }
         const totalDamage = initialSize * unbreakingDamage;
         const postDamagedDurability = itemDurability.damage + totalDamage;
@@ -226,8 +240,19 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                 yield;
             }
             player.playSound('dig.cave_vines');
-            if (!destroyedTree?.isDone)
-                resetOutlinedTrees(destroyedTree);
+            for (const group of stackDistribution(size)) {
+                dimension.spawnItem(new ItemStack(blockTypeId, group), location);
+                yield;
+            }
+            system.runTimeout(() => {
+                for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
+                    if (node) {
+                        db.delete(`visited_${hashBlock(node.block)}`);
+                    }
+                }
+                if (!destroyedTree?.isDone)
+                    resetOutlinedTrees(destroyedTree);
+            }, 3);
             return;
         })());
     });
@@ -258,6 +283,10 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
             return;
         const tempResult = await new Promise((inspectTreePromiseResolve) => {
             const tMain = system.runJob((function* (inspectTreePromiseResolve) {
+                if (db.has(`visited_${hashBlock(blockInteracted)}`)) {
+                    inspectTreePromiseResolve({ result: null, index: -100 });
+                    return system.clearJob(tMain);
+                }
                 const possibleVisitedLogs = [];
                 for (let i = 0; i < visitedLogs.length; i++) {
                     const currentInspectedTree = visitedLogs[i];
@@ -332,6 +361,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
             })(inspectTreePromiseResolve));
         });
         if (tempResult.index === -1) {
+            console.warn("TETLWEQE");
             const molangVariable = new MolangVariableMap();
             let isTreeDoneTraversing = false;
             let treeOffsets = [];

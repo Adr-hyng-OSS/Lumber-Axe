@@ -1,5 +1,5 @@
 import { world, PlayerLeaveAfterEvent, ScriptEventCommandMessageAfterEvent, system, ScriptEventSource, Player, BlockPermutation, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, PlayerBreakBlockBeforeEvent, Block, VectorXZ, TicksPerSecond, ItemCooldownComponent, EntityComponentTypes, EntityScaleComponent, Vector2, Vector3, Entity } from '@minecraft/server';
-import { ADDON_IDENTIFIER, axeEquipments, forceShow, getTreeLogs, getTreeTrunkSize, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult, visitedLogs} from "./index"
+import { ADDON_IDENTIFIER, axeEquipments, db, forceShow, getTreeLogs, getTreeTrunkSize, hashBlock, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult, visitedLogs} from "./index"
 import { Logger } from 'utils/logger';
 import './items/axes';
 import { MinecraftEnchantmentTypes, MinecraftBlockTypes } from 'modules/vanilla-types/index';
@@ -40,9 +40,11 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     system.run(() => axe.damageDurability(1));
       return;
   }
+  if(db.has(`visited_${hashBlock(blockInteracted)}`)) {
+    arg.cancel = true;
+    return;
+  }
   // /execute positioned ~~~ run fill ~1 ~ ~1 ~-1 ~20 ~-1 jungle_log
-  const cooldown = (currentHeldAxe.getComponent(ItemCooldownComponent.componentId) as ItemCooldownComponent);
-  let BLOCK_OUTLINES_DESPAWN_CD = cooldown.cooldownTicks / TicksPerSecond;
 
   // Getting the cache, if it has, to remove the particle.
   // Filter by getting the graph that has this node.
@@ -69,11 +71,6 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
   }
   player.configuration.loadServer();
   system.run(async () => {
-    // if(cooldown.getCooldownTicksRemaining(player) !== 0) {
-      // blockInteracted.setType(blockTypeId);
-      // return;
-    // }
-    // cooldown.startCooldown(player);
     currentHeldAxe.lockMode = ItemLockMode.slot;
     const inventory = (player.getComponent(EntityInventoryComponent.componentId) as EntityInventoryComponent).container;
     inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
@@ -165,8 +162,20 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       currentHeldAxe.lockMode = ItemLockMode.none;
       inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
       SendMessageTo(player, {rawtext: [{text: "Cannot chop the whole tree due to limitation. "}]});
-      resetOutlinedTrees(destroyedTree);
-      return;
+      return await new Promise<void>((resolve) => {
+        system.runJob((function*() {
+          for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
+            yield;
+            if (!node) continue;
+            // Reset the temporary permutation for block being destroyed.
+            db.delete(`visited_${hashBlock(node.block)}`);
+            yield;
+          }
+          resetOutlinedTrees(destroyedTree);
+          resolve();
+          return;
+        })());
+      });
     }
 
     const totalDamage: number = initialSize * unbreakingDamage;
@@ -235,6 +244,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         yield;
         if(Vec3.equals(node.block, blockInteracted.location)) continue;
         if (!node) continue;
+
         // If there's setDestroy that cancels the dropped item, just use that instead of this.
         // Custom Destroy Particle
         if(isLogIncluded(blockTypeId, node.block.typeId)) {
@@ -250,12 +260,20 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       }
       player.playSound('dig.cave_vines');
 
-      // for (const group of stackDistribution(size)) {
-      //   dimension.spawnItem(new ItemStack(blockTypeId, group), location);
-      //   yield;
-      // }
-
-      if(!destroyedTree?.isDone) resetOutlinedTrees(destroyedTree);
+      for (const group of stackDistribution(size)) {
+        dimension.spawnItem(new ItemStack(blockTypeId, group), location);
+        yield;
+      }
+      
+      system.runTimeout(() => {
+        for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
+          // Reset the temporary permutation for block being destroyed.
+          if (node) {
+            db.delete(`visited_${hashBlock(node.block)}`);
+          }
+        }
+        if(!destroyedTree?.isDone) resetOutlinedTrees(destroyedTree);
+      }, 3);
       return;
     })());
   });
@@ -281,11 +299,17 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
 
   const cooldown = (currentHeldAxe.getComponent(ItemCooldownComponent.componentId) as ItemCooldownComponent);
   let BLOCK_OUTLINES_DESPAWN_CD = cooldown.cooldownTicks / TicksPerSecond;
+
   try {
     // Check also, if this tree is already being interacted. By checking this current blockOutline (node), if it's being interacted.
     if(!visitedLogs) return;
     const tempResult = await new Promise<{result: VisitedBlockResult, index: number}>((inspectTreePromiseResolve) => {
       const tMain = system.runJob((function*(inspectTreePromiseResolve: (inspectedTreeResult: {result: VisitedBlockResult, index: number} | PromiseLike<{result: VisitedBlockResult, index: number}>) => void){
+        if(db.has(`visited_${hashBlock(blockInteracted)}`)) {
+          inspectTreePromiseResolve({result: null, index: -100});
+          return system.clearJob(tMain);
+        }
+        
         // Filter by getting the graph that has this node.
         const possibleVisitedLogs: {result: InteractedTreeResult, index: number}[] = [];
         for(let i = 0; i < visitedLogs.length; i++) {
@@ -371,6 +395,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
     });
 
     if(tempResult.index === -1) {
+      console.warn("TETLWEQE");
       const molangVariable = new MolangVariableMap();
       // Get the bottom most log (TODO)
       let isTreeDoneTraversing = false;

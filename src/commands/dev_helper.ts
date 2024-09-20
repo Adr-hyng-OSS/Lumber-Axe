@@ -2,7 +2,7 @@ import { EntityComponentTypes, EntityInventoryComponent, ItemStack, MolangVariab
 import { CommandHandler } from "commands/command_handler";
 import { ICommandBase} from "./ICommandBase";
 import { SendMessageTo} from "utils/utilities";
-import { axeEquipments, visitedLogs } from "constant";
+import { axeEquipments, db, visitedLogs } from "constant";
 
 // Automate this, the values should be the description.
 enum REQUIRED_PARAMETER {
@@ -47,9 +47,10 @@ const command: ICommandBase = {
                 }
                 break;
             case REQUIRED_PARAMETER.TEST:
-                console.warn(visitedLogs.length);
+                console.warn(db.size);
                 break;
             case REQUIRED_PARAMETER.RELOAD:
+                db.clear();
                 break;
             default:
                 break;

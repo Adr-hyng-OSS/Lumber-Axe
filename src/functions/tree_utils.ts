@@ -1,6 +1,6 @@
-import { Block, Dimension, Entity, Vector3, VectorXZ, system } from "@minecraft/server";
+import { Block, Dimension, Entity, Vector3, VectorXZ, system, world } from "@minecraft/server";
 
-import { serverConfigurationCopy, VisitedBlockResult, TrunkBlockResult } from "../index";
+import { serverConfigurationCopy, VisitedBlockResult, TrunkBlockResult, db, hashBlock } from "../index";
 import { Graph } from "utils/graph";
 import { Vec3 } from "utils/VectorUtils";
 
@@ -41,6 +41,7 @@ export async function getTreeLogs(
         const visited: Set<string> = new Set([JSON.stringify(firstBlock.location)]);
         const traversingTreeInterval: number = system.runJob(function* () {
             graph.addNode(firstBlock);
+            db.set(`visited_${hashBlock(firstBlock)}`, true);
 
             // Should spawn outline is indicator for inspection or breaking tree.
             // Inspection = True
@@ -63,6 +64,7 @@ export async function getTreeLogs(
                 for (const neighborBlock of getBlockNear(blockTypeId, block)) {
                     const serializedLocation = JSON.stringify(neighborBlock.location);
                     let neighborNode = graph.getNode(neighborBlock) ?? graph.addNode(neighborBlock);
+                    db.set(`visited_${hashBlock(neighborBlock)}`, true);
 
                     // It should check if this neighbor of main node is already a neighbor, if yes, then continue.
                     if(mainNode.neighbors.has(neighborNode)) continue;
@@ -81,7 +83,15 @@ export async function getTreeLogs(
                 }
                 yield;
             }
-
+            
+            // Reset temporarily permutations to block using dynamic property.
+            // Reset only for inspection. It resets after breaking the whole block when it's not inspecting.
+            if(isInspectingTree) {
+                for(const node of graph.traverseIterative(firstBlock, "BFS")) {
+                    db.delete(`visited_${hashBlock(node.block)}`);
+                    yield;
+                }
+            }
             system.clearJob(traversingTreeInterval);
             resolve({
                 source: graph, 
