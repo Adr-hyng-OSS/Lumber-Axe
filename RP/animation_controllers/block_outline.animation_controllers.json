@@ -33,6 +33,13 @@
           "animations": [
             "show_destroy_block_anim"
           ]
+          // "particle_effects": [
+          //   {
+          //     "effect": "destroy_block",
+          //     "locator": "destroy_block",
+          //     "pre_effect_script": "variable.trunk_size = q.has_property('yn:trunk_size') ? q.property('yn:trunk_size') : 0;variable.dig_particle_texture_coordinate = query.surface_particle_texture_coordinate; variable.dig_particle_texture_size = query.surface_particle_texture_size; variable.dig_particle_color = query.surface_particle_color;"
+          //   }
+          // ]
 				}
 			}
 		}

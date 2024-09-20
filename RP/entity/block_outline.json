@@ -42,7 +42,7 @@
 					"render",
 					"particle_controller"
 				],
-				"should_update_effects_offscreen": "0.0"
+				"should_update_effects_offscreen": "1.0"
 			},
 			"animations": {
 				"render": "animation.block_outline.render_scale",

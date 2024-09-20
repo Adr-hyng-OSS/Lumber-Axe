@@ -37,10 +37,12 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
   if(!axeEquipments.includes(currentHeldAxe.typeId)) return;
   if(!player.isSurvival()) return;
   if (!isLogIncluded(blockTypeId, blockTypeId)) {
-      system.run(() => axe.damageDurability(1));
+    system.run(() => axe.damageDurability(1));
       return;
   }
   // /execute positioned ~~~ run fill ~1 ~ ~1 ~-1 ~20 ~-1 jungle_log
+  const cooldown = (currentHeldAxe.getComponent(ItemCooldownComponent.componentId) as ItemCooldownComponent);
+  let BLOCK_OUTLINES_DESPAWN_CD = cooldown.cooldownTicks / TicksPerSecond;
 
   // Getting the cache, if it has, to remove the particle.
   // Filter by getting the graph that has this node.
@@ -67,6 +69,11 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
   }
   player.configuration.loadServer();
   system.run(async () => {
+    // if(cooldown.getCooldownTicksRemaining(player) !== 0) {
+      // blockInteracted.setType(blockTypeId);
+      // return;
+    // }
+    // cooldown.startCooldown(player);
     currentHeldAxe.lockMode = ItemLockMode.slot;
     const inventory = (player.getComponent(EntityInventoryComponent.componentId) as EntityInventoryComponent).container;
     inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
@@ -96,7 +103,6 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       }
       }
     };
-  
     // (TODO) Use Cache again :,D 
     const molang = new MolangVariableMap();
     let isTreeDoneTraversing = false;
@@ -150,7 +156,6 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     ) as VisitedBlockResult);
     isTreeDoneTraversing = true;
     destroyedTree.visitedLogs = choppedTree;
-    destroyedTree.isBeingChopped = true;
     visited = choppedTree.source;
     const initialSize = visited.getSize() - 1;
     visitedLogs.push(destroyedTree);
@@ -199,9 +204,12 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       }
     }
     // /execute positioned -14462 84 11333 run fill ~1 ~ ~1 ~-1 ~10 ~-1 oak_log
-    
+    let size = 0;
+    const blockOutlineIterator = destroyedTree.visitedLogs.blockOutlines[Symbol.iterator]();
+    let blockOutlineIterResult = blockOutlineIterator.next();
     
     system.runJob( (function* () {
+      // Dust
       if(!(serverConfigurationCopy.progressiveChopping.defaultValue) && isValidVerticalTree) {
         for(const yOffset of trunkYCoordinates) {
           if(currentBlockOffset % 2 === 0) {
@@ -210,14 +218,16 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
             dimension.spawnParticle('yn:tree_dust', {x: destroyedTree.visitedLogs.trunk.center.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.center.z}, molang);
           }
           currentBlockOffset++;
+          yield;
         }
       }
-      let size = 0;
-      const blockOutlineIterator = destroyedTree.visitedLogs.blockOutlines[Symbol.iterator]();
-      let blockOutlineIterResult = blockOutlineIterator.next();
+
+      // Destroy particle
       while(!blockOutlineIterResult.done) {
         const blockOutline: Entity = blockOutlineIterResult.value;
-        blockOutline.setProperty('yn:trunk_size', destroyedTree.visitedLogs.trunk.size);
+        if(blockOutline?.isValid()) {
+          blockOutline.setProperty('yn:trunk_size', destroyedTree.visitedLogs.trunk.size);
+        }
         blockOutlineIterResult = blockOutlineIterator.next();
         yield;
       }
@@ -229,7 +239,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         // Custom Destroy Particle
         if(isLogIncluded(blockTypeId, node.block.typeId)) {
           size++;
-          system.waitTicks(1).then(() => {
+          system.waitTicks(3).then(() => {
             dimension.setBlockType(node.block.location, MinecraftBlockTypes.Air);
           });
         } else {
@@ -349,11 +359,11 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
         if(currentChangedIndex === -1) {
             if(newInspectedSubTree.initialSize > 0) visitedLogs.push(newInspectedSubTree);
             system.waitTicks(BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond).then(async (_) => {
-              if(!visitedLogs[tempResult.index]) return;
-              if(!visitedLogs[tempResult.index].isDone) resetOutlinedTrees(newInspectedSubTree);
+              if(!visitedLogs[index]) return;
+              if(!visitedLogs[index].isDone) resetOutlinedTrees(newInspectedSubTree);
             });
         } else {
-          visitedLogs[tempResult.index] = newInspectedSubTree;
+          visitedLogs[index] = newInspectedSubTree;
         }
         system.clearJob(tMain);
         inspectTreePromiseResolve({result: finalizedTreeInspection, index: index});
@@ -361,7 +371,6 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
     });
 
     if(tempResult.index === -1) {
-      if(cooldown.getCooldownTicksRemaining(player) !== 0) return;
       const molangVariable = new MolangVariableMap();
       // Get the bottom most log (TODO)
       let isTreeDoneTraversing = false;
@@ -393,8 +402,6 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
           _bottom = _bottom.below();
         });
       });
-      
-      cooldown.startCooldown(player);
       const trunkSizeToParticleRadiusParser = {
         1: 1.5,
         2: 2.5,

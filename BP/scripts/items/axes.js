@@ -10,6 +10,8 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
                 return;
             const axe = player.getComponent(EntityEquippableComponent.componentId);
             axe.damageDurability(1);
-        }
+        },
+        onUseOn(arg) {
+        },
     });
 });

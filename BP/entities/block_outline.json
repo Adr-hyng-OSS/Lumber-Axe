@@ -10,7 +10,7 @@
         "yn:trunk_size": {
           "type": "int",
           "client_sync": true,
-          "default": 0,
+          "default": 1,
 					"range": [0, 31]
         },
 				"yn:is_in_air": {
@@ -121,7 +121,10 @@
 		"events": {
 			"minecraft:entity_spawned": {
 				"remove": { "component_groups": [ "active_outline" ] },
-				"add": { "component_groups": [ "inactive_outline", "check_for_collision" ] }
+				"add": { "component_groups": [ "inactive_outline", "check_for_collision" ] },
+				"set_property": {
+					"yn:trunk_size": 1
+				}
 			},
 			"on_air_detected": {
 				"set_property": {

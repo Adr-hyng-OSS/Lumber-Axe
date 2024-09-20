@@ -41,6 +41,8 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         system.run(() => axe.damageDurability(1));
         return;
     }
+    const cooldown = currentHeldAxe.getComponent(ItemCooldownComponent.componentId);
+    let BLOCK_OUTLINES_DESPAWN_CD = cooldown.cooldownTicks / TicksPerSecond;
     const possibleVisitedLogs = [];
     for (let i = 0; i < visitedLogs.length; i++) {
         const currentInspectedTree = visitedLogs[i];
@@ -136,7 +138,6 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         const choppedTree = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false);
         isTreeDoneTraversing = true;
         destroyedTree.visitedLogs = choppedTree;
-        destroyedTree.isBeingChopped = true;
         visited = choppedTree.source;
         const initialSize = visited.getSize() - 1;
         visitedLogs.push(destroyedTree);
@@ -183,6 +184,9 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                 currentBlockOffset++;
             }
         }
+        let size = 0;
+        const blockOutlineIterator = destroyedTree.visitedLogs.blockOutlines[Symbol.iterator]();
+        let blockOutlineIterResult = blockOutlineIterator.next();
         system.runJob((function* () {
             if (!(serverConfigurationCopy.progressiveChopping.defaultValue) && isValidVerticalTree) {
                 for (const yOffset of trunkYCoordinates) {
@@ -192,14 +196,14 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                         dimension.spawnParticle('yn:tree_dust', { x: destroyedTree.visitedLogs.trunk.center.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.center.z }, molang);
                     }
                     currentBlockOffset++;
+                    yield;
                 }
             }
-            let size = 0;
-            const blockOutlineIterator = destroyedTree.visitedLogs.blockOutlines[Symbol.iterator]();
-            let blockOutlineIterResult = blockOutlineIterator.next();
             while (!blockOutlineIterResult.done) {
                 const blockOutline = blockOutlineIterResult.value;
-                blockOutline.setProperty('yn:trunk_size', destroyedTree.visitedLogs.trunk.size);
+                if (blockOutline?.isValid()) {
+                    blockOutline.setProperty('yn:trunk_size', destroyedTree.visitedLogs.trunk.size);
+                }
                 blockOutlineIterResult = blockOutlineIterator.next();
                 yield;
             }
@@ -211,7 +215,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                     continue;
                 if (isLogIncluded(blockTypeId, node.block.typeId)) {
                     size++;
-                    system.waitTicks(1).then(() => {
+                    system.waitTicks(3).then(() => {
                         dimension.setBlockType(node.block.location, MinecraftBlockTypes.Air);
                     });
                 }
@@ -314,22 +318,20 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                     if (newInspectedSubTree.initialSize > 0)
                         visitedLogs.push(newInspectedSubTree);
                     system.waitTicks(BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond).then(async (_) => {
-                        if (!visitedLogs[tempResult.index])
+                        if (!visitedLogs[index])
                             return;
-                        if (!visitedLogs[tempResult.index].isDone)
+                        if (!visitedLogs[index].isDone)
                             resetOutlinedTrees(newInspectedSubTree);
                     });
                 }
                 else {
-                    visitedLogs[tempResult.index] = newInspectedSubTree;
+                    visitedLogs[index] = newInspectedSubTree;
                 }
                 system.clearJob(tMain);
                 inspectTreePromiseResolve({ result: finalizedTreeInspection, index: index });
             })(inspectTreePromiseResolve));
         });
         if (tempResult.index === -1) {
-            if (cooldown.getCooldownTicksRemaining(player) !== 0)
-                return;
             const molangVariable = new MolangVariableMap();
             let isTreeDoneTraversing = false;
             let treeOffsets = [];
@@ -360,7 +362,6 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                     _bottom = _bottom.below();
                 });
             });
-            cooldown.startCooldown(player);
             const trunkSizeToParticleRadiusParser = {
                 1: 1.5,
                 2: 2.5,

@@ -116,7 +116,7 @@ export async function getTreeLogs(
                 for(const blockOutline of blockOutlines) {
                     if(blockOutline?.isValid()) {
                         blockOutline.triggerEvent('not_persistent');
-                        blockOutline.triggerEvent('active_outline');
+                        // blockOutline.triggerEvent('active_outline');
                     }
                     yield;
                 }

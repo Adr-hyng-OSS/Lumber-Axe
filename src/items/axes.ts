@@ -9,6 +9,9 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
       if(!player.isSurvival()) return;
       const axe = (player.getComponent(EntityEquippableComponent.componentId) as EntityEquippableComponent);
       axe.damageDurability(1);
-    }
+    },
+    onUseOn(arg) {
+      
+    },
   })
 });
