@@ -27,7 +27,7 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
         const queue = [firstBlock];
         const yOffsets = new Map();
         const visited = new Set([JSON.stringify(firstBlock.location)]);
-        visitedTypeIDs.set(blockTypeId, 1);
+        visitedTypeIDs.set(blockTypeId, 0);
         const traversingTreeInterval = system.runJob(function* () {
             graph.addNode(firstBlock);
             db.set(`visited_${hashBlock(firstBlock)}`, isInspectingTree);
