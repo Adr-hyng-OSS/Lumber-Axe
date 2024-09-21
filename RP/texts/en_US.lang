@@ -11,10 +11,8 @@ LumberAxe.form.title.text=Tree Status Overview
 LumberAxe.form.treeSizeAbrev.text=Has
 LumberAxe.form.treeSizeAbrevLogs.text=Log/s
 LumberAxe.form.trunkHeightAbrev.text=Block/s High
-LumberAxe.form.surplusAmountAbrev.text=Surplus
-LumberAxe.form.deficitAmountAbrev.text=Deficit
-LumberAxe.form.canBeChopped.text=§aChoppable
-LumberAxe.form.cannotBeChopped.text=§cCannot be chopped
+LumberAxe.form.canBeChopped.text=Yes
+LumberAxe.form.cannotBeChopped.text=No
 
 ## Log Messages <ADD LOCALIZATION>
 LumberAxe.on_load_message=§a§lLumber Axe Addon§r §ahas been loaded successfully. Created by Adr-hyng.

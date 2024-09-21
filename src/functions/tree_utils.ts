@@ -41,7 +41,7 @@ export async function getTreeLogs(
         const visited: Set<string> = new Set([JSON.stringify(firstBlock.location)]);
         const traversingTreeInterval: number = system.runJob(function* () {
             graph.addNode(firstBlock);
-            db.set(`visited_${hashBlock(firstBlock)}`, true);
+            db.set(`visited_${hashBlock(firstBlock)}`, isInspectingTree);
 
             // Should spawn outline is indicator for inspection or breaking tree.
             // Inspection = True
@@ -64,7 +64,7 @@ export async function getTreeLogs(
                 for (const neighborBlock of getBlockNear(blockTypeId, block)) {
                     const serializedLocation = JSON.stringify(neighborBlock.location);
                     let neighborNode = graph.getNode(neighborBlock) ?? graph.addNode(neighborBlock);
-                    db.set(`visited_${hashBlock(neighborBlock)}`, true);
+                    db.set(`visited_${hashBlock(neighborBlock)}`, isInspectingTree);
 
                     // It should check if this neighbor of main node is already a neighbor, if yes, then continue.
                     if(mainNode.neighbors.has(neighborNode)) continue;

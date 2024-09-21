@@ -28,7 +28,7 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
         const visited = new Set([JSON.stringify(firstBlock.location)]);
         const traversingTreeInterval = system.runJob(function* () {
             graph.addNode(firstBlock);
-            db.set(`visited_${hashBlock(firstBlock)}`, true);
+            db.set(`visited_${hashBlock(firstBlock)}`, isInspectingTree);
             while (queue.length > 0) {
                 const size = graph.getSize();
                 if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || size >= maxNeeded) {
@@ -42,7 +42,7 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
                 for (const neighborBlock of getBlockNear(blockTypeId, block)) {
                     const serializedLocation = JSON.stringify(neighborBlock.location);
                     let neighborNode = graph.getNode(neighborBlock) ?? graph.addNode(neighborBlock);
-                    db.set(`visited_${hashBlock(neighborBlock)}`, true);
+                    db.set(`visited_${hashBlock(neighborBlock)}`, isInspectingTree);
                     if (mainNode.neighbors.has(neighborNode))
                         continue;
                     mainNode.addNeighbor(neighborNode);

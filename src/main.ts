@@ -43,6 +43,10 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     system.run(() => axe.damageDurability(1));
       return;
   }
+  if(db.has(`visited_${hashBlock(blockInteracted)}`) && !db.get(`visited_${hashBlock(blockInteracted)}`)) {
+    arg.cancel = true;
+    return;
+  }
   // /execute positioned ~~~ run fill ~1 ~ ~1 ~-1 ~20 ~-1 jungle_log
 
   // Getting the cache, if it has, to remove the particle.
@@ -61,7 +65,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
     const index = latestPossibleInspectedTree.index;
     const initialTreeInspection = latestPossibleInspectedTree.result;
-    if(initialTreeInspection.isBeingChopped || db.has(`visited_${hashBlock(blockInteracted)}`)) {
+    if(initialTreeInspection.isBeingChopped) {
       arg.cancel = true;
       return;
     }
@@ -554,7 +558,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
             {
               translate: `LumberAxe.form.treeSizeAbrevLogs.text`
             }
-          ]}, "textures/InfoUI/blocks.png")
+          ]}, "textures/InfoUI/total_lumber.png")
       .button(
           {
             rawtext: [
@@ -564,27 +568,24 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
             {
               translate: `LumberAxe.form.trunkHeightAbrev.text`
             }
-          ]}, "textures/InfoUI/axe_durability.png")
+          ]}, "textures/InfoUI/tree_height.png")
       .button(
           {
             rawtext: [
             {
-              translate: (maxDurability - totalDurabilityConsumed) > 0 ? `LumberAxe.form.surplusAmountAbrev.text` : 'LumberAxe.form.deficitAmountAbrev.text',
+              text: `${(maxDurability - totalDurabilityConsumed) > 0 ? '+' : ''}${maxDurability - totalDurabilityConsumed} `
             },
             {
-              text: ` ${(maxDurability - totalDurabilityConsumed) > 0 ? '+' : ''}${maxDurability - totalDurabilityConsumed}`
+              translate: "LumberAxe.form.treeSizeAbrevLogs.text"
             }
-          ]}, "textures/InfoUI/required_durability.png")
+          ]}, (maxDurability - totalDurabilityConsumed) > 0 ? "textures/InfoUI/lumber_surplus.png" : "textures/InfoUI/lumber_deficit.png")
       .button(
           {
             rawtext: [
-            {
-              text: "§l"
-            },
             {
               translate: `${canBeChopped ? "LumberAxe.form.canBeChopped.text": "LumberAxe.form.cannotBeChopped.text"}`
             }
-          ]}, "textures/InfoUI/canBeCut.png");
+          ]}, canBeChopped ? "textures/InfoUI/can_be_cut.png" : "textures/InfoUI/cannot_be_cut.png");
       forceShow(player, inspectionForm).then((response: ActionFormResponse) => {
         if(response.canceled || response.selection === undefined || response.cancelationReason === FormCancelationReason.UserClosed) {
         return;
