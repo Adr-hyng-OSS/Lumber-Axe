@@ -244,15 +244,18 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                 dimension.spawnItem(new ItemStack(blockTypeId, group), location);
                 yield;
             }
-            system.runTimeout(() => {
-                for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
-                    if (node) {
-                        db.delete(`visited_${hashBlock(node.block)}`);
-                    }
+            return;
+        })());
+        await system.waitTicks(3);
+        system.runJob((function* () {
+            for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
+                if (node) {
+                    db.delete(`visited_${hashBlock(node.block)}`);
                 }
-                if (!destroyedTree?.isDone)
-                    resetOutlinedTrees(destroyedTree);
-            }, 3);
+                yield;
+            }
+            if (!destroyedTree?.isDone)
+                resetOutlinedTrees(destroyedTree);
             return;
         })());
     });
@@ -361,7 +364,6 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
             })(inspectTreePromiseResolve));
         });
         if (tempResult.index === -1) {
-            console.warn("TETLWEQE");
             const molangVariable = new MolangVariableMap();
             let isTreeDoneTraversing = false;
             let treeOffsets = [];

@@ -41,10 +41,6 @@
         "value": 10,
         "slot": "axe"
       },
-      "minecraft:cooldown": {
-        "category": "wooden_lumberaxe_inspect_cooldown",
-        "duration": 5
-      },
       "minecraft:custom_components": [
         "yn:tool_durability"
       ],

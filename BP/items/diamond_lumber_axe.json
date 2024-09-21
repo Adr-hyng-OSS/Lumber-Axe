@@ -53,10 +53,6 @@
         "value": 8,
         "slot": "axe"
       },
-      "minecraft:cooldown": {
-        "category": "diamond_lumberaxe_inspect_cooldown",
-        "duration": 5
-      },
       "minecraft:custom_components": [
         "yn:tool_durability"
       ],

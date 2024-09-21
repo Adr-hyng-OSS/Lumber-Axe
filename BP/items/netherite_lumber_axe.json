@@ -40,10 +40,6 @@
           }
         ]
       },
-      "minecraft:cooldown": {
-        "category": "netherite_lumberaxe_inspect_cooldown",
-        "duration": 5
-      },
       "minecraft:damage": {
         "value": 8
       },

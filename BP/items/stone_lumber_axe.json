@@ -37,10 +37,6 @@
       "minecraft:damage": {
         "value": 5
       },
-      "minecraft:cooldown": {
-        "category": "stone_lumberaxe_inspect_cooldown",
-        "duration": 5
-      },
       "minecraft:enchantable": {
         "value": 10,
         "slot": "axe"
