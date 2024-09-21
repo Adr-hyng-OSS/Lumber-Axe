@@ -33,7 +33,6 @@ export async function getTreeLogs(
     maxNeeded: number, 
     isInspectingTree: boolean = true
 ): Promise<VisitedBlockResult> {
-    console.warn("RUNNING");
     const firstBlock = dimension.getBlock(location);
     const visitedTree = await new Promise<VisitedBlockResult>((resolve) => {
         const graph = new Graph();
@@ -197,8 +196,13 @@ export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): P
             x: 0, 
             z: 0
         };
+
+
+        // (TODO) Possible to accurately get the trunk size, use a hashset to collect X and Z axis,
+        // (TODO) Possible to accurately get the trunk height
         const visited = new Set<string>(); // To avoid revisiting blocks
         const queue: Block[] = [blockInteracted]; // Queue for the floodfill process
+        const originalY = blockInteracted.y; // Store the original Y position
 
         const t = system.runJob((function* () {
             while (queue.length > 0) {
@@ -213,8 +217,11 @@ export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): P
                 centroidLog.z += currentBlock.z;
                 i++;
 
-                // Add the neighboring blocks within radius 1 (cardinal + diagonal)
+                // Add the neighboring blocks within radius 1 (cardinal + diagonal) but limit Y within +2 and -2 range
                 for (let y = -1; y <= 1; y++) {
+                    const newY = currentBlock.y + y;
+                    if (newY < originalY - 2 || newY > originalY + 2) continue; // Skip if out of allowed y-range
+
                     for (let x = -1; x <= 1; x++) {
                         for (let z = -1; z <= 1; z++) {
                             if (x === 0 && z === 0 && y === 0) continue; // Skip the current block itself
@@ -240,6 +247,7 @@ export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): P
                 centroidLog.x = (centroidLog.x / i) + 0.5;
                 centroidLog.z = (centroidLog.z / i) + 0.5;
             }
+
             system.clearJob(t);
             fetchedTrunkSizeResolved({ center: centroidLog, size: i });
             return;

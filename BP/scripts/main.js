@@ -75,7 +75,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         const enchantments = currentHeldAxe.getComponent(ItemEnchantableComponent.componentId);
         const level = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
         const unbreakingMultiplier = (100 / (level + 1)) / 100;
-        const unbreakingDamage = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
+        const unbreakingDamage = +serverConfigurationCopy.durabilityDamagePerBlock.defaultValue * unbreakingMultiplier;
         let visited;
         let destroyedTree = {
             isBeingChopped: false,
@@ -135,7 +135,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         visitedLogs.push(destroyedTree);
         if (!visited)
             return;
-        if (initialSize >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "")) {
+        if (initialSize >= +serverConfigurationCopy.chopLimit.defaultValue) {
             currentHeldAxe.lockMode = ItemLockMode.none;
             inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
             SendMessageTo(player, { rawtext: [{ text: "Cannot chop the whole tree due to limitation. " }] });
@@ -184,7 +184,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
             9: 7
         };
         const trunkYCoordinates = Array.from(destroyedTree.visitedLogs.yOffsets.keys()).sort((a, b) => a - b);
-        const getTreeDustValue = key => treeDustParseMap[key] || key > 9 ? 1 : treeDustParseMap[key];
+        const getTreeDustValue = (key) => key > 9 ? 7 : treeDustParseMap[key];
         molang.setFloat('trunk_size', getTreeDustValue(brokenTreeTrunk.size));
         let currentBlockOffset = 0;
         if (serverConfigurationCopy.progressiveChopping.defaultValue && isValidVerticalTree) {
@@ -280,7 +280,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
     const currentDurability = itemDurability.damage;
     const maxDurability = itemDurability.maxDurability;
     const unbreakingMultiplier = (100 / (level + 1)) / 100;
-    const unbreakingDamage = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
+    const unbreakingDamage = +serverConfigurationCopy.durabilityDamagePerBlock.defaultValue * unbreakingMultiplier;
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
     let BLOCK_OUTLINES_DESPAWN_CD = BLOCK_OUTLINES_DESPAWN_TIMER * TicksPerSecond;
     try {
@@ -408,9 +408,9 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                 9: 3.5
             };
             let treeCollectedResult = null;
+            let currentTime = system.currentTick;
             const trunkHeight = (topMostBlock.y - (bottomMostBlock.y + 1));
             const isValidVerticalTree = trunkHeight > 2;
-            console.warn(trunkHeight, topMostBlock.y, bottomMostBlock.y, treeCollectedResult?.trunk?.size);
             if (isValidVerticalTree) {
                 const { x: centerX, z: centerZ } = interactedTreeTrunk.center;
                 const centerBlockErrorCatch = blockInteracted.dimension.getBlock({ x: centerX, y: blockInteracted.y, z: centerZ });
@@ -441,8 +441,8 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                     }, molangVariable);
                 }, 5);
             }
-            const currentTime = system.currentTick;
             treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, +serverConfigurationCopy.chopLimit.defaultValue);
+            currentTime = system.currentTick;
             isTreeDoneTraversing = true;
             if (isValidVerticalTree) {
                 treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
@@ -482,7 +482,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
             const size = tempResult.result.source.getSize();
             const totalDamage = size * unbreakingDamage;
             const totalDurabilityConsumed = currentDurability + totalDamage;
-            const canBeChopped = ((totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability)) && (size <= parseInt(serverConfigurationCopy.chopLimit.defaultValue + ""));
+            const canBeChopped = ((totalDurabilityConsumed === maxDurability) || (totalDurabilityConsumed < maxDurability)) && (size <= +serverConfigurationCopy.chopLimit.defaultValue);
             const inspectionForm = new ActionFormData()
                 .title({
                 rawtext: [

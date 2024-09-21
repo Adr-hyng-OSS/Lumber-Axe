@@ -20,7 +20,6 @@ export function isLogIncluded(rootBlockTypeId, blockTypeId) {
     return false;
 }
 export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, isInspectingTree = true) {
-    console.warn("RUNNING");
     const firstBlock = dimension.getBlock(location);
     const visitedTree = await new Promise((resolve) => {
         const graph = new Graph();
@@ -153,6 +152,7 @@ export function getTreeTrunkSize(blockInteracted, blockTypeId) {
         };
         const visited = new Set();
         const queue = [blockInteracted];
+        const originalY = blockInteracted.y;
         const t = system.runJob((function* () {
             while (queue.length > 0) {
                 const currentBlock = queue.shift();
@@ -166,6 +166,9 @@ export function getTreeTrunkSize(blockInteracted, blockTypeId) {
                 centroidLog.z += currentBlock.z;
                 i++;
                 for (let y = -1; y <= 1; y++) {
+                    const newY = currentBlock.y + y;
+                    if (newY < originalY - 2 || newY > originalY + 2)
+                        continue;
                     for (let x = -1; x <= 1; x++) {
                         for (let z = -1; z <= 1; z++) {
                             if (x === 0 && z === 0 && y === 0)
