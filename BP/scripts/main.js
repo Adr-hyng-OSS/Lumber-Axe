@@ -43,10 +43,6 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         system.run(() => axe.damageDurability(1));
         return;
     }
-    if (db.has(`visited_${hashBlock(blockInteracted)}`)) {
-        arg.cancel = true;
-        return;
-    }
     const possibleVisitedLogs = [];
     for (let i = 0; i < visitedLogs.length; i++) {
         const currentInspectedTree = visitedLogs[i];
@@ -59,7 +55,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
         const index = latestPossibleInspectedTree.index;
         const initialTreeInspection = latestPossibleInspectedTree.result;
-        if (initialTreeInspection.isBeingChopped) {
+        if (initialTreeInspection.isBeingChopped || db.has(`visited_${hashBlock(blockInteracted)}`)) {
             arg.cancel = true;
             return;
         }
@@ -290,10 +286,6 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
             return;
         const tempResult = await new Promise((inspectTreePromiseResolve) => {
             const tMain = system.runJob((function* (inspectTreePromiseResolve) {
-                if (db.has(`visited_${hashBlock(blockInteracted)}`)) {
-                    inspectTreePromiseResolve({ result: null, index: -100 });
-                    return system.clearJob(tMain);
-                }
                 const possibleVisitedLogs = [];
                 for (let i = 0; i < visitedLogs.length; i++) {
                     const currentInspectedTree = visitedLogs[i];
@@ -303,6 +295,10 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                     }
                 }
                 if (!possibleVisitedLogs.length) {
+                    if (db.has(`visited_${hashBlock(blockInteracted)}`)) {
+                        inspectTreePromiseResolve({ result: null, index: -100 });
+                        return system.clearJob(tMain);
+                    }
                     inspectTreePromiseResolve({ result: null, index: -1 });
                     return system.clearJob(tMain);
                 }
@@ -316,6 +312,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                 for (const node of initialTreeInspection.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
                     if (!node.block?.isValid() || !isLogIncluded(blockInteracted.typeId, node.block.typeId)) {
                         initialTreeInspection.visitedLogs.source.removeNode(node.block);
+                        db.delete(`visited_${hashBlock(node.block)}`);
                     }
                     yield;
                 }
@@ -353,11 +350,18 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                 if (currentChangedIndex === -1) {
                     if (newInspectedSubTree.initialSize > 0)
                         visitedLogs.push(newInspectedSubTree);
-                    system.waitTicks(BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond).then(async (_) => {
-                        if (!visitedLogs[index])
+                    system.waitTicks(BLOCK_OUTLINES_DESPAWN_CD).then(async (_) => {
+                        system.runJob((function* () {
+                            for (const node of newInspectedSubTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
+                                db.delete(`visited_${hashBlock(node.block)}`);
+                                yield;
+                            }
+                            if (!visitedLogs[index])
+                                return;
+                            if (!visitedLogs[index].isDone)
+                                resetOutlinedTrees(newInspectedSubTree);
                             return;
-                        if (!visitedLogs[index].isDone)
-                            resetOutlinedTrees(newInspectedSubTree);
+                        })());
                     });
                 }
                 else {
@@ -413,7 +417,6 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                 9: 3.5
             };
             let treeCollectedResult = null;
-            let currentTime = system.currentTick;
             const trunkHeight = (topMostBlock.y - (bottomMostBlock.y + 1));
             const isValidVerticalTree = trunkHeight > 2;
             if (isValidVerticalTree) {
@@ -423,7 +426,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                     interactedTreeTrunk.size++;
                 }
                 const it = system.runInterval(() => {
-                    if ((system.currentTick >= (currentTime + BLOCK_OUTLINES_DESPAWN_CD)) || result.isDone) {
+                    if (result.isDone) {
                         system.clearRun(it);
                         return;
                     }
@@ -447,7 +450,6 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                 }, 5);
             }
             treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, +serverConfigurationCopy.chopLimit.defaultValue);
-            currentTime = system.currentTick;
             isTreeDoneTraversing = true;
             if (isValidVerticalTree) {
                 treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
@@ -479,8 +481,15 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
             if (result.initialSize > 0)
                 visitedLogs.push(result);
             system.runTimeout(() => {
-                if (!result?.isDone)
-                    resetOutlinedTrees(result);
+                system.runJob((function* () {
+                    for (const node of treeCollectedResult.source.traverseIterative(blockInteracted, "BFS")) {
+                        db.delete(`visited_${hashBlock(node.block)}`);
+                        yield;
+                    }
+                    if (!result?.isDone)
+                        resetOutlinedTrees(result);
+                    return;
+                })());
             }, BLOCK_OUTLINES_DESPAWN_CD);
         }
         else if (tempResult.index >= 0) {

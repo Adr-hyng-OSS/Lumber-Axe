@@ -84,14 +84,6 @@ export async function getTreeLogs(
                 yield;
             }
             
-            // Reset temporarily permutations to block using dynamic property.
-            // Reset only for inspection. It resets after breaking the whole block when it's not inspecting.
-            if(isInspectingTree) {
-                for(const node of graph.traverseIterative(firstBlock, "BFS")) {
-                    db.delete(`visited_${hashBlock(node.block)}`);
-                    yield;
-                }
-            }
             system.clearJob(traversingTreeInterval);
             resolve({
                 source: graph, 

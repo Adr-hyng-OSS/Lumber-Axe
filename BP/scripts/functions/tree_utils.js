@@ -55,12 +55,6 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
                 }
                 yield;
             }
-            if (isInspectingTree) {
-                for (const node of graph.traverseIterative(firstBlock, "BFS")) {
-                    db.delete(`visited_${hashBlock(node.block)}`);
-                    yield;
-                }
-            }
             system.clearJob(traversingTreeInterval);
             resolve({
                 source: graph,

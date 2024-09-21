@@ -43,10 +43,6 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     system.run(() => axe.damageDurability(1));
       return;
   }
-  if(db.has(`visited_${hashBlock(blockInteracted)}`)) {
-    arg.cancel = true;
-    return;
-  }
   // /execute positioned ~~~ run fill ~1 ~ ~1 ~-1 ~20 ~-1 jungle_log
 
   // Getting the cache, if it has, to remove the particle.
@@ -65,13 +61,13 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
     const index = latestPossibleInspectedTree.index;
     const initialTreeInspection = latestPossibleInspectedTree.result;
-    if(initialTreeInspection.isBeingChopped) {
+    if(initialTreeInspection.isBeingChopped || db.has(`visited_${hashBlock(blockInteracted)}`)) {
       arg.cancel = true;
       return;
     }
     visitedLogs!.splice(index, 1);
     initialTreeInspection!.isDone = true;
-  }
+  } 
   player.configuration.loadServer();
   system.run(async () => {
     currentHeldAxe.lockMode = ItemLockMode.slot;
@@ -314,11 +310,6 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
     if(!visitedLogs) return;
     const tempResult = await new Promise<{result: VisitedBlockResult, index: number}>((inspectTreePromiseResolve) => {
       const tMain = system.runJob((function*(inspectTreePromiseResolve: (inspectedTreeResult: {result: VisitedBlockResult, index: number} | PromiseLike<{result: VisitedBlockResult, index: number}>) => void){
-        if(db.has(`visited_${hashBlock(blockInteracted)}`)) {
-          inspectTreePromiseResolve({result: null, index: -100});
-          return system.clearJob(tMain);
-        }
-        
         // Filter by getting the graph that has this node.
         const possibleVisitedLogs: {result: InteractedTreeResult, index: number}[] = [];
         for(let i = 0; i < visitedLogs.length; i++) {
@@ -330,6 +321,10 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
         }
 
         if(!possibleVisitedLogs.length) {
+          if(db.has(`visited_${hashBlock(blockInteracted)}`)) {
+            inspectTreePromiseResolve({result: null, index: -100});
+            return system.clearJob(tMain);
+          }
           inspectTreePromiseResolve({result: null, index: -1});
           return system.clearJob(tMain);
         }
@@ -348,6 +343,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
         for(const node of initialTreeInspection.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
           if(!node.block?.isValid() || !isLogIncluded(blockInteracted.typeId, node.block.typeId)) {
             initialTreeInspection.visitedLogs.source.removeNode(node.block);
+            db.delete(`visited_${hashBlock(node.block)}`);
           }
           yield;
         }
@@ -391,9 +387,16 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
         const currentChangedIndex = visitedLogs.findIndex((result) => newInspectedSubTree.visitedLogs.source.isEqual(initialTreeInspection.visitedLogs.source) && !result.isDone);
         if(currentChangedIndex === -1) {
             if(newInspectedSubTree.initialSize > 0) visitedLogs.push(newInspectedSubTree);
-            system.waitTicks(BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond).then(async (_) => {
-              if(!visitedLogs[index]) return;
-              if(!visitedLogs[index].isDone) resetOutlinedTrees(newInspectedSubTree);
+            system.waitTicks(BLOCK_OUTLINES_DESPAWN_CD).then(async (_) => {
+              system.runJob((function*() {
+                for(const node of newInspectedSubTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
+                    db.delete(`visited_${hashBlock(node.block)}`);
+                    yield;
+                }
+                if(!visitedLogs[index]) return;
+                if(!visitedLogs[index].isDone) resetOutlinedTrees(newInspectedSubTree);
+                return;
+              })());
             });
         } else {
           visitedLogs[index] = newInspectedSubTree;
@@ -449,7 +452,6 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
         9: 3.5
       }
       let treeCollectedResult: VisitedBlockResult = null;
-      let currentTime = system.currentTick;
       const trunkHeight = (topMostBlock.y - (bottomMostBlock.y + 1));
       const isValidVerticalTree = trunkHeight > 2;
 
@@ -463,7 +465,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
         }
         const it = system.runInterval(() => {
           // Get the first block, and based on that it will get the height.
-          if((system.currentTick >= (currentTime + BLOCK_OUTLINES_DESPAWN_CD)) || result.isDone) {
+          if(result.isDone) {
             system.clearRun(it);
             return;
           }
@@ -486,7 +488,6 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
         }, 5);
       }
       treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, +serverConfigurationCopy.chopLimit.defaultValue);
-      currentTime = system.currentTick;
       isTreeDoneTraversing = true;
       if(isValidVerticalTree) {
         treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
@@ -518,7 +519,15 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
       };
       if(result.initialSize > 0) visitedLogs.push(result);
       system.runTimeout(() => { 
-        if(!result?.isDone) resetOutlinedTrees(result);
+        // Reset temporarily permutations to block using dynamic property.
+        system.runJob((function*() {
+          for(const node of treeCollectedResult.source.traverseIterative(blockInteracted, "BFS")) {
+              db.delete(`visited_${hashBlock(node.block)}`);
+              yield;
+          }
+          if(!result?.isDone) resetOutlinedTrees(result);
+          return;
+        })());
       }, BLOCK_OUTLINES_DESPAWN_CD);
     } else if (tempResult.index >= 0) {
       const size = tempResult.result.source.getSize();
