@@ -46,6 +46,10 @@
           }
         ]
       },
+      "minecraft:cooldown": {
+        "category": "lumberaxe_inspect_cooldown",
+        "duration": 3.0
+      },
       "minecraft:enchantable": {
         "value": 15,
         "slot": "axe"

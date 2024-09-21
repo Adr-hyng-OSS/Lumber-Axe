@@ -1,5 +1,5 @@
-import { world, system, ScriptEventSource, Player, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, TicksPerSecond } from '@minecraft/server';
-import { ADDON_IDENTIFIER, axeEquipments, db, forceShow, getTreeLogs, getTreeTrunkSize, hashBlock, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, visitedLogs } from "./index";
+import { world, system, ScriptEventSource, Player, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, TicksPerSecond, ItemCooldownComponent } from '@minecraft/server';
+import { ADDON_IDENTIFIER, axeEquipments, db, forceShow, getTreeLogs, getTreeTrunkSize, hashBlock, isLogIncluded, playerInteractedTimeLogMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, visitedLogs } from "./index";
 import { Logger } from 'utils/logger';
 import './items/axes';
 import { MinecraftEnchantmentTypes, MinecraftBlockTypes } from 'modules/vanilla-types/index';
@@ -11,18 +11,19 @@ world.afterEvents.playerSpawn.subscribe((e) => {
     if (!e.initialSpawn)
         return;
     e.player.configuration.loadServer();
-    if (!serverConfigurationCopy.ShowMessageUponJoin.defaultValue)
-        return;
-    SendMessageTo(e.player, {
-        rawtext: [
-            {
-                translate: "LumberAxe.on_load_message"
-            }
-        ]
-    });
-});
-world.afterEvents.playerLeave.subscribe((e) => {
-    playerInteractionMap.set(e.playerId, false);
+    if (!db.has(`playerFirstJoined-${e.player.id}`)) {
+        db.set(`playerFirstJoined-${e.player.id}`, false);
+    }
+    if (!db.get(`playerFirstJoined-${e.player.id}`)) {
+        db.set(`playerFirstJoined-${e.player.id}`, true);
+        SendMessageTo(e.player, {
+            rawtext: [
+                {
+                    translate: "LumberAxe.on_load_message"
+                }
+            ]
+        });
+    }
 });
 world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     const player = arg.player;
@@ -138,7 +139,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         if (initialSize >= +serverConfigurationCopy.chopLimit.defaultValue) {
             currentHeldAxe.lockMode = ItemLockMode.none;
             inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
-            SendMessageTo(player, { rawtext: [{ text: "Cannot chop the whole tree due to limitation. " }] });
+            SendMessageTo(player, { rawtext: [{ translate: `LumberAxe.server.invalid_log_amount_limitation`, with: [serverConfigurationCopy.chopLimit.defaultValue] }] });
             return await new Promise((resolve) => {
                 system.runJob((function* () {
                     for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
@@ -282,6 +283,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
     const unbreakingMultiplier = (100 / (level + 1)) / 100;
     const unbreakingDamage = +serverConfigurationCopy.durabilityDamagePerBlock.defaultValue * unbreakingMultiplier;
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
+    const cooldown = currentHeldAxe.getComponent(ItemCooldownComponent.componentId);
     let BLOCK_OUTLINES_DESPAWN_CD = BLOCK_OUTLINES_DESPAWN_TIMER * TicksPerSecond;
     try {
         if (!visitedLogs)
@@ -366,6 +368,9 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
             })(inspectTreePromiseResolve));
         });
         if (tempResult.index === -1) {
+            if (cooldown.getCooldownTicksRemaining(player) !== 0)
+                return;
+            cooldown.startCooldown(player);
             const molangVariable = new MolangVariableMap();
             let isTreeDoneTraversing = false;
             let treeOffsets = [];

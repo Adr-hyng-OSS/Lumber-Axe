@@ -124,25 +124,6 @@ function* getBlockNear(initialBlockTypeID, initialBlock, radius = 1) {
         }
     }
 }
-function groupAdjacentBlocks(visited) {
-    const array = Array.from(visited).map(item => JSON.parse(item));
-    array.sort((a, b) => a.x - b.x || a.z - b.z || a.y - b.y);
-    const groups = [];
-    let currentGroup = [];
-    for (let i = 0; i < array.length; i++) {
-        if (i === 0 || (array[i].x === array[i - 1].x && array[i].z === array[i - 1].z && Math.abs(array[i].y - JSON.parse(currentGroup[currentGroup.length - 1]).y) <= 2)) {
-            currentGroup.push(JSON.stringify(array[i]));
-        }
-        else {
-            groups.push(currentGroup);
-            currentGroup = [JSON.stringify(array[i])];
-        }
-    }
-    if (currentGroup.length > 0) {
-        groups.push(currentGroup);
-    }
-    return groups;
-}
 export function getTreeTrunkSize(blockInteracted, blockTypeId) {
     return new Promise((fetchedTrunkSizeResolved) => {
         let i = 0;

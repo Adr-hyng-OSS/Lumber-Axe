@@ -136,7 +136,7 @@ export class Configuration {
     ]}, [...serverConfigurationCopy.includedLog.values], 0)
     .textField({rawtext: [
       {translate: "LumberAxe.log_include_manager.text_field"}
-    ]}, "squid", preResultFlags[1] as string)
+    ]}, "myaddon:custom_log", preResultFlags[1] as string)
     .toggle({rawtext: [
       {translate: "LumberAxe.log_include_manager.toggle"}
     ]}, preResultFlags[2] as boolean); 
@@ -198,7 +198,7 @@ export class Configuration {
     ]}, [...serverConfigurationCopy.excludedLog.values], 0)
     .textField({rawtext: [
       {translate: "LumberAxe.log_exclude_manager.drop_down"}
-    ]}, "squid", preResultFlags[1] as string)
+    ]}, "myaddon:custom_log", preResultFlags[1] as string)
     .toggle({rawtext: [
       {translate: "LumberAxe.log_exclude_manager.drop_down"}
     ]}, preResultFlags[2] as boolean);

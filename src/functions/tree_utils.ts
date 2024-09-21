@@ -126,7 +126,6 @@ export async function getTreeLogs(
                 for(const blockOutline of blockOutlines) {
                     if(blockOutline?.isValid()) {
                         blockOutline.triggerEvent('not_persistent');
-                        // blockOutline.triggerEvent('active_outline');
                     }
                     yield;
                 }
@@ -160,33 +159,6 @@ function* getBlockNear(initialBlockTypeID: string, initialBlock: Block, radius: 
             }
         }
     }
-}
-
-// Gets all the visited blocks and groups them together.
-function groupAdjacentBlocks(visited: Set<string>): string[][] {
-    const array = Array.from(visited).map(item => JSON.parse(item));
-
-    // Sort the array based on "x", "z", and "y"
-    array.sort((a, b) => a.x - b.x || a.z - b.z || a.y - b.y);
-
-    const groups: string[][] = [];
-    let currentGroup: string[] = [];
-
-    for (let i = 0; i < array.length; i++) {
-        // If it's the first element or "x" and "z" didn't change and "y" difference is less or equal to 2, add it to the current group
-        if (i === 0 || (array[i].x === array[i - 1].x && array[i].z === array[i - 1].z && Math.abs(array[i].y - JSON.parse(currentGroup[currentGroup.length - 1]).y) <= 2)) {
-            currentGroup.push(JSON.stringify(array[i]));
-        } else {
-            // Otherwise, add the current group to the groups array and start a new group
-            groups.push(currentGroup);
-            currentGroup = [JSON.stringify(array[i])];
-        }
-    }
-    // Add the last group to the groups array
-    if (currentGroup.length > 0) {
-        groups.push(currentGroup);
-    }
-    return groups;
 }
 
 export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): Promise<TrunkBlockResult> {

@@ -1,4 +1,4 @@
-## Items
+## Items <DONT CHANGE>
 item.yn:wooden_lumber_axe.name=Wooden Lumber Axe
 item.yn:stone_lumber_axe.name=Stone Lumber Axe
 item.yn:golden_lumber_axe.name=Golden Lumber Axe
@@ -6,8 +6,7 @@ item.yn:iron_lumber_axe.name=Iron Lumber Axe
 item.yn:diamond_lumber_axe.name=Diamond Lumber Axe
 item.yn:netherite_lumber_axe.name=Netherite Lumber Axe
 
-
-## Form-UI
+## Form-UI <REDO LOCALIZATION>
 LumberAxe.form.title.text=Tree Status Overview
 LumberAxe.form.treeSizeAbrev.text=Has
 LumberAxe.form.treeSizeAbrevLogs.text=Log/s
@@ -17,7 +16,7 @@ LumberAxe.form.deficitAmountAbrev.text=Deficit
 LumberAxe.form.canBeChopped.text=§aChoppable
 LumberAxe.form.cannotBeChopped.text=§cCannot be chopped
 
-## Log Messages
+## Log Messages <ADD LOCALIZATION>
 LumberAxe.on_load_message=§a§lLumber Axe Addon§r §ahas been loaded successfully. Created by Adr-hyng.
 LumberAxe.on_caught_invalid_command=§cInvalid Usage Format. %1
 LumberAxe.on_database_empty=§4No configuration record found in database.§r
@@ -26,31 +25,35 @@ LumberAxe.show_database=Database ID: §e%1§r%2%3
 ### LumberAxe.show_help_message= -> Not Implemented
 LumberAxe.on_caught_command_404=§cError while fetching %1 command: %2
 LumberAxe.on_caught_main_command_not_found=§cInvalid Command: §l%1§r%2§cCheck If The Command Actually Exists. Use /scriptevent %3 help
+LumberAxe.server.invalid_log_amount_limitation=Cannot chop the whole tree due to server configuration limitation of %1. Ask server operator to increase / adjust.
 
-## Server Options Details
-LumberAxe.server.show_message_on_join=Show Message On Join
+## Server Options Details <ADD LOCALIZATION>
 LumberAxe.server.durability_damage_per_block=Durability loss per block
 LumberAxe.server.chop_limit=Tree Logs Limitation
-LumberAxe.server.progressive_chopping=Enable Progressive Chopping
+LumberAxe.server.progressive_chopping=Enable Immersive Mode
 
-## Configuration Options
+## Configuration Options <ADD LOCALIZATION>
 LumberAxe.configuration.title=%1 Settings
 LumberAxe.configuration.general=General Options
 LumberAxe.configuration.log_include_manager=Included Logs Manager
 LumberAxe.configuration.log_exclude_manager=Excluded Logs Manager
 
-## Include Manager
+## Include Manager <ADD LOCALIZATION>
 LumberAxe.log_include_manager.drop_down=Included Choppable Logs
 LumberAxe.log_include_manager.text_field=Log Block to Include
-LumberAxe.log_include_manager.toggle=Insert
+LumberAxe.log_include_manager.toggle=Add
 LumberAxe.log_include_manager.add_success_log=§aBlock named '%1' was successfully added to §oIncluded Choppable Blocks.
 LumberAxe.log_include_manager.remove_success_log=§cBlock named '%1' was successfully removed from §oIncluded Choppable Blocks.
 LumberAxe.log_include_manager.update_success_log=§eBlock named '%1' from §oIncluded Choppable Blocks§r §ewas successfully updated to '%2' in §oIncluded Choppable Blocks.
 
-## Exclude Manager
+## Exclude Manager <ADD LOCALIZATION>
 LumberAxe.log_exclude_manager.drop_down=Excluded Choppable Logs
 LumberAxe.log_exclude_manager.text_field=Log Block to Exclude
-LumberAxe.log_exclude_manager.toggle=Insert
+LumberAxe.log_exclude_manager.toggle=Add
 LumberAxe.log_exclude_manager.add_success_log=§aBlock named '%1' was successfully added to §oExcluded Choppable Blocks.
 LumberAxe.log_exclude_manager.remove_success_log=§cBlock named '%1' was successfully removed from §oExcluded Choppable Blocks.
 LumberAxe.log_exclude_manager.update_success_log=§eBlock named '%1' from §oExcluded Choppable Blocks§r §ewas successfully updated to '%2' in §oExcluded Choppable Blocks.
+
+## Instructions
+LumberAxe.log_include_manager.info=How to include custom log: %1-Add: To add a custom log entry to be chopped with lumber axe, you will need to select the dropdown to "Empty" (default). Then, press the "Add" toggle, and start putting custom log identifier in the textfield provided, and submit. %1Example: %1korbon:redwood_log.%1-Delete: To delete an entry, you just need to select an entry within the dropdown, and don't press the "Add" toggle. Then upon submission, it will be deleted. %1-Update: To update an existing entry, similar to adding/inserting it, but instead of making the dropdown selection to be "Empty", select other entry to update with, and submit. %1%1Note: Including a custom log is ignored, if this custom log is already existing in the excluded logs OR it starts with 'stripped_'.
+LumberAxe.log_exclude_manager.info=How to exclude custom log: %1-Add: To add a custom log entry to be ignored with lumber axe functionality, you will need to select the dropdown to "Empty" (default). Then, press the "Add" toggle, and start putting custom log identifier in the textfield provided, and submit. %1Example: %1korbon:redwood_log.%1-Delete: To delete an entry, you just need to select an entry within the dropdown, and don't press the "Add" toggle. Then upon submission, it will be deleted. %1-Update: To update an existing entry, similar to adding/inserting it, but instead of making the dropdown selection to be "Empty", select other entry to update with, and submit. %1%1Note: Excluding a custom log is prioritized over including.

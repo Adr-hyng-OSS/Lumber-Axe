@@ -23,12 +23,7 @@
   "progressiveChopping": {
     "description": "Enable/Disable Progressive Chopping, which makes you chop trees slightly longer, but nice to see.",
     "name": "LumberAxe.server.progressive_chopping",
-    "default": true
-  },
-  "ShowMessageUponJoin": {
-    "description": "Shows the script initialization message log upon player joining, default is true.",
-    "name": "LumberAxe.server.show_message_on_join",
-    "default": true
+    "default": false
   }
 }
   

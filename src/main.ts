@@ -1,5 +1,5 @@
-import { world, PlayerLeaveAfterEvent, ScriptEventCommandMessageAfterEvent, system, ScriptEventSource, Player, BlockPermutation, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, PlayerBreakBlockBeforeEvent, Block, VectorXZ, TicksPerSecond, ItemCooldownComponent, EntityComponentTypes, EntityScaleComponent, Vector2, Vector3, Entity } from '@minecraft/server';
-import { ADDON_IDENTIFIER, axeEquipments, db, forceShow, getTreeLogs, getTreeTrunkSize, hashBlock, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult, visitedLogs} from "./index"
+import { world, ScriptEventCommandMessageAfterEvent, system, ScriptEventSource, Player, BlockPermutation, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, Block, TicksPerSecond, Entity, ItemCooldownComponent } from '@minecraft/server';
+import { ADDON_IDENTIFIER, axeEquipments, db, forceShow, getTreeLogs, getTreeTrunkSize, hashBlock, InteractedTreeResult, isLogIncluded, playerInteractedTimeLogMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, VisitedBlockResult, visitedLogs} from "./index"
 import { Logger } from 'utils/logger';
 import './items/axes';
 import { MinecraftEnchantmentTypes, MinecraftBlockTypes } from 'modules/vanilla-types/index';
@@ -10,22 +10,23 @@ import { ActionFormData, ActionFormResponse, FormCancelationReason } from '@mine
 const BLOCK_OUTLINES_DESPAWN_TIMER = 5;
 
 world.afterEvents.playerSpawn.subscribe((e) => {
-    if(!e.initialSpawn) return;
-    e.player.configuration.loadServer();
-    if(!serverConfigurationCopy.ShowMessageUponJoin.defaultValue) return; 
+  if(!e.initialSpawn) return;
+  e.player.configuration.loadServer();
+  if(!db.has(`playerFirstJoined-${e.player.id}`)) {
+    db.set(`playerFirstJoined-${e.player.id}`, false);
+  }
+  if(!db.get(`playerFirstJoined-${e.player.id}`)) {
+    db.set(`playerFirstJoined-${e.player.id}`, true);
     SendMessageTo(e.player, {
-        rawtext: [
-          {
-              translate: "LumberAxe.on_load_message"
-          }
-        ]
+      rawtext: [
+        {
+          translate: "LumberAxe.on_load_message"
+        }
+      ]
     });
+  }
 });
-
-world.afterEvents.playerLeave.subscribe((e: PlayerLeaveAfterEvent) => {
-    playerInteractionMap.set(e.playerId, false);
-});
-
+ 
 world.beforeEvents.playerBreakBlock.subscribe((arg) => {
   const player: Player = arg.player;
   const axe = (player.getComponent(EntityEquippableComponent.componentId) as EntityEquippableComponent);
@@ -152,7 +153,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     if(initialSize >= +serverConfigurationCopy.chopLimit.defaultValue) {
       currentHeldAxe.lockMode = ItemLockMode.none;
       inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
-      SendMessageTo(player, {rawtext: [{text: "Cannot chop the whole tree due to limitation. "}]});
+      SendMessageTo(player, {rawtext: [{translate: `LumberAxe.server.invalid_log_amount_limitation`, with: [<string>serverConfigurationCopy.chopLimit.defaultValue]}]});
       return await new Promise<void>((resolve) => {
         system.runJob((function*() {
           for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
@@ -202,6 +203,8 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     const getTreeDustValue = (key: number) => key > 9 ? 7 : treeDustParseMap[key];
     molang.setFloat('trunk_size', getTreeDustValue(brokenTreeTrunk.size));
     let currentBlockOffset = 0;
+
+    // Currently, it doesn't spawn destroy particle with redwood tree in expansive biomes
     if(<boolean>serverConfigurationCopy.progressiveChopping.defaultValue && isValidVerticalTree){
       for(const yOffset of trunkYCoordinates) {
         if(currentBlockOffset % 2 === 0) {
@@ -303,6 +306,8 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
   const unbreakingDamage: number = +serverConfigurationCopy.durabilityDamagePerBlock.defaultValue * unbreakingMultiplier;
   const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
 
+  const cooldown = (<ItemCooldownComponent>currentHeldAxe.getComponent(ItemCooldownComponent.componentId));
+
   let BLOCK_OUTLINES_DESPAWN_CD = BLOCK_OUTLINES_DESPAWN_TIMER * TicksPerSecond;
   try {
     // Check also, if this tree is already being interacted. By checking this current blockOutline (node), if it's being interacted.
@@ -399,6 +404,8 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
     });
 
     if(tempResult.index === -1) {
+      if(cooldown.getCooldownTicksRemaining(player) !== 0) return;
+      cooldown.startCooldown(player);
       const molangVariable = new MolangVariableMap();
       // Get the bottom most log (TODO)
       let isTreeDoneTraversing = false;
