@@ -26,7 +26,11 @@ export const serverConfiguration = {
   /**
    * Enable/Disable Progressive Chopping, which makes you chop trees slightly longer, but nice to see.
    */
-  progressiveChopping: new FormBuilder("LumberAxe.server.progressive_chopping").createToggle(false),
+  immersiveMode: new FormBuilder("LumberAxe.server.immersive_chopping").createToggle(false),
+  /**
+   * Delay for immersive mode.
+   */
+  immersiveModeDelay: new FormBuilder("LumberAxe.server.immersive_delay").createTextField("5"),
   /**
    * Enables debug messages to content logs.
    */

@@ -206,10 +206,10 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     let currentBlockOffset = 0;
 
     // Currently, it doesn't spawn destroy particle with redwood tree in expansive biomes
-    if(<boolean>serverConfigurationCopy.progressiveChopping.defaultValue && isValidVerticalTree){
+    if(<boolean>serverConfigurationCopy.immersiveMode.defaultValue && isValidVerticalTree){
       for(const yOffset of trunkYCoordinates) {
         if(currentBlockOffset % 2 === 0) {
-          await system.waitTicks(3);
+          await system.waitTicks(+serverConfigurationCopy.immersiveModeDelay.defaultValue);
           const loc = {x: destroyedTree.visitedLogs.trunk.center.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.center.z};
           player.playSound('mob.irongolem.crack', {location: loc});
           const molang = new MolangVariableMap();
@@ -224,7 +224,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     let size = 0;
     system.runJob( (function* () {
       // Dust
-      if(!(serverConfigurationCopy.progressiveChopping.defaultValue) && isValidVerticalTree) {
+      if(!(serverConfigurationCopy.immersiveMode.defaultValue) && isValidVerticalTree) {
         for(const yOffset of trunkYCoordinates) {
           if(currentBlockOffset % 2 === 0) {
             const molang = new MolangVariableMap();

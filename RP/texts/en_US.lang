@@ -28,7 +28,8 @@ LumberAxe.server.invalid_log_amount_limitation=Cannot chop the whole tree due to
 ## Server Options Details <ADD LOCALIZATION>
 LumberAxe.server.durability_damage_per_block=Durability loss per block
 LumberAxe.server.chop_limit=Tree Logs Limitation
-LumberAxe.server.progressive_chopping=Enable Immersive Mode
+LumberAxe.server.immersive_chopping=Enable Immersive Mode
+LumberAxe.server.immersive_delay=Immersive Mode Delay Time
 
 ## Configuration Options <ADD LOCALIZATION>
 LumberAxe.configuration.title=%1 Settings
