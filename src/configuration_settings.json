@@ -4,6 +4,11 @@
     "name": "LumberAxe.server.durability_damage_per_block",
     "default": 0
   },
+  "immersiveModeDelay": {
+    "description": "Delay for immersive mode.",
+    "name": "LumberAxe.server.immersive_delay",
+    "default": 5
+  },
   "chopLimit": {
     "description": "Tree chop limitation for control purposes.",
     "name": "LumberAxe.server.chop_limit",
@@ -23,11 +28,6 @@
     "description": "Enable/Disable Progressive Chopping, which makes you chop trees slightly longer, but nice to see.",
     "name": "LumberAxe.server.immersive_chopping",
     "default": false
-  },
-  "immersiveModeDelay": {
-    "description": "Delay for immersive mode.",
-    "name": "LumberAxe.server.immersive_delay",
-    "default": 5
   }
 }
   

@@ -7,6 +7,10 @@ export const serverConfiguration = {
    */
   durabilityDamagePerBlock: new FormBuilder("LumberAxe.server.durability_damage_per_block").createTextField("0"),
   /**
+   * Delay for immersive mode.
+   */
+  immersiveModeDelay: new FormBuilder("LumberAxe.server.immersive_delay").createTextField("5"),
+  /**
    * Tree chop limitation for control purposes.
    */
   chopLimit: new FormBuilder("LumberAxe.server.chop_limit").createTextField("1000"),
@@ -27,10 +31,6 @@ export const serverConfiguration = {
    * Enable/Disable Progressive Chopping, which makes you chop trees slightly longer, but nice to see.
    */
   immersiveMode: new FormBuilder("LumberAxe.server.immersive_chopping").createToggle(false),
-  /**
-   * Delay for immersive mode.
-   */
-  immersiveModeDelay: new FormBuilder("LumberAxe.server.immersive_delay").createTextField("5"),
   /**
    * Enables debug messages to content logs.
    */
