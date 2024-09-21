@@ -37,16 +37,16 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
   const currentHeldAxeSlot = player.selectedSlotIndex;
   const currentBreakBlock: BlockPermutation = arg.block.permutation;
   const blockTypeId: string = currentBreakBlock.type.id;
-  if(!axeEquipments.includes(currentHeldAxe.typeId)) return;
   if(!player.isSurvival()) return;
   if (!isLogIncluded(blockTypeId, blockTypeId)) {
     system.run(() => axe.damageDurability(1));
-      return;
+    return;
   }
   if(db.has(`visited_${hashBlock(blockInteracted)}`) && !db.get(`visited_${hashBlock(blockInteracted)}`)) {
     arg.cancel = true;
     return;
   }
+  if(!axeEquipments.includes(currentHeldAxe.typeId)) return;
   // /execute positioned ~~~ run fill ~1 ~ ~1 ~-1 ~20 ~-1 jungle_log
 
   // Getting the cache, if it has, to remove the particle.

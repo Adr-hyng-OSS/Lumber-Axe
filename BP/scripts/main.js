@@ -35,8 +35,6 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     const currentHeldAxeSlot = player.selectedSlotIndex;
     const currentBreakBlock = arg.block.permutation;
     const blockTypeId = currentBreakBlock.type.id;
-    if (!axeEquipments.includes(currentHeldAxe.typeId))
-        return;
     if (!player.isSurvival())
         return;
     if (!isLogIncluded(blockTypeId, blockTypeId)) {
@@ -47,6 +45,8 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         arg.cancel = true;
         return;
     }
+    if (!axeEquipments.includes(currentHeldAxe.typeId))
+        return;
     const possibleVisitedLogs = [];
     for (let i = 0; i < visitedLogs.length; i++) {
         const currentInspectedTree = visitedLogs[i];
