@@ -21,6 +21,7 @@ export type VisitedBlockResult = {
   blockOutlines: Entity[];
   yOffsets: Map<number, boolean>;
   trunk: TrunkBlockResult;
+  typeIds: Map<string, number>;
 }
 
 export type InteractedTreeResult = {

@@ -23,9 +23,11 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
     const firstBlock = dimension.getBlock(location);
     const visitedTree = await new Promise((resolve) => {
         const graph = new Graph();
+        const visitedTypeIDs = new Map();
         const queue = [firstBlock];
         const yOffsets = new Map();
         const visited = new Set([JSON.stringify(firstBlock.location)]);
+        visitedTypeIDs.set(blockTypeId, 1);
         const traversingTreeInterval = system.runJob(function* () {
             graph.addNode(firstBlock);
             db.set(`visited_${hashBlock(firstBlock)}`, isInspectingTree);
@@ -51,6 +53,9 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
                         continue;
                     visited.add(serializedLocation);
                     queue.push(neighborBlock);
+                    let currentAmount = visitedTypeIDs.get(neighborBlock.typeId) ?? 0;
+                    currentAmount += 1;
+                    visitedTypeIDs.set(neighborBlock.typeId, currentAmount);
                     yield;
                 }
                 yield;
@@ -60,6 +65,7 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
                 source: graph,
                 blockOutlines: [],
                 yOffsets,
+                typeIds: visitedTypeIDs,
                 trunk: {
                     size: 0,
                     center: { x: 0, z: 0 }
@@ -91,6 +97,7 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
             }
             system.clearJob(t);
             resolve({
+                typeIds: visitedTree.typeIds,
                 source: visitedTree.source,
                 blockOutlines: blockOutlines,
                 trunk: trunk,

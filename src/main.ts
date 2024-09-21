@@ -91,6 +91,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       initialSize: 0,
       isDone: false,
       visitedLogs: {
+      typeIds: new Map(),
       blockOutlines: [], 
       source: new Graph(),
       yOffsets: new Map(),
@@ -208,7 +209,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     if(<boolean>serverConfigurationCopy.progressiveChopping.defaultValue && isValidVerticalTree){
       for(const yOffset of trunkYCoordinates) {
         if(currentBlockOffset % 2 === 0) {
-          await system.waitTicks(10);
+          await system.waitTicks(3);
           const loc = {x: destroyedTree.visitedLogs.trunk.center.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.center.z};
           player.playSound('mob.irongolem.crack', {location: loc});
           const molang = new MolangVariableMap();
@@ -266,8 +267,12 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       }
       player.playSound('dig.cave_vines');
 
-      for (const group of stackDistribution(size)) {
-        dimension.spawnItem(new ItemStack(blockTypeId, group), location);
+      // For each typeIDs create stackDistribution
+      for(const [typeIDs, typeIDSize] of choppedTree.typeIds.entries()) {
+        for (const stackedAmount of stackDistribution(typeIDSize)) {
+          dimension.spawnItem(new ItemStack(typeIDs, stackedAmount), location);
+          yield;
+        }
         yield;
       }
       return;
@@ -359,6 +364,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
 
         const finalizedTreeInspection: VisitedBlockResult = {
           blockOutlines: [], 
+          typeIds: new Map(),
           source: new Graph(), 
           yOffsets: new Map(),
           trunk: {
@@ -420,6 +426,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
       let result: InteractedTreeResult = {
         isBeingChopped: false,
         visitedLogs: { 
+          typeIds: new Map(),
           blockOutlines: [], 
           source: new Graph(), 
           trunk: {
