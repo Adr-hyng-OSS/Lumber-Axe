@@ -3,7 +3,7 @@ import { serverConfigurationCopy, db, hashBlock } from "../index";
 import { Graph } from "utils/graph";
 import { Vec3 } from "utils/VectorUtils";
 export function isLogIncluded(rootBlockTypeId, blockTypeId) {
-    const validLogBlocks = /(_log|_wood|crimson_stem|warped_stem)$/;
+    const validLogBlocks = /(_log|_wood|crimson_stem|warped_stem|(?:brown|red_)?mushroom_block)$/;
     function extractLogFamily(blockTypeId) {
         const [, cleanedBlockTypeId] = blockTypeId.split(':');
         const parts = cleanedBlockTypeId.split('_');
@@ -20,6 +20,7 @@ export function isLogIncluded(rootBlockTypeId, blockTypeId) {
     return false;
 }
 export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, isInspectingTree = true) {
+    console.warn("RUNNING");
     const firstBlock = dimension.getBlock(location);
     const visitedTree = await new Promise((resolve) => {
         const graph = new Graph();

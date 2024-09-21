@@ -78,7 +78,7 @@
           },
           {
             "block": {
-              "tags": "q.any_tag('wood', 'log', 'pumpkin', 'plant', 'iron_axe_diggable')"
+              "tags": "q.any_tag('wood', 'log', 'pumpkin', 'plant', 'iron_axe_diggable', 'k_correct_tool:axe')"
             },
             "speed": 10
           },

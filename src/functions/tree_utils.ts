@@ -5,7 +5,7 @@ import { Graph } from "utils/graph";
 import { Vec3 } from "utils/VectorUtils";
 
 export function isLogIncluded(rootBlockTypeId: string, blockTypeId: string): boolean {
-    const validLogBlocks: RegExp = /(_log|_wood|crimson_stem|warped_stem)$/;
+    const validLogBlocks: RegExp = /(_log|_wood|crimson_stem|warped_stem|(?:brown|red_)?mushroom_block)$/;
     function extractLogFamily(blockTypeId: string): string {
         // Remove the namespace by splitting on the colon (':') and taking the second part
         const [, cleanedBlockTypeId] = blockTypeId.split(':');
@@ -21,7 +21,7 @@ export function isLogIncluded(rootBlockTypeId: string, blockTypeId: string): boo
     const blockFamily = extractLogFamily(blockTypeId);
     const isSameFamily = blockFamily === extractedLogFamily;
     if((serverConfigurationCopy.includedLog.values.includes(blockTypeId) ||
-       validLogBlocks.test(blockTypeId)) && isSameFamily ) return true;
+        validLogBlocks.test(blockTypeId)) && isSameFamily ) return true;
     return false;
 }
 
@@ -33,6 +33,7 @@ export async function getTreeLogs(
     maxNeeded: number, 
     isInspectingTree: boolean = true
 ): Promise<VisitedBlockResult> {
+    console.warn("RUNNING");
     const firstBlock = dimension.getBlock(location);
     const visitedTree = await new Promise<VisitedBlockResult>((resolve) => {
         const graph = new Graph();

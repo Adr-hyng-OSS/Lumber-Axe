@@ -1,8 +1,8 @@
 import { FormBuilder } from "utils/form_builder";
 import { cloneConfiguration } from "./configuration_handler";
 export const serverConfiguration = {
-    durabilityDamagePerBlock: new FormBuilder("LumberAxe.server.durability_damage_per_block").createTextField("3"),
-    chopLimit: new FormBuilder("LumberAxe.server.chop_limit").createTextField("500"),
+    durabilityDamagePerBlock: new FormBuilder("LumberAxe.server.durability_damage_per_block").createTextField("0"),
+    chopLimit: new FormBuilder("LumberAxe.server.chop_limit").createTextField("1000"),
     includedLog: new FormBuilder("LumberAxe.configuration.log_include_manager").createDropdown(['Empty'], "Empty"),
     excludedLog: new FormBuilder("LumberAxe.configuration.log_exclude_manager").createDropdown(['Empty'], "Empty"),
     progressiveChopping: new FormBuilder("LumberAxe.server.progressive_chopping").createToggle(true),

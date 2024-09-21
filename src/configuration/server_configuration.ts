@@ -5,11 +5,11 @@ export const serverConfiguration = {
   /**
    * Lumber Axe durability damage per log destroyed.
    */
-  durabilityDamagePerBlock: new FormBuilder("LumberAxe.server.durability_damage_per_block").createTextField("3"),
+  durabilityDamagePerBlock: new FormBuilder("LumberAxe.server.durability_damage_per_block").createTextField("0"),
   /**
-   * 1500 above is not recommended. It Does work but it's not recommended.
+   * Tree chop limitation for control purposes.
    */
-  chopLimit: new FormBuilder("LumberAxe.server.chop_limit").createTextField("500"),
+  chopLimit: new FormBuilder("LumberAxe.server.chop_limit").createTextField("1000"),
   /**
    * Included blocks for custom logs, but any custom or vanilla logs also work as long as the block identifier ends with "*_log".
    * Check: https://github.com/mcbe-mods/Cut-tree-one-click by Lete114.

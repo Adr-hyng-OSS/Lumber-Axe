@@ -1,4 +1,4 @@
-import { world, system, ScriptEventSource, Player, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, TicksPerSecond, ItemCooldownComponent } from '@minecraft/server';
+import { world, system, ScriptEventSource, Player, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, TicksPerSecond } from '@minecraft/server';
 import { ADDON_IDENTIFIER, axeEquipments, db, forceShow, getTreeLogs, getTreeTrunkSize, hashBlock, isLogIncluded, playerInteractedTimeLogMap, playerInteractionMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, visitedLogs } from "./index";
 import { Logger } from 'utils/logger';
 import './items/axes';
@@ -6,6 +6,7 @@ import { MinecraftEnchantmentTypes, MinecraftBlockTypes } from 'modules/vanilla-
 import { Graph } from 'utils/graph';
 import { Vec3 } from 'utils/VectorUtils';
 import { ActionFormData, FormCancelationReason } from '@minecraft/server-ui';
+const BLOCK_OUTLINES_DESPAWN_TIMER = 5;
 world.afterEvents.playerSpawn.subscribe((e) => {
     if (!e.initialSpawn)
         return;
@@ -110,24 +111,13 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         });
         const mainTreeTrunkHeight = (topMostBlock.y - bottomMostBlock.y);
         const isValidVerticalTree = mainTreeTrunkHeight > 2;
-        const treeDustParseMap = {
-            1: 3.25,
-            2: 4,
-            3: 4,
-            4: 4,
-            5: 7,
-            6: 7,
-            7: 7,
-            8: 7,
-            9: 7
-        };
         if (isValidVerticalTree) {
-            let dustCount = 1.5;
-            molang.setFloat('trunk_size', dustCount);
+            let dustRadius = 1;
+            molang.setFloat('trunk_size', dustRadius);
             player.playSound('hit.stem');
             dimension.spawnParticle('yn:tree_dust', { x: brokenTreeTrunk.center.x, y: blockInteracted.y, z: brokenTreeTrunk.center.z }, molang);
             const t = system.runInterval(() => {
-                molang.setFloat('trunk_size', dustCount += 0.25);
+                molang.setFloat('trunk_size', dustRadius += 0.25);
                 if (isTreeDoneTraversing) {
                     system.clearRun(t);
                     return;
@@ -181,8 +171,21 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
             heldTemp.lockMode = ItemLockMode.none;
             inventory.setItem(currentHeldAxeSlot, heldTemp);
         }
+        const treeDustParseMap = {
+            0: 1,
+            1: 3.25,
+            2: 4,
+            3: 4,
+            4: 4,
+            5: 7,
+            6: 7,
+            7: 7,
+            8: 7,
+            9: 7
+        };
         const trunkYCoordinates = Array.from(destroyedTree.visitedLogs.yOffsets.keys()).sort((a, b) => a - b);
-        molang.setFloat('trunk_size', treeDustParseMap[brokenTreeTrunk.size]);
+        const getTreeDustValue = key => treeDustParseMap[key] || key > 9 ? 1 : treeDustParseMap[key];
+        molang.setFloat('trunk_size', getTreeDustValue(brokenTreeTrunk.size));
         let currentBlockOffset = 0;
         if (serverConfigurationCopy.progressiveChopping.defaultValue && isValidVerticalTree) {
             for (const yOffset of trunkYCoordinates) {
@@ -191,7 +194,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                     const loc = { x: destroyedTree.visitedLogs.trunk.center.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.center.z };
                     player.playSound('mob.irongolem.crack', { location: loc });
                     const molang = new MolangVariableMap();
-                    molang.setFloat('trunk_size', treeDustParseMap[destroyedTree.visitedLogs.trunk.size]);
+                    molang.setFloat('trunk_size', getTreeDustValue(destroyedTree.visitedLogs.trunk.size));
                     dimension.spawnParticle('yn:tree_dust', loc, molang);
                 }
                 destroyedTree.visitedLogs.yOffsets.set(yOffset, true);
@@ -206,7 +209,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                 for (const yOffset of trunkYCoordinates) {
                     if (currentBlockOffset % 2 === 0) {
                         const molang = new MolangVariableMap();
-                        molang.setFloat('trunk_size', treeDustParseMap[destroyedTree.visitedLogs.trunk.size]);
+                        molang.setFloat('trunk_size', getTreeDustValue(destroyedTree.visitedLogs.trunk.size));
                         dimension.spawnParticle('yn:tree_dust', { x: destroyedTree.visitedLogs.trunk.center.x, y: yOffset, z: destroyedTree.visitedLogs.trunk.center.z }, molang);
                     }
                     currentBlockOffset++;
@@ -268,7 +271,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
         return;
     const oldLog = playerInteractedTimeLogMap.get(player.id);
     playerInteractedTimeLogMap.set(player.id, system.currentTick);
-    if ((oldLog + 5) >= system.currentTick)
+    if ((oldLog + 10) >= system.currentTick)
         return;
     player.configuration.loadServer();
     const itemDurability = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId);
@@ -279,8 +282,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
     const unbreakingMultiplier = (100 / (level + 1)) / 100;
     const unbreakingDamage = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
     const reachableLogs = (maxDurability - currentDurability) / unbreakingDamage;
-    const cooldown = currentHeldAxe.getComponent(ItemCooldownComponent.componentId);
-    let BLOCK_OUTLINES_DESPAWN_CD = cooldown.cooldownTicks / TicksPerSecond;
+    let BLOCK_OUTLINES_DESPAWN_CD = BLOCK_OUTLINES_DESPAWN_TIMER * TicksPerSecond;
     try {
         if (!visitedLogs)
             return;
@@ -405,8 +407,10 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                 8: 3.5,
                 9: 3.5
             };
+            let treeCollectedResult = null;
             const trunkHeight = (topMostBlock.y - (bottomMostBlock.y + 1));
             const isValidVerticalTree = trunkHeight > 2;
+            console.warn(trunkHeight, topMostBlock.y, bottomMostBlock.y, treeCollectedResult?.trunk?.size);
             if (isValidVerticalTree) {
                 const { x: centerX, z: centerZ } = interactedTreeTrunk.center;
                 const centerBlockErrorCatch = blockInteracted.dimension.getBlock({ x: centerX, y: blockInteracted.y, z: centerZ });
@@ -414,7 +418,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                     interactedTreeTrunk.size++;
                 }
                 const it = system.runInterval(() => {
-                    if (system.currentTick >= currentTime + (BLOCK_OUTLINES_DESPAWN_CD * TicksPerSecond) || result?.isDone) {
+                    if ((system.currentTick >= (currentTime + BLOCK_OUTLINES_DESPAWN_CD)) || result.isDone) {
                         system.clearRun(it);
                         return;
                     }
@@ -438,7 +442,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                 }, 5);
             }
             const currentTime = system.currentTick;
-            const treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, +serverConfigurationCopy.chopLimit.defaultValue);
+            treeCollectedResult = await getTreeLogs(player.dimension, blockInteracted.location, blockInteracted.typeId, +serverConfigurationCopy.chopLimit.defaultValue);
             isTreeDoneTraversing = true;
             if (isValidVerticalTree) {
                 treeOffsets = Array.from(treeCollectedResult.yOffsets.keys()).sort((a, b) => a - b);
@@ -452,8 +456,8 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                 const t = system.runJob((function* () {
                     for (const node of treeCollectedResult.source.traverseIterative(blockInteracted, "BFS")) {
                         molangVariable.setFloat('radius', 1.1);
-                        molangVariable.setFloat('height', 0.99);
-                        molangVariable.setFloat('max_age', BLOCK_OUTLINES_DESPAWN_CD);
+                        molangVariable.setFloat('height', 0.97);
+                        molangVariable.setFloat('max_age', BLOCK_OUTLINES_DESPAWN_CD / TicksPerSecond);
                         molangVariable.setColorRGB('color', { red: 0.0, green: 1.0, blue: 0.0 });
                         player.dimension.spawnParticle('yn:inspecting_indicator', { x: node.block.bottomCenter().x, y: node.block.y, z: node.block.bottomCenter().z }, molangVariable);
                         yield;
@@ -472,7 +476,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
             system.runTimeout(() => {
                 if (!result?.isDone)
                     resetOutlinedTrees(result);
-            }, (BLOCK_OUTLINES_DESPAWN_CD - 2) * TicksPerSecond);
+            }, BLOCK_OUTLINES_DESPAWN_CD);
         }
         else if (tempResult.index >= 0) {
             const size = tempResult.result.source.getSize();
