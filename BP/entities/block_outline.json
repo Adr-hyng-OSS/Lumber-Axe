@@ -10,7 +10,7 @@
         "yn:trunk_size": {
           "type": "int",
           "client_sync": true,
-          "default": 1,
+          "default": 0,
 					"range": [0, 31]
         },
 				"yn:is_in_air": {
@@ -123,7 +123,7 @@
 				"remove": { "component_groups": [ "active_outline" ] },
 				"add": { "component_groups": [ "inactive_outline", "check_for_collision" ] },
 				"set_property": {
-					"yn:trunk_size": 1
+					"yn:trunk_size": 0
 				}
 			},
 			"on_air_detected": {

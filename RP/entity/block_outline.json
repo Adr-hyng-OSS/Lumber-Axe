@@ -50,8 +50,7 @@
 				"particle_controller": "controller.animation.block_outline.controller"
 			},
 			"particle_effects": {
-        "destroy_block": "yn:custom_destroy",
-				"inspect_indicator": "yn:inspecting_indicator"
+        "destroy_block": "yn:custom_destroy"
       }
 		}
 	}

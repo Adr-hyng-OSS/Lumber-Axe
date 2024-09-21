@@ -218,9 +218,6 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     }
     // /execute positioned -14462 84 11333 run fill ~1 ~ ~1 ~-1 ~10 ~-1 oak_log
     let size = 0;
-    const blockOutlineIterator = destroyedTree.visitedLogs.blockOutlines[Symbol.iterator]();
-    let blockOutlineIterResult = blockOutlineIterator.next();
-    
     system.runJob( (function* () {
       // Dust
       if(!(serverConfigurationCopy.progressiveChopping.defaultValue) && isValidVerticalTree) {
@@ -234,8 +231,10 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
           yield;
         }
       }
-
+      
       // Destroy particle
+      const blockOutlineIterator = destroyedTree.visitedLogs.blockOutlines[Symbol.iterator]();
+      let blockOutlineIterResult = blockOutlineIterator.next();
       while(!blockOutlineIterResult.done) {
         const blockOutline: Entity = blockOutlineIterResult.value;
         if(blockOutline?.isValid()) {

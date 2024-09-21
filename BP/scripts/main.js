@@ -202,8 +202,6 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
             }
         }
         let size = 0;
-        const blockOutlineIterator = destroyedTree.visitedLogs.blockOutlines[Symbol.iterator]();
-        let blockOutlineIterResult = blockOutlineIterator.next();
         system.runJob((function* () {
             if (!(serverConfigurationCopy.progressiveChopping.defaultValue) && isValidVerticalTree) {
                 for (const yOffset of trunkYCoordinates) {
@@ -216,6 +214,8 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                     yield;
                 }
             }
+            const blockOutlineIterator = destroyedTree.visitedLogs.blockOutlines[Symbol.iterator]();
+            let blockOutlineIterResult = blockOutlineIterator.next();
             while (!blockOutlineIterResult.done) {
                 const blockOutline = blockOutlineIterResult.value;
                 if (blockOutline?.isValid()) {
