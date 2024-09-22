@@ -20,6 +20,7 @@ export function isLogIncluded(rootBlockTypeId, blockTypeId) {
     return false;
 }
 export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, isInspectingTree = true) {
+    console.warn("RUNNED");
     const firstBlock = dimension.getBlock(location);
     const visitedTree = await new Promise((resolve) => {
         const graph = new Graph();
@@ -77,23 +78,21 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
     const trunk = await getTreeTrunkSize(firstBlock, blockTypeId);
     return new Promise((resolve) => {
         const t = system.runJob((function* () {
-            if (!isInspectingTree) {
-                for (const yOffset of visitedTree.yOffsets.keys()) {
-                    const outline = dimension.spawnEntity('yn:block_outline', {
-                        x: trunk.center.x,
-                        y: yOffset,
-                        z: trunk.center.z
-                    });
-                    outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
-                    blockOutlines.push(outline);
-                    yield;
+            for (const yOffset of visitedTree.yOffsets.keys()) {
+                const outline = dimension.spawnEntity('yn:block_outline', {
+                    x: trunk.center.x,
+                    y: yOffset,
+                    z: trunk.center.z
+                });
+                outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
+                blockOutlines.push(outline);
+                yield;
+            }
+            for (const blockOutline of blockOutlines) {
+                if (blockOutline?.isValid()) {
+                    blockOutline.triggerEvent('not_persistent');
                 }
-                for (const blockOutline of blockOutlines) {
-                    if (blockOutline?.isValid()) {
-                        blockOutline.triggerEvent('not_persistent');
-                    }
-                    yield;
-                }
+                yield;
             }
             system.clearJob(t);
             resolve({

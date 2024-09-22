@@ -38,10 +38,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
   const currentBreakBlock: BlockPermutation = arg.block.permutation;
   const blockTypeId: string = currentBreakBlock.type.id;
   if(!player.isSurvival()) return;
-  if (!isLogIncluded(blockTypeId, blockTypeId)) {
-    system.run(() => axe.damageDurability(1));
-    return;
-  }
+  if (!isLogIncluded(blockTypeId, blockTypeId)) return;
   if(db.has(`visited_${hashBlock(blockInteracted)}`) && !db.get(`visited_${hashBlock(blockInteracted)}`)) {
     arg.cancel = true;
     return;
@@ -60,11 +57,12 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       }
   }
 
+  let initialTreeInspection: InteractedTreeResult;
   if(possibleVisitedLogs.length) {
     // After filtering check get that tree that this player has inspected, get the latest one.
     const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
     const index = latestPossibleInspectedTree.index;
-    const initialTreeInspection = latestPossibleInspectedTree.result;
+    initialTreeInspection = latestPossibleInspectedTree.result;
     if(initialTreeInspection.isBeingChopped) {
       arg.cancel = true;
       return;
@@ -77,7 +75,6 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     currentHeldAxe.lockMode = ItemLockMode.slot;
     const inventory = (player.getComponent(EntityInventoryComponent.componentId) as EntityInventoryComponent).container;
     inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
-    axe.damageDurability(2);
     const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
     const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
     const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
@@ -87,7 +84,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     
     // This should be the temporary container where it doesn't copy the reference from the original player's visitedNodes.
     let destroyedTree :InteractedTreeResult = {
-      isBeingChopped: false,
+      isBeingChopped: true,
       initialSize: 0,
       isDone: false,
       visitedLogs: {
@@ -104,7 +101,6 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
       }
       }
     };
-    // (TODO) Use Cache again :,D 
     const molang = new MolangVariableMap();
     let isTreeDoneTraversing = false;
     const brokenTreeTrunk = await getTreeTrunkSize(blockInteracted, blockTypeId);
@@ -139,11 +135,11 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         dimension.spawnParticle('yn:tree_dust', {x: brokenTreeTrunk.center.x, y: blockInteracted.y, z: brokenTreeTrunk.center.z}, molang);
       }, 12);
     }
-    const choppedTree = (await getTreeLogs(
+    const choppedTree = initialTreeInspection === undefined ? (await getTreeLogs(
       dimension, location, blockTypeId, 
       (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, 
       false
-    ) as VisitedBlockResult);
+    ) as VisitedBlockResult) : initialTreeInspection.visitedLogs;
     isTreeDoneTraversing = true;
     destroyedTree.visitedLogs = choppedTree;
     visited = choppedTree.source;
@@ -560,7 +556,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
               translate: `LumberAxe.form.treeSizeAbrev.text`
             },
             {
-              text: ` ${size !== 0 ? (canBeChopped ? size : reachableLogs + 1) : 1}${canBeChopped ? "" : "+" } `
+              text: ` ${size !== 0 ? Math.round(canBeChopped ? size : reachableLogs + 1) : 1}${canBeChopped ? "" : "+" } `
             },
             {
               translate: `LumberAxe.form.treeSizeAbrevLogs.text`
@@ -580,7 +576,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
           {
             rawtext: [
             {
-              text: `${(maxDurability - totalDurabilityConsumed) > 0 ? '+' : ''}${maxDurability - totalDurabilityConsumed} `
+              text: `${(maxDurability - totalDurabilityConsumed) > 0 ? '+' : ''}${Math.round(maxDurability - totalDurabilityConsumed)} `
             },
             {
               translate: "LumberAxe.form.treeSizeAbrevLogs.text"

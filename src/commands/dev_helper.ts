@@ -47,7 +47,7 @@ const command: ICommandBase = {
                 }
                 break;
             case REQUIRED_PARAMETER.TEST:
-                console.warn(db.size);
+                console.warn(db.size, visitedLogs.length);
                 break;
             case REQUIRED_PARAMETER.RELOAD:
                 db.clear();

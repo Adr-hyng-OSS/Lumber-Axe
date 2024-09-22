@@ -37,10 +37,8 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     const blockTypeId = currentBreakBlock.type.id;
     if (!player.isSurvival())
         return;
-    if (!isLogIncluded(blockTypeId, blockTypeId)) {
-        system.run(() => axe.damageDurability(1));
+    if (!isLogIncluded(blockTypeId, blockTypeId))
         return;
-    }
     if (db.has(`visited_${hashBlock(blockInteracted)}`) && !db.get(`visited_${hashBlock(blockInteracted)}`)) {
         arg.cancel = true;
         return;
@@ -55,10 +53,11 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
             possibleVisitedLogs.push({ result: currentInspectedTree, index: i });
         }
     }
+    let initialTreeInspection;
     if (possibleVisitedLogs.length) {
         const latestPossibleInspectedTree = possibleVisitedLogs[possibleVisitedLogs.length - 1];
         const index = latestPossibleInspectedTree.index;
-        const initialTreeInspection = latestPossibleInspectedTree.result;
+        initialTreeInspection = latestPossibleInspectedTree.result;
         if (initialTreeInspection.isBeingChopped) {
             arg.cancel = true;
             return;
@@ -71,7 +70,6 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         currentHeldAxe.lockMode = ItemLockMode.slot;
         const inventory = player.getComponent(EntityInventoryComponent.componentId).container;
         inventory.setItem(currentHeldAxeSlot, currentHeldAxe);
-        axe.damageDurability(2);
         const itemDurability = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId);
         const enchantments = currentHeldAxe.getComponent(ItemEnchantableComponent.componentId);
         const level = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
@@ -79,7 +77,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         const unbreakingDamage = +serverConfigurationCopy.durabilityDamagePerBlock.defaultValue * unbreakingMultiplier;
         let visited;
         let destroyedTree = {
-            isBeingChopped: false,
+            isBeingChopped: true,
             initialSize: 0,
             isDone: false,
             visitedLogs: {
@@ -129,7 +127,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                 dimension.spawnParticle('yn:tree_dust', { x: brokenTreeTrunk.center.x, y: blockInteracted.y, z: brokenTreeTrunk.center.z }, molang);
             }, 12);
         }
-        const choppedTree = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false);
+        const choppedTree = initialTreeInspection === undefined ? await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage, false) : initialTreeInspection.visitedLogs;
         isTreeDoneTraversing = true;
         destroyedTree.visitedLogs = choppedTree;
         visited = choppedTree.source;
@@ -521,7 +519,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                         translate: `LumberAxe.form.treeSizeAbrev.text`
                     },
                     {
-                        text: ` ${size !== 0 ? (canBeChopped ? size : reachableLogs + 1) : 1}${canBeChopped ? "" : "+"} `
+                        text: ` ${size !== 0 ? Math.round(canBeChopped ? size : reachableLogs + 1) : 1}${canBeChopped ? "" : "+"} `
                     },
                     {
                         translate: `LumberAxe.form.treeSizeAbrevLogs.text`
@@ -541,7 +539,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                 .button({
                 rawtext: [
                     {
-                        text: `${(maxDurability - totalDurabilityConsumed) > 0 ? '+' : ''}${maxDurability - totalDurabilityConsumed} `
+                        text: `${(maxDurability - totalDurabilityConsumed) > 0 ? '+' : ''}${Math.round(maxDurability - totalDurabilityConsumed)} `
                     },
                     {
                         translate: "LumberAxe.form.treeSizeAbrevLogs.text"

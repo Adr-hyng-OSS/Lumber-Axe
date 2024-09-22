@@ -13,5 +13,10 @@ world.beforeEvents.worldInitialize.subscribe((registry) => {
         },
         onUseOn(arg) {
         },
+        onMineBlock(arg) {
+            const player = arg.source;
+            const axe = player.getComponent(EntityEquippableComponent.componentId);
+            axe.damageDurability(2);
+        },
     });
 });

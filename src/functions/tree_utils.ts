@@ -33,6 +33,7 @@ export async function getTreeLogs(
     maxNeeded: number, 
     isInspectingTree: boolean = true
 ): Promise<VisitedBlockResult> {
+    console.warn("RUNNED");
     const firstBlock = dimension.getBlock(location);
     const visitedTree = await new Promise<VisitedBlockResult>((resolve) => {
         const graph = new Graph();
@@ -110,25 +111,25 @@ export async function getTreeLogs(
         const t = system.runJob((function*(){
             // Create Block Entity based on the trunk. 
             // (Create particle spawner entities when you are chopping it down for dust, and destroy particle, else just for inpsection particle)
-            if(!isInspectingTree) {
-                for(const yOffset of visitedTree.yOffsets.keys()) {
-                    const outline = dimension.spawnEntity('yn:block_outline', {
-                        x: trunk.center.x, 
-                        y: yOffset, 
-                        z: trunk.center.z
-                    });
-                    outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
-                    blockOutlines.push(outline);
-                    yield;
-                }
-                // After all is traversed, start timer.
-                for(const blockOutline of blockOutlines) {
-                    if(blockOutline?.isValid()) {
-                        blockOutline.triggerEvent('not_persistent');
-                    }
-                    yield;
-                }
+            // if(!isInspectingTree) {
+            for(const yOffset of visitedTree.yOffsets.keys()) {
+                const outline = dimension.spawnEntity('yn:block_outline', {
+                    x: trunk.center.x, 
+                    y: yOffset, 
+                    z: trunk.center.z
+                });
+                outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
+                blockOutlines.push(outline);
+                yield;
             }
+            // After all is traversed, start timer.
+            for(const blockOutline of blockOutlines) {
+                if(blockOutline?.isValid()) {
+                    blockOutline.triggerEvent('not_persistent');
+                }
+                yield;
+            }
+            // }
             system.clearJob(t);
             resolve({
                 typeIds: visitedTree.typeIds,
