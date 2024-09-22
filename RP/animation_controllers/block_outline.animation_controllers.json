@@ -1,0 +1,40 @@
+{
+	"format_version": "1.10.0",
+	"animation_controllers": {
+		"controller.animation.block_outline.controller": {
+			"states": {
+				"default": {
+          "on_entry": [
+            "variable.trunk_size = q.has_property('yn:trunk_size') ? q.property('yn:trunk_size') : 0;",
+            "variable.dig_particle_texture_coordinate = query.surface_particle_texture_coordinate;",
+            "variable.dig_particle_texture_size = query.surface_particle_texture_size;", 
+            "variable.dig_particle_color = query.surface_particle_color;"
+          ],
+          "on_exit": [
+            "variable.trunk_size = q.has_property('yn:trunk_size') ? q.property('yn:trunk_size') : 0;",
+            "variable.dig_particle_texture_coordinate = query.surface_particle_texture_coordinate;",
+            "variable.dig_particle_texture_size = query.surface_particle_texture_size;", 
+            "variable.dig_particle_color = query.surface_particle_color;"
+          ],
+					"transitions": [
+						{"show_destroy_block": "q.has_property('yn:trunk_size') && q.property('yn:trunk_size') != 0"}
+					]
+				},
+				"show_destroy_block": {
+          "on_entry": [
+            "variable.trunk_size = q.has_property('yn:trunk_size') ? q.property('yn:trunk_size') : 0;",
+            "variable.dig_particle_texture_coordinate = query.surface_particle_texture_coordinate;",
+            "variable.dig_particle_texture_size = query.surface_particle_texture_size;", 
+            "variable.dig_particle_color = query.surface_particle_color;"
+          ],
+          "on_exit": [
+            "variable.trunk_size = q.has_property('yn:trunk_size') ? q.property('yn:trunk_size') : 0;"
+          ],
+          "animations": [
+            "show_destroy_block_anim"
+          ]
+				}
+			}
+		}
+	}
+}

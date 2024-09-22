@@ -1,8 +1,8 @@
-import json
-import argparse
+import json, argparse
 import uuid
 import shutil
 import os
+
 
 parser = argparse.ArgumentParser(description='Build manifest files from \'mc_manifest.json\'.')
 parser.add_argument('--init', '-i', action='store_true', help='Initialize UUID and versions.')
@@ -12,16 +12,16 @@ args = parser.parse_args()
 bp_manifest = {}
 rp_manifest = {}
 
-def processJsonElement(element, bp_element, rp_element, init, current_key=None):
+def processJsonElement(element, bp_element, rp_element):
     def process(key, value):
         if isinstance(value, dict):
             bp_element[key] = {}
             rp_element[key] = {}
-            processJsonElement(value, bp_element[key], rp_element[key], init, key)
+            processJsonElement(value, bp_element[key], rp_element[key])
         elif isinstance(value, list):
             bp_element[key] = []
             rp_element[key] = []
-            processJsonElement(value, bp_element[key], rp_element[key], init, key)
+            processJsonElement(value, bp_element[key], rp_element[key])
         else:
             if isinstance(bp_element, list):
                 bp_element.append(value)
@@ -30,8 +30,9 @@ def processJsonElement(element, bp_element, rp_element, init, current_key=None):
                 bp_element[key] = value
                 rp_element[key] = value
 
+    
     if isinstance(element, dict):
-        for key, value in element.items():
+        for [key, value] in element.items():
             if key.startswith('bp_'):
                 if key.startswith('bp_server_'):
                     sub = bp_element[key[10:]]
@@ -41,14 +42,8 @@ def processJsonElement(element, bp_element, rp_element, init, current_key=None):
                         bp_element[key[10:]] = { **sub, **value }
                 else:
                     bp_element[key[3:]] = value
-                    if init and key == 'bp_modules':
-                        for module in value:
-                            module['uuid'] = str(uuid.uuid4())
             elif key.startswith('rp_'):
                 rp_element[key[3:]] = value
-                if init and key == 'rp_modules':
-                    for module in value:
-                        module['uuid'] = str(uuid.uuid4())
             else:
                 process(key, value)
     elif isinstance(element, list):
@@ -58,10 +53,9 @@ def processJsonElement(element, bp_element, rp_element, init, current_key=None):
             i = i + 1
 
 # load base manifest
-with open('setup/mc_manifest.json', 'r') as file:
+with open('setup/mc_manifest.json', 'r', encoding='utf-8') as file:
     manifest = json.load(file)
-    processJsonElement(manifest, bp_manifest, rp_manifest, args.init)
-
+    processJsonElement(manifest, bp_manifest, rp_manifest)
 
 # Generate UUIDv4 for bp_uuid and rp_uuid and set default versions
 if args.init:
@@ -85,15 +79,15 @@ if args.init:
     shutil.copy('setup/pack_icon.png', 'RP/')
 
 version = manifest['header']['version']
-bp_manifest['header']['name'] += ' ' + '.'.join(map(str, version))
-rp_manifest['header']['name'] += ' ' + '.'.join(map(str, version))
+bp_manifest['header']['name'] += ' §8(' + '.'.join(map(str, version)) + ')'
+rp_manifest['header']['name'] += ' §8(' + '.'.join(map(str, version)) + ')'
 
-if not isinstance(version, str):
+if not type(version) is str:
     version = version[:3]
 bp_manifest['header']['version'] = version
 rp_manifest['header']['version'] = version
 
-if 'dependencies' not in bp_manifest:
+if not 'dependencies' in bp_manifest:
     bp_manifest['dependencies'] = []
 bp_manifest['dependencies'].append({
     'uuid': rp_manifest['header']['uuid'],
@@ -105,7 +99,7 @@ if args.target == 'debug':
     rp_manifest['header']['name'] += ' [DEBUG]'
 
 # export behaviour and resource manifests
-with open('BP/manifest.json', 'w') as file:
-    json.dump(bp_manifest, file, indent=4)
-with open('RP/manifest.json', 'w') as file:
-    json.dump(rp_manifest, file, indent=4)
+with open('BP/manifest.json', 'w', encoding='utf-8') as file:
+    json.dump(bp_manifest, file, indent=4, ensure_ascii=False)
+with open('RP/manifest.json', 'w', encoding='utf-8') as file:
+    json.dump(rp_manifest, file, indent=4, ensure_ascii=False)

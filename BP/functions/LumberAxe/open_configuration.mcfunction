@@ -1,0 +1,1 @@
+scriptevent yn:lumber config show

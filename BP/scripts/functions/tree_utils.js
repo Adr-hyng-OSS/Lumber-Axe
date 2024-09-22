@@ -1,134 +1,182 @@
-import { EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, system } from "@minecraft/server";
-import { MinecraftBlockTypes, MinecraftEnchantmentTypes } from "../modules/vanilla-types/index";
-import { validLogBlocks, axeEquipments, stackDistribution, durabilityDamagePerBlock, excludedLog, includedLog, chopLimit } from "../index";
-async function treeCut(player, dimension, location, blockTypeId) {
-    const equipment = player.getComponent(EntityEquippableComponent.componentId);
-    const currentHeldAxe = equipment.getEquipment(EquipmentSlot.Mainhand);
-    if (!axeEquipments.includes(currentHeldAxe?.typeId))
-        return;
-    if (!isLogIncluded(blockTypeId))
-        return;
-    if (!player.isSurvival())
-        return;
-    if (player.isSurvival())
-        currentHeldAxe.lockMode = ItemLockMode.slot;
-    const itemDurability = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId);
-    const enchantments = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId));
-    const level = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
-    const unbreakingMultiplier = (100 / (level + 1)) / 100;
-    const unbreakingDamage = durabilityDamagePerBlock * unbreakingMultiplier;
-    const visited = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
-    const totalDamage = visited.size * unbreakingDamage;
-    const postDamagedDurability = itemDurability.damage + totalDamage;
-    if (postDamagedDurability + 1 === itemDurability.maxDurability) {
-        equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
+import { system } from "@minecraft/server";
+import { serverConfigurationCopy, originalDatabase, hashBlock } from "../index";
+import { Graph } from "utils/graph";
+import { Vec3 } from "utils/VectorUtils";
+export function isLogIncluded(rootBlockTypeId, blockTypeId) {
+    const validLogBlocks = /(_log|_wood|crimson_stem|warped_stem|(?:brown|red_)?mushroom_block)$/;
+    function extractLogFamily(blockTypeId) {
+        const [, cleanedBlockTypeId] = blockTypeId.split(':');
+        const parts = cleanedBlockTypeId.split('_');
+        return parts.slice(0, -1).join('_');
     }
-    else if (postDamagedDurability > itemDurability.maxDurability) {
-        currentHeldAxe.lockMode = ItemLockMode.none;
-        return;
-    }
-    else if (postDamagedDurability < itemDurability.maxDurability) {
-        itemDurability.damage = itemDurability.damage + totalDamage;
-        currentHeldAxe.lockMode = ItemLockMode.none;
-        equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
-    }
-    for (const group of groupAdjacentBlocks(visited)) {
-        const firstElement = JSON.parse(group[0]);
-        const lastElement = JSON.parse(group[group.length - 1]);
-        if (firstElement === lastElement) {
-            await new Promise((resolve) => {
-                dimension.getBlock(firstElement).setType(MinecraftBlockTypes.Air);
-                resolve();
-            });
-            continue;
-        }
-        else {
-            await new Promise((resolve) => {
-                dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.Air);
-                resolve();
-            });
-        }
-    }
-    system.runTimeout(async () => {
-        for (const group of stackDistribution(visited.size)) {
-            await new Promise((resolve) => {
-                dimension.spawnItem(new ItemStack(blockTypeId, group), location);
-                resolve();
-            });
-        }
-    }, 5);
-}
-function isLogIncluded(blockTypeId) {
-    if (excludedLog.includes(blockTypeId) || blockTypeId.includes('stripped_'))
+    if (serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_'))
         return false;
-    if (includedLog.includes(blockTypeId) || validLogBlocks.test(blockTypeId))
+    const extractedLogFamily = extractLogFamily(rootBlockTypeId);
+    const blockFamily = extractLogFamily(blockTypeId);
+    const isSameFamily = blockFamily === extractedLogFamily;
+    if ((serverConfigurationCopy.includedLog.values.includes(blockTypeId) ||
+        validLogBlocks.test(blockTypeId)) && isSameFamily)
         return true;
     return false;
 }
-function getTreeLogs(dimension, location, blockTypeId, maxNeeded) {
-    return new Promise((resolve) => {
-        const traversingTreeInterval = system.runInterval(() => {
-            const visited = new Set();
-            let queue = getBlockNear(dimension, location);
+export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, isInspectingTree = true) {
+    const firstBlock = dimension.getBlock(location);
+    const visitedTree = await new Promise((resolve) => {
+        const graph = new Graph();
+        const visitedTypeIDs = new Map();
+        const queue = [firstBlock];
+        const yOffsets = new Map();
+        const visited = new Set([JSON.stringify(firstBlock.location)]);
+        visitedTypeIDs.set(blockTypeId, 0);
+        const traversingTreeInterval = system.runJob(function* () {
+            graph.addNode(firstBlock);
+            originalDatabase.set(`visited_${hashBlock(firstBlock)}`, isInspectingTree);
             while (queue.length > 0) {
-                if (visited.size >= chopLimit || visited.size >= maxNeeded) {
-                    system.clearRun(traversingTreeInterval);
-                    resolve(visited);
+                const size = graph.getSize();
+                if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || size >= maxNeeded) {
+                    break;
                 }
-                const _block = queue.shift();
-                if (!_block || !isLogIncluded(_block?.typeId))
+                const block = queue.shift();
+                const mainNode = graph.getNode(block);
+                if (!mainNode)
                     continue;
-                if (_block.typeId !== blockTypeId)
-                    continue;
-                const pos = JSON.stringify(_block.location);
-                if (visited.has(pos))
-                    continue;
-                visited.add(pos);
-                queue.push(...getBlockNear(dimension, _block.location));
+                yOffsets.set(block.y, false);
+                for (const neighborBlock of getBlockNear(blockTypeId, block)) {
+                    const serializedLocation = JSON.stringify(neighborBlock.location);
+                    let neighborNode = graph.getNode(neighborBlock) ?? graph.addNode(neighborBlock);
+                    originalDatabase.set(`visited_${hashBlock(neighborBlock)}`, isInspectingTree);
+                    if (mainNode.neighbors.has(neighborNode))
+                        continue;
+                    mainNode.addNeighbor(neighborNode);
+                    neighborNode.addNeighbor(mainNode);
+                    if (visited.has(serializedLocation))
+                        continue;
+                    visited.add(serializedLocation);
+                    queue.push(neighborBlock);
+                    let currentAmount = visitedTypeIDs.get(neighborBlock.typeId) ?? 0;
+                    currentAmount += 1;
+                    visitedTypeIDs.set(neighborBlock.typeId, currentAmount);
+                    yield;
+                }
+                yield;
             }
-            queue = [];
-            system.clearRun(traversingTreeInterval);
-            resolve(visited);
-        }, 1);
+            system.clearJob(traversingTreeInterval);
+            resolve({
+                source: graph,
+                blockOutlines: [],
+                yOffsets,
+                typeIds: visitedTypeIDs,
+                trunk: {
+                    size: 0,
+                    center: { x: 0, z: 0 }
+                }
+            });
+        }());
+    });
+    const blockOutlines = [];
+    const trunk = await getTreeTrunkSize(firstBlock, blockTypeId);
+    return new Promise((resolve) => {
+        const t = system.runJob((function* () {
+            for (const yOffset of visitedTree.yOffsets.keys()) {
+                const outline = dimension.spawnEntity('yn:block_outline', {
+                    x: trunk.center.x,
+                    y: yOffset,
+                    z: trunk.center.z
+                });
+                outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
+                blockOutlines.push(outline);
+                yield;
+            }
+            for (const blockOutline of blockOutlines) {
+                if (blockOutline?.isValid()) {
+                    blockOutline.triggerEvent('not_persistent');
+                }
+                yield;
+            }
+            system.clearJob(t);
+            resolve({
+                typeIds: visitedTree.typeIds,
+                source: visitedTree.source,
+                blockOutlines: blockOutlines,
+                trunk: trunk,
+                yOffsets: visitedTree.yOffsets
+            });
+            return;
+        })());
     });
 }
-function getBlockNear(dimension, location, radius = 1) {
-    const centerX = location.x;
-    const centerY = location.y;
-    const centerZ = location.z;
-    const positions = [];
+function* getBlockNear(initialBlockTypeID, initialBlock, radius = 1) {
+    const centerX = 0;
+    const centerY = 0;
+    const centerZ = 0;
     let _block;
     for (let x = centerX - radius; x <= centerX + radius; x++) {
         for (let y = centerY - radius; y <= centerY + radius; y++) {
             for (let z = centerZ - radius; z <= centerZ + radius; z++) {
                 if (centerX === x && centerY === y && centerZ === z)
                     continue;
-                _block = dimension.getBlock({ x, y, z });
-                if (_block.isAir)
+                _block = initialBlock.offset({ x, y, z });
+                if (!_block?.isValid() || !isLogIncluded(initialBlockTypeID, _block?.typeId))
                     continue;
-                positions.push(_block);
+                yield _block;
             }
         }
     }
-    return positions;
 }
-function groupAdjacentBlocks(visited) {
-    const array = Array.from(visited).map(item => JSON.parse(item));
-    array.sort((a, b) => a.x - b.x || a.z - b.z || a.y - b.y);
-    const groups = [];
-    let currentGroup = [];
-    for (let i = 0; i < array.length; i++) {
-        if (i === 0 || (array[i].x === array[i - 1].x && array[i].z === array[i - 1].z && Math.abs(array[i].y - JSON.parse(currentGroup[currentGroup.length - 1]).y) <= 2)) {
-            currentGroup.push(JSON.stringify(array[i]));
-        }
-        else {
-            groups.push(currentGroup);
-            currentGroup = [JSON.stringify(array[i])];
-        }
-    }
-    if (currentGroup.length > 0) {
-        groups.push(currentGroup);
-    }
-    return groups;
+export function getTreeTrunkSize(blockInteracted, blockTypeId) {
+    return new Promise((fetchedTrunkSizeResolved) => {
+        let i = 0;
+        let centroidLog = {
+            x: 0,
+            z: 0
+        };
+        const visited = new Set();
+        const queue = [blockInteracted];
+        const originalY = blockInteracted.y;
+        const t = system.runJob((function* () {
+            while (queue.length > 0) {
+                const currentBlock = queue.shift();
+                if ((!currentBlock || !currentBlock.isValid()) && !Vec3.equals(blockInteracted, currentBlock))
+                    continue;
+                const blockKey = JSON.stringify({ x: currentBlock.x, z: currentBlock.z });
+                if (visited.has(blockKey))
+                    continue;
+                visited.add(blockKey);
+                centroidLog.x += currentBlock.x;
+                centroidLog.z += currentBlock.z;
+                i++;
+                for (let y = -1; y <= 1; y++) {
+                    const newY = currentBlock.y + y;
+                    if (newY < originalY - 2 || newY > originalY + 2)
+                        continue;
+                    for (let x = -1; x <= 1; x++) {
+                        for (let z = -1; z <= 1; z++) {
+                            if (x === 0 && z === 0 && y === 0)
+                                continue;
+                            const neighborBlock = currentBlock.offset({ x: x, y: y, z: z });
+                            const neighborLoc = JSON.stringify({ x: neighborBlock.x, z: neighborBlock.z });
+                            if (!neighborBlock?.isValid() || visited.has(neighborLoc) || !isLogIncluded(blockTypeId, neighborBlock.typeId))
+                                continue;
+                            queue.push(neighborBlock);
+                            yield;
+                        }
+                        yield;
+                    }
+                    yield;
+                }
+                yield;
+            }
+            if (i <= 1) {
+                i = 1;
+                centroidLog = blockInteracted.center();
+            }
+            else {
+                centroidLog.x = (centroidLog.x / i) + 0.5;
+                centroidLog.z = (centroidLog.z / i) + 0.5;
+            }
+            system.clearJob(t);
+            fetchedTrunkSizeResolved({ center: centroidLog, size: i });
+            return;
+        })());
+    });
 }
-export { treeCut, isLogIncluded, getTreeLogs };

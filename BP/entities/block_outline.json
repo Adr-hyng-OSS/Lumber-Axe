@@ -1,0 +1,150 @@
+{
+	"format_version": "1.18.0",
+	
+	"minecraft:entity": {
+		"description": {
+			"identifier": "yn:block_outline",
+			"is_spawnable": true,
+			"is_summonable": true,
+			"properties": {
+        "yn:trunk_size": {
+          "type": "int",
+          "client_sync": true,
+          "default": 0,
+					"range": [0, 31]
+        },
+				"yn:is_in_air": {
+          "type": "bool",
+          "default": false
+        }
+      }
+		},
+		
+		"components": {
+			"minecraft:collision_box": {
+				"width": 0,
+				"height": 0
+			},
+			"minecraft:type_family": {
+				"family": [
+					"inanimate"
+				]
+			},
+			"minecraft:health": {
+        "value": 1,
+        "max": 1
+      },
+			"minecraft:despawn": {
+				"despawn_from_distance": {
+					"min_distance": 32
+				},
+				"despawn_from_inactivity": true,
+				"despawn_from_simulation_edge": true,
+				"min_range_inactivity_timer": 15,
+				"remove_child_entities": false
+			},
+			"minecraft:on_death": "despawn",
+			"minecraft:breathable": {
+				"total_supply": 1,
+				"suffocate_time": 0,
+				"breathes_solids": true,
+				"breathe_blocks": [],
+				"non_breathe_blocks": ["minecraft:air"]
+			},
+      "minecraft:physics": {
+        "has_collision": false,
+        "has_gravity": false
+      },
+			"minecraft:damage_sensor": {
+        "triggers": [
+					{
+						"cause": "suffocation",
+						"deals_damage": false,
+						"on_damage": {
+							"target": "self",
+							"event": "despawn"
+						}
+					},
+					{
+						"cause": "all",
+						"deals_damage": false
+					}
+				]
+      },
+      "minecraft:knockback_resistance": {
+        "value": 100
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": false
+      }
+		},
+		"component_groups": {
+			"active_outline": {
+				"minecraft:variant": {
+					"value": 1
+				}
+			},
+			"inactive_outline": {
+				"minecraft:variant": {
+					"value": 0
+				}
+			},
+			"despawn": {
+        "minecraft:instant_despawn": {}
+      },
+			"not_persistent": {
+				"minecraft:timer": {
+					"looping": false,
+					"time": 7,
+					"time_down_event": {
+						"event": "despawn"
+					}
+				}
+			},
+			"check_for_collision": {
+				"minecraft:environment_sensor": {
+					"triggers": [
+						{
+							"event": "on_air_detected",
+							"target": "self",
+							"filters": {
+								"test": "in_block",
+								"value": "minecraft:air"
+							}
+						}
+					]
+				}
+			}
+		},
+		
+		"events": {
+			"minecraft:entity_spawned": {
+				"remove": { "component_groups": [ "active_outline" ] },
+				"add": { "component_groups": [ "inactive_outline", "check_for_collision" ] },
+				"set_property": {
+					"yn:trunk_size": 0
+				}
+			},
+			"on_air_detected": {
+				"set_property": {
+					"yn:is_in_air": true
+				}
+			},
+			"despawn": {
+				"add": { "component_groups": [ "despawn" ] }
+      },
+			"active_outline": {
+				"remove": { "component_groups": [ "inactive_outline" ] },
+				"add": { "component_groups": [ "active_outline" ] }
+      },
+			"inactive_outline": {
+				"remove": { "component_groups": [ "active_outline" ] },
+				"add": { "component_groups": [ "inactive_outline" ] }
+      },
+			"not_persistent": {
+				"add": { "component_groups": [ "not_persistent" ]}
+			}
+		}
+	}
+}

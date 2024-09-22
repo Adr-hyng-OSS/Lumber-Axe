@@ -21,8 +21,8 @@ elif args.dest == 'server':
     com_mojang = os.path.expandvars(SERVER_LOCATION)
 
 
-behaviour_pack = com_mojang + f'\\development_behavior_packs\\{pack_folder} BP'
-resource_pack = com_mojang + f'\\development_resource_packs\\{pack_folder} RP'
+behaviour_pack = os.path.join(com_mojang, 'development_behavior_packs', f'{pack_folder} BP')
+resource_pack = os.path.join(com_mojang, 'development_resource_packs', f'{pack_folder} RP')
 
 def sync_file(path, from_root, to_root):
     from_file = Path(path).relative_to(from_root)

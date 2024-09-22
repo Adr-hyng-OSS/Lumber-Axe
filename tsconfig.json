@@ -1,15 +1,16 @@
 {
-    "compilerOptions": {
-      "module": "ES2020",
-      "target": "ES2021",
-      "moduleResolution": "Node",
-      "allowSyntheticDefaultImports": true,
-      "baseUrl": "./src",
-      "rootDir": "./src",
-      "removeComments": true,
-      "outDir": "./BP/scripts/"
-    },
-    "exclude": [ "node_modules" ],
-    "include": [ "src" ]
-  }
-  
+  "compilerOptions": {
+    "module": "ES2020",
+    "target": "ES2021",
+    "moduleResolution": "Node",
+    "removeComments": true,
+    "allowJs": true,
+    "checkJs": false,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": "./src",
+    "rootDir": "./src",
+    "outDir": "./BP/scripts"
+  },
+  "exclude": [ "node_modules"],
+  "include": [ "src/**/*"]
+}

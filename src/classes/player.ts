@@ -1,11 +1,23 @@
 import { GameMode, Player } from "@minecraft/server";
+import { OverTakes } from "./partial_overtakes";
+import { Configuration } from "configuration/configuration_screen";
 
 declare module "@minecraft/server" {
   interface Player {
-    isSurvival(this: Player): boolean;
+    configuration: Configuration;
+    isSurvival(): boolean;
   }
 }
 
-Player.prototype.isSurvival = function(): boolean {
-  return this.dimension.getPlayers({ gameMode: GameMode.survival, name: this.name, location: this.location, maxDistance: 1, closest: 1 }).length > 0;
-}
+const screenConfigs = new WeakMap<Player, Configuration>();
+
+OverTakes(Player.prototype, {
+  isSurvival(): boolean {
+    return this.getGameMode() === GameMode.survival;
+  },
+  get configuration() {
+    let sc = screenConfigs.get(this);
+    if(!sc) screenConfigs.set(this, sc = new Configuration(this));
+    return sc;
+  }
+});

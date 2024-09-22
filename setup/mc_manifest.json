@@ -1,15 +1,13 @@
 {
 	"format_version": 2,
 	"header": {
-		"bp_name": "Lumber Axe BP: Chopping made easy!",
-		"rp_name": "Lumber Axe RP: Chopping made easy!",
-		
-        "description": "Cut the whole tree with easy as a lumberjack's pie! We create addons/datapack that will ease your survival plays. \n @Created By: @h_YanG_0A & @Brilliant",
-		
-        "bp_uuid": "4538bab6-a78b-4710-89e5-a2e103e97a6a",
+		"bp_name": "Lumber Axe BP",
+		"rp_name": "Lumber Axe RP",
+		"description": "An addon that gives you a lumberjack axes, which can preview the tree's status, and chopdown trees. \n @Created By: @Adr-hyng",
+		"bp_uuid": "4538bab6-a78b-4710-89e5-a2e103e97a6a",
 		"rp_uuid": "62b4cab4-fa42-405b-bff6-1f47b6958dd6",
-        "version": [1, 0, 5],
-		"min_engine_version": [ 1, 20, 10 ]
+		"version": [2, 0, 0],
+		"min_engine_version": [ 1, 21, 0 ]
 	},
 	"bp_modules": [
 		{
@@ -23,7 +21,7 @@
 			"type": "script",
 			"language": "javascript",
 			"uuid": "9717780a-c69f-4679-bbe6-dbf6dfcdd7de",
-			"version": [ 1, 0, 5 ],
+			"version": [ 2, 0, 0 ],
 			"entry": "scripts/main.js"
 		}
 	],
@@ -38,23 +36,19 @@
 	"bp_dependencies": [
 		{
 			"module_name": "@minecraft/server",
-			"version": "1.9.0-beta"
+			"version": "1.13.0"
 		},
 		{
 			"module_name": "@minecraft/server-ui",
-			"version": "1.2.0-beta"
+			"version": "1.2.0"
 		}
 	],
-	"bp_server_dependencies": [
-		{
-			"module_name": "@minecraft/server-admin",
-			"version": "1.0.0-beta"
-		}
-	],
+	"bp_server_dependencies": [],
 	"metadata": {
 		"authors": [
 			"@h_YanG_0A",
-      		"@Brilliant"
+			"Contributor-@Brilliant",
+			"Contributor-@Dal4y"
 		],
 		"license": "GPL-3.0-or-later",
 		"url": "https://twitter.com/h_YanG_0A"

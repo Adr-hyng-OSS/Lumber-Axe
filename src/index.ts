@@ -1,11 +1,32 @@
-export * from './functions/utils';
+import { Entity, VectorXZ } from '@minecraft/server';
+import { Graph } from 'utils/graph';
+
+export * from './utils/utilities';
 export * from './functions/tree_utils';
 export * from './classes/player';
+export * from './classes/entity_override';
+export * from './classes/item_equippable';
 
-import Configuration from "./config";
-const { durabilityDamagePerBlock, chopLimit, includedLog, excludedLog, disableWatchDogTerminateLog } = Configuration;
-export { durabilityDamagePerBlock, chopLimit, includedLog, excludedLog, disableWatchDogTerminateLog};
+export * from "configuration/server_configuration";
+export * from "constant";
+export * from "items/axes";
 
-export const validLogBlocks: RegExp = /(_log|crimson_stem|warped_stem)$/;
+export type TrunkBlockResult = {
+  size: number;
+  center: VectorXZ;
+}
 
-export const axeEquipments: string[] = [ "yn:wooden_lumber_axe", "yn:stone_lumber_axe", "yn:iron_lumber_axe", "yn:diamond_lumber_axe", "yn:golden_lumber_axe", "yn:netherite_lumber_axe" ];
+export type VisitedBlockResult = {
+  source: Graph;
+  blockOutlines: Entity[];
+  yOffsets: Map<number, boolean>;
+  trunk: TrunkBlockResult;
+  typeIds: Map<string, number>;
+}
+
+export type InteractedTreeResult = {
+  initialSize: number;
+  visitedLogs: VisitedBlockResult;
+  isDone: boolean;
+  isBeingChopped: boolean;
+}

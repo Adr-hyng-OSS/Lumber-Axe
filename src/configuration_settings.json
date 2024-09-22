@@ -1,27 +1,33 @@
 {
-    "durabilityDamagePerBlock": {
-      "description": "Lumber Axe durability damage per log destroyed.",
-      "default": 3
-    },
-  
-    "chopLimit": {
-      "description": "1500 above is not recommended. It Does work but it's not recommended.",
-      "default": 300
-    },
-  
-    "includedLog": {
-      "description": "Included blocks for custom logs, but any custom or vanilla logs also work as long as the block identifier ends with \"*_log\".\nCheck: https://github.com/mcbe-mods/Cut-tree-one-click by Lete114.",
-      "default": []
-    },
-  
-    "excludedLog": {
-      "description": "Excluded blocks for block logs you don't want to be included in being chopped.\n\nTip:\n- excludedLog is prioritized over includedLog.\n- It's unnecessary to include log blocks that have \"*_log\" in their block id.",
-      "default": []
-    },
-  
-    "disableWatchDogTerminateLog": {
-      "description": "Disables the watchDogTerminate Log message. If true, it will only show a warning message when you enable content-ui log in the Minecraft settings.",
-      "default": true
-    }
+  "durabilityDamagePerBlock": {
+    "description": "Lumber Axe durability damage per log destroyed.",
+    "name": "LumberAxe.server.durability_damage_per_block",
+    "default": 3
+  },
+  "immersiveModeDelay": {
+    "description": "Delay for immersive mode.",
+    "name": "LumberAxe.server.immersive_delay",
+    "default": 5
+  },
+  "chopLimit": {
+    "description": "Tree chop limitation for control purposes.",
+    "name": "LumberAxe.server.chop_limit",
+    "default": 1000
+  },
+  "includedLog": {
+    "description": "Included blocks for custom logs, but any custom or vanilla logs also work as long as the block identifier ends with \"*_log\".\nCheck: https://github.com/mcbe-mods/Cut-tree-one-click by Lete114.",
+    "name": "LumberAxe.configuration.log_include_manager",
+    "default": ["Empty"]
+  },
+  "excludedLog": {
+    "description": "Excluded blocks for block logs you don't want to be included in being chopped.\n\nTip:\n- excludedLog is prioritized over includedLog.\n- It's unnecessary to include log blocks that have \"*_log\" in their block id.",
+    "name": "LumberAxe.configuration.log_exclude_manager",
+    "default": ["Empty"]
+  },
+  "immersiveMode": {
+    "description": "Enable/Disable Progressive Chopping, which makes you chop trees slightly longer, but nice to see.",
+    "name": "LumberAxe.server.immersive_chopping",
+    "default": false
   }
+}
   

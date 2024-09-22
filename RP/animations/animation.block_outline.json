@@ -1,0 +1,26 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"animation.block_outline.render_scale": {
+			"loop": true,
+			"bones": {
+				"root": {
+					"rotation": [0, 0, 0]
+				},
+				"outline": {
+					"scale": "1.04 + math.sqrt(query.distance_from_camera) / 64"
+				}
+			}
+		},
+		"animation.block_outline.spawn_particle": {
+			"loop": "hold_on_last_frame",
+			"animation_length": 1.0,
+			"particle_effects": {
+				"0.1": {
+					"pre_effect_script": "variable.trunk_size = q.has_property('yn:trunk_size') ? q.property('yn:trunk_size') : 0;variable.dig_particle_texture_coordinate = query.surface_particle_texture_coordinate; variable.dig_particle_texture_size = query.surface_particle_texture_size; variable.dig_particle_color = query.surface_particle_color;",
+					"effect": "destroy_block"
+				}
+			}
+		}
+	}
+}
