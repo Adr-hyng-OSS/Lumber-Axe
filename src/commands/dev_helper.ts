@@ -23,7 +23,7 @@ const command: ICommandBase = {
         Usage:
         > ${CommandHandler.prefix}${this.name} ${REQUIRED_PARAMETER.GET} = GETS an enchanted fishing rod for development.
         > ${CommandHandler.prefix}${this.name} ${REQUIRED_PARAMETER.TEST} = TEST a Working-in-progress features.
-        > ${CommandHandler.prefix}${this.name} ${REQUIRED_PARAMETER.TEST} = Reloads the addon.
+        > ${CommandHandler.prefix}${this.name} ${REQUIRED_PARAMETER.RELOAD} = Reloads the addon.
         `).replaceAll("        ", "");
     },
     execute(player, args) {

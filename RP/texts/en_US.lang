@@ -6,13 +6,15 @@ item.yn:iron_lumber_axe.name=Iron Lumber Axe
 item.yn:diamond_lumber_axe.name=Diamond Lumber Axe
 item.yn:netherite_lumber_axe.name=Netherite Lumber Axe
 
+## Don't Change
+LumberAxe.form.canBeChopped.text=Choppable
+LumberAxe.form.cannotBeChopped.text=Cannot be Chopped
+
 ## Form-UI <REDO LOCALIZATION>
 LumberAxe.form.title.text=Tree Status Overview
 LumberAxe.form.treeSizeAbrev.text=Has
 LumberAxe.form.treeSizeAbrevLogs.text=Log/s
 LumberAxe.form.trunkHeightAbrev.text=Block/s High
-LumberAxe.form.canBeChopped.text=Yes
-LumberAxe.form.cannotBeChopped.text=No
 
 ## Log Messages <ADD LOCALIZATION>
 LumberAxe.on_load_message=§a§lLumber Axe Addon§r §ahas been loaded successfully. Created by Adr-hyng.

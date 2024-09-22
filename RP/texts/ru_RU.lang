@@ -8,13 +8,49 @@ item.yn:netherite_lumber_axe.name=Незеритовый топор дровос
 
 
 ## Form-UI
-LumberAxe.form.title.text=Информация о дереве
-LumberAxe.form.treeSizeAbrev.text=имеет
-LumberAxe.form.treeSizeAbrevLogs.text=бревен дерева
-LumberAxe.form.durabilityAbrev.text=DMG
-LumberAxe.form.maxDurabilityAbrev.text=MAX
-LumberAxe.form.canBeChopped.text=§aДерево можно срубить
-LumberAxe.form.cannotBeChopped.text=§cДерево нельзя срубить
+LumberAxe.form.canBeChopped.text=Дерево можно срубить
+LumberAxe.form.cannotBeChopped.text=Дерево нельзя срубить
 
-## Error Message
-LumberAxe.watchdogError.hang.text=Ошибка сценария: попробуйте рубить или осматривать деревья меньшего размера или под другим углом.
+## Form-UI <REDO LOCALIZATION>
+LumberAxe.form.title.text=Обзор состояния дерева
+LumberAxe.form.treeSizeAbrev.text=Имеет
+LumberAxe.form.treeSizeAbrevLogs.text=Бревно/а
+LumberAxe.form.trunkHeightAbrev.text=Блок/ов Высота
+
+## Log Messages <ADD LOCALIZATION>
+LumberAxe.on_load_message=§a§lАддон Топор Лесоруба§r §aуспешно загружен. Создано Adr-hyng.
+LumberAxe.on_caught_invalid_command=§cНеверный формат использования. %1
+LumberAxe.on_database_empty=§4В базе данных не найдено записей конфигурации.§r
+LumberAxe.on_database_reset=§aБаза данных была сброшена.§r
+LumberAxe.show_database=ID базы данных: §e%1§r%2%3
+LumberAxe.on_caught_command_404=§cОшибка при выполнении команды %1: %2
+LumberAxe.on_caught_main_command_not_found=§cНеверная команда: §l%1§r%2§cПроверьте, существует ли команда. Используйте /scriptevent %3 help
+LumberAxe.server.invalid_log_amount_limitation=Невозможно срубить всё дерево из-за ограничения конфигурации сервера в %1. Обратитесь к администратору для увеличения/настройки.
+
+## Server Options Details <ADD LOCALIZATION>
+LumberAxe.server.durability_damage_per_block=Потеря прочности за блок
+LumberAxe.server.chop_limit=Ограничение количества бревен дерева
+LumberAxe.server.immersive_chopping=Включить Иммерсивный Режим
+LumberAxe.server.immersive_delay=Время Задержки Иммерсивного Режима
+
+## Configuration Options <ADD LOCALIZATION>
+LumberAxe.configuration.title=Настройки %1
+LumberAxe.configuration.general=Основные Настройки
+LumberAxe.configuration.log_include_manager=Менеджер Включенных Бревен
+LumberAxe.configuration.log_exclude_manager=Менеджер Исключенных Бревен
+
+## Include Manager <ADD LOCALIZATION>
+LumberAxe.log_include_manager.drop_down=Включенные Бревна для Рубки
+LumberAxe.log_include_manager.text_field=Бревно для Включения
+LumberAxe.log_include_manager.toggle=Добавить
+LumberAxe.log_include_manager.add_success_log=§aБлок с именем '%1' успешно добавлен в §oВключенные Бревна для Рубки.
+LumberAxe.log_include_manager.remove_success_log=§cБлок с именем '%1' успешно удален из §oВключенные Бревна для Рубки.
+LumberAxe.log_include_manager.update_success_log=§eБлок с именем '%1' из §oВключенные Бревна для Рубки§r §eбыл успешно обновлен на '%2' в §oВключенные Бревна для Рубки.
+
+## Exclude Manager <ADD LOCALIZATION>
+LumberAxe.log_exclude_manager.drop_down=Исключенные Бревна для Рубки
+LumberAxe.log_exclude_manager.text_field=Бревно для Исключения
+LumberAxe.log_exclude_manager.toggle=Добавить
+LumberAxe.log_exclude_manager.add_success_log=§aБлок с именем '%1' успешно добавлен в §oИсключенные Бревна для Рубки.
+LumberAxe.log_exclude_manager.remove_success_log=§cБлок с именем '%1' успешно удален из §oИсключенные Бревна для Рубки.
+LumberAxe.log_exclude_manager.update_success_log=§eБлок с именем '%1' из §oИсключенные Бревна для Рубки§r §eбыл успешно обновлен на '%2' в §oИсключенные Бревна для Рубки.
