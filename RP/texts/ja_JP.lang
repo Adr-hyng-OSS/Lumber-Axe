@@ -1,0 +1,53 @@
+## Items
+item.yn:wooden_lumber_axe.name=木製の木こりの斧	###
+item.yn:stone_lumber_axe.name=石製の木こりの斧	###
+item.yn:golden_lumber_axe.name=金製の木こりの斧	###
+item.yn:iron_lumber_axe.name=鉄製の木こりの斧	###
+item.yn:diamond_lumber_axe.name=ダイヤモンドの木こりの斧	###
+item.yn:netherite_lumber_axe.name=ネザライトの木こりの斧	###
+
+## Form-UI <REDO LOCALIZATION>
+LumberAxe.form.title.text=木の状態確認	###
+LumberAxe.form.treeSizeAbrev.text=含む	###
+LumberAxe.form.treeSizeAbrevLogs.text=ログ	###
+LumberAxe.form.trunkHeightAbrev.text=ブロックの高さ	###
+LumberAxe.form.canBeChopped.text=切り倒せる	###
+LumberAxe.form.cannotBeChopped.text=切り倒せない	###
+
+## Log Messages <ADD LOCALIZATION>
+LumberAxe.on_load_message=§a§l木こりの斧アドオン§r §aが正常に読み込まれました。 作成者：Adr-hyng。	###
+LumberAxe.on_caught_invalid_command=§c無効な使用フォーマット。%1	###
+LumberAxe.on_database_empty=§4データベースに構成レコードが見つかりませんでした。§r	###
+LumberAxe.on_database_reset=§aデータベースがリセットされました。§r	###
+LumberAxe.show_database=データベースID：§e%1§r%2%3	###
+LumberAxe.on_caught_command_404=§c%1 コマンドを取得中にエラーが発生しました: %2	###
+LumberAxe.on_caught_main_command_not_found=§c無効なコマンド: §l%1§r%2§cコマンドが存在するか確認してください。/scriptevent %3 helpを使用	###
+LumberAxe.server.invalid_log_amount_limitation=サーバーの設定制限 %1 により木を全部切り倒すことができません。 サーバーオペレーターに調整を依頼してください。	###
+
+## Server Options Details <ADD LOCALIZATION>
+LumberAxe.server.durability_damage_per_block=ブロックごとの耐久度減少	###
+LumberAxe.server.chop_limit=木のログの制限	###
+LumberAxe.server.immersive_chopping=没入モードを有効化	###
+LumberAxe.server.immersive_delay=没入モード遅延時間	###
+
+## Configuration Options <ADD LOCALIZATION>
+LumberAxe.configuration.title=%1 設定	###
+LumberAxe.configuration.general=一般オプション	###
+LumberAxe.configuration.log_include_manager=含まれるログマネージャー	###
+LumberAxe.configuration.log_exclude_manager=除外されたログマネージャー	###
+
+## Include Manager <ADD LOCALIZATION>
+LumberAxe.log_include_manager.drop_down=含まれる切り倒せるログ	###
+LumberAxe.log_include_manager.text_field=含めるログブロック	###
+LumberAxe.log_include_manager.toggle=追加	###
+LumberAxe.log_include_manager.add_success_log=§aブロック名 '%1' が正常に §o含まれる切り倒せるブロック に追加されました。	###
+LumberAxe.log_include_manager.remove_success_log=§cブロック名 '%1' が正常に §o含まれる切り倒せるブロック から削除されました。	###
+LumberAxe.log_include_manager.update_success_log=§eブロック名 '%1' が §o含まれる切り倒せるブロック§r に正常に '%2' に更新されました。	###
+
+## Exclude Manager <ADD LOCALIZATION>
+LumberAxe.log_exclude_manager.drop_down=除外された切り倒せるログ	###
+LumberAxe.log_exclude_manager.text_field=除外するログブロック	###
+LumberAxe.log_exclude_manager.toggle=追加	###
+LumberAxe.log_exclude_manager.add_success_log=§aブロック名 '%1' が正常に §o除外された切り倒せるブロック に追加されました。	###
+LumberAxe.log_exclude_manager.remove_success_log=§cブロック名 '%1' が正常に §o除外された切り倒せるブロック から削除されました。	###
+LumberAxe.log_exclude_manager.update_success_log=§eブロック名 '%1' が §o除外された切り倒せるブロック§r に正常に '%2' に更新されました。	###

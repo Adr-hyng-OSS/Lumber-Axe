@@ -1,0 +1,53 @@
+## Items
+item.yn:wooden_lumber_axe.name=木製伐木斧	###
+item.yn:stone_lumber_axe.name=石製伐木斧	###
+item.yn:golden_lumber_axe.name=金製伐木斧	###
+item.yn:iron_lumber_axe.name=鐵製伐木斧	###
+item.yn:diamond_lumber_axe.name=鑽石伐木斧	###
+item.yn:netherite_lumber_axe.name=下界合金伐木斧	###
+
+## Form-UI <REDO LOCALIZATION>
+LumberAxe.form.title.text=樹木狀態概覽	###
+LumberAxe.form.treeSizeAbrev.text=包含	###
+LumberAxe.form.treeSizeAbrevLogs.text=原木	###
+LumberAxe.form.trunkHeightAbrev.text=方塊高度	###
+LumberAxe.form.canBeChopped.text=可砍伐	###
+LumberAxe.form.cannotBeChopped.text=不可砍伐	###
+
+## Log Messages <ADD LOCALIZATION>
+LumberAxe.on_load_message=§a§l伐木斧模組§r §a已成功加載。由 Adr-hyng 創建。	###
+LumberAxe.on_caught_invalid_command=§c無效的使用格式。%1	###
+LumberAxe.on_database_empty=§4資料庫中未找到配置記錄。§r	###
+LumberAxe.on_database_reset=§a資料庫已重置。§r	###
+LumberAxe.show_database=資料庫 ID：§e%1§r%2%3	###
+LumberAxe.on_caught_command_404=§c獲取 %1 命令時出錯: %2	###
+LumberAxe.on_caught_main_command_not_found=§c無效命令：§l%1§r%2§c請檢查命令是否存在。使用 /scriptevent %3 help	###
+LumberAxe.server.invalid_log_amount_limitation=由於伺服器設置限制為 %1，無法砍伐整棵樹。請聯繫伺服器管理員進行調整。	###
+
+## Server Options Details <ADD LOCALIZATION>
+LumberAxe.server.durability_damage_per_block=每方塊耐久損耗	###
+LumberAxe.server.chop_limit=樹木原木限制	###
+LumberAxe.server.immersive_chopping=啟用沉浸模式	###
+LumberAxe.server.immersive_delay=沉浸模式延遲時間	###
+
+## Configuration Options <ADD LOCALIZATION>
+LumberAxe.configuration.title=%1 設置	###
+LumberAxe.configuration.general=一般選項	###
+LumberAxe.configuration.log_include_manager=包含的原木管理器	###
+LumberAxe.configuration.log_exclude_manager=排除的原木管理器	###
+
+## Include Manager <ADD LOCALIZATION>
+LumberAxe.log_include_manager.drop_down=包含的可砍伐原木	###
+LumberAxe.log_include_manager.text_field=要包含的原木方塊	###
+LumberAxe.log_include_manager.toggle=添加	###
+LumberAxe.log_include_manager.add_success_log=§a方塊名 '%1' 已成功添加到 §o包含的可砍伐原木 中。	###
+LumberAxe.log_include_manager.remove_success_log=§c方塊名 '%1' 已成功從 §o包含的可砍伐原木 中移除。	###
+LumberAxe.log_include_manager.update_success_log=§e方塊名 '%1' 已從 §o包含的可砍伐原木§r §e成功更新為 '%2'。	###
+
+## Exclude Manager <ADD LOCALIZATION>
+LumberAxe.log_exclude_manager.drop_down=排除的可砍伐原木	###
+LumberAxe.log_exclude_manager.text_field=要排除的原木方塊	###
+LumberAxe.log_exclude_manager.toggle=添加	###
+LumberAxe.log_exclude_manager.add_success_log=§a方塊名 '%1' 已成功添加到 §o排除的可砍伐原木 中。	###
+LumberAxe.log_exclude_manager.remove_success_log=§c方塊名 '%1' 已成功從 §o排除的可砍伐原木 中移除。	###
+LumberAxe.log_exclude_manager.update_success_log=§e方塊名 '%1' 已從 §o排除的可砍伐原木§r §e成功更新為 '%2'。	###

@@ -1,0 +1,51 @@
+## Items
+item.yn:wooden_lumber_axe.name=Machado de Lenhador de Madeira	###
+item.yn:stone_lumber_axe.name=Machado de Lenhador de Pedra	###
+item.yn:golden_lumber_axe.name=Machado de Lenhador de Ouro	###
+item.yn:iron_lumber_axe.name=Machado de Lenhador de Ferro	###
+item.yn:diamond_lumber_axe.name=Machado de Lenhador de Diamante	###
+item.yn:netherite_lumber_axe.name=Machado de Lenhador de Netherite	###
+
+## Form-UI <REDO LOCALIZATION>
+LumberAxe.form.title.text=Visão Geral do Estado da Árvore	###
+LumberAxe.form.treeSizeAbrev.text=Contém	###
+LumberAxe.form.treeSizeAbrevLogs.text=Troncos	###
+LumberAxe.form.trunkHeightAbrev.text=Altura em Blocos	###
+LumberAxe.form.canBeChopped.text=Pode Ser Cortada	###
+LumberAxe.form.cannotBeChopped.text=Não Pode Ser Cortada	###
+
+## Log Messages <ADD LOCALIZATION>
+LumberAxe.on_load_message=§a§lAdd-on de Machado de Lenhador§r §aCarregado com sucesso. Criado por Adr-hyng.	###
+LumberAxe.on_caught_invalid_command=§cFormato de uso inválido. %1	###
+LumberAxe.on_database_empty=§4Nenhum registo de configuração encontrado na base de dados. §r	###
+LumberAxe.on_database_reset=§aA base de dados foi reiniciada. §r	###
+LumberAxe.show_database=ID da Base de Dados: §e%1§r%2%3	###
+LumberAxe.on_caught_command_404=§cErro ao obter comando %1: %2	###
+LumberAxe.on_caught_main_command_not_found=§cComando inválido: §l%1§r%2§cVerifique se o comando existe. Utilize /scriptevent %3 help	###
+LumberAxe.server.invalid_log_amount_limitation=Não é possível cortar a árvore inteira devido à limitação de configuração do servidor %1. Solicite ao operador do servidor que ajuste.	###
+
+## Server Options Details <ADD LOCALIZATION>
+LumberAxe.server.durability_damage_per_block=Dano de durabilidade por bloco	###
+LumberAxe.server.chop_limit=Limite de troncos da árvore	###
+LumberAxe.server.immersive_chopping=Ativar modo imersivo	###
+LumberAxe.server.immersive_delay=Atraso do modo imersivo	###
+
+## Configuration Options <ADD LOCALIZATION>
+LumberAxe.configuration.title=Configurações de %1	###
+LumberAxe.configuration.general=Opções Gerais	###
+LumberAxe.configuration.log_include_manager=Gestor de Troncos Incluídos	###
+LumberAxe.configuration.log_exclude_manager=Gestor de Troncos Excluídos	###
+
+## Include Manager <ADD LOCALIZATION>
+LumberAxe.log_include_manager.drop_down=Troncos Incluídos no Corte	###
+LumberAxe.log_include_manager.text_field=Bloco de Tronco a Incluir	###
+LumberAxe.log_include_manager.toggle=Adicionar	###
+LumberAxe.log_include_manager.add_success_log=§aBloco '%1' adicionado com sucesso a §oTroncos Incluídos no Corte.	###
+LumberAxe.log_include_manager.remove_success_log=§cBloco '%1' removido com sucesso de §oTroncos Incluídos no Corte.	###
+LumberAxe.log_include_manager.update_success_log=§eBloco '%1' atualizado com sucesso para '%2' em §oTroncos Incluídos no Corte§r.	###
+
+## Exclude Manager <ADD LOCALIZATION>
+LumberAxe.log_exclude_manager.drop_down=Troncos Excluídos no Corte	###
+LumberAxe.log_exclude_manager.text_field=Bloco de Tronco a Excluir	###
+LumberAxe.log_exclude_manager.toggle=Adicionar	###
+LumberAxe.log_exclude_manager.add_success_log=§aBloco '%1' adicionado com sucesso a §oTroncos Excluídos no Corte.	###

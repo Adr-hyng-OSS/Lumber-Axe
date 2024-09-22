@@ -200,10 +200,10 @@ export class Configuration {
       {translate: "LumberAxe.log_exclude_manager.drop_down"}
     ]}, [...serverConfigurationCopy.excludedLog.values], 0)
     .textField({rawtext: [
-      {translate: "LumberAxe.log_exclude_manager.drop_down"}
+      {translate: "LumberAxe.log_exclude_manager.text_field"}
     ]}, "myaddon:custom_log", preResultFlags[1] as string)
     .toggle({rawtext: [
-      {translate: "LumberAxe.log_exclude_manager.drop_down"}
+      {translate: "LumberAxe.log_exclude_manager.toggle"}
     ]}, preResultFlags[2] as boolean);
     form.show(this.player).then((response: ModalFormResponse) => {
       if(!response.formValues) return;
