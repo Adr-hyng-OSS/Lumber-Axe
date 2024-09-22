@@ -1,11 +1,12 @@
 import { EntityComponentTypes, ItemStack } from "@minecraft/server";
 import { CommandHandler } from "commands/command_handler";
 import { SendMessageTo } from "utils/utilities";
-import { axeEquipments } from "constant";
+import { axeEquipments, originalDatabase, resetOriginalDatabase, visitedLogs } from "constant";
 var REQUIRED_PARAMETER;
 (function (REQUIRED_PARAMETER) {
     REQUIRED_PARAMETER["GET"] = "get";
     REQUIRED_PARAMETER["TEST"] = "test";
+    REQUIRED_PARAMETER["RELOAD"] = "reload";
 })(REQUIRED_PARAMETER || (REQUIRED_PARAMETER = {}));
 const command = {
     name: 'dev_helper',
@@ -18,6 +19,7 @@ const command = {
         Usage:
         > ${CommandHandler.prefix}${this.name} ${REQUIRED_PARAMETER.GET} = GETS an enchanted fishing rod for development.
         > ${CommandHandler.prefix}${this.name} ${REQUIRED_PARAMETER.TEST} = TEST a Working-in-progress features.
+        > ${CommandHandler.prefix}${this.name} ${REQUIRED_PARAMETER.RELOAD} = Reloads the addon.
         `).replaceAll("        ", "");
     },
     execute(player, args) {
@@ -34,7 +36,6 @@ const command = {
                     },
                 ]
             });
-        let fishingRod;
         switch (selectedReqParam) {
             case REQUIRED_PARAMETER.GET:
                 for (const axe of axeEquipments) {
@@ -42,6 +43,12 @@ const command = {
                 }
                 break;
             case REQUIRED_PARAMETER.TEST:
+                console.warn(originalDatabase.size, visitedLogs.length);
+                break;
+            case REQUIRED_PARAMETER.RELOAD:
+                originalDatabase.clear();
+                resetOriginalDatabase();
+                console.warn(originalDatabase.isValid(), originalDatabase.size);
                 break;
             default:
                 break;

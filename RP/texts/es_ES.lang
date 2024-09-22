@@ -6,16 +6,16 @@ item.yn:iron_lumber_axe.name=Hacha de madera de hierro
 item.yn:diamond_lumber_axe.name=Hacha de madera de diamante
 item.yn:netherite_lumber_axe.name=Hacha de madera inframundita
 
+LumberAxe.form.canBeChopped.text=ael árbol se puede cortar
+LumberAxe.form.cannotBeChopped.text=cel árbol no se puede cortar
 
-## Form-UI
-LumberAxe.form.title.text=Información del árbol
-LumberAxe.form.treeSizeAbrev.text=TIENE
-LumberAxe.form.treeSizeAbrevLogs.text=roncos de árboles
-LumberAxe.form.durabilityAbrev.text=DMG
-LumberAxe.form.maxDurabilityAbrev.text=MAX
-LumberAxe.form.canBeChopped.text=§ael árbol se puede cortar
-LumberAxe.form.cannotBeChopped.text=§cel árbol no se puede cortar
+## Form-UI <REDO LOCALIZATION>
+LumberAxe.form.title.text=Resumen del Estado del Árbol
+LumberAxe.form.treeSizeAbrev.text=Tiene
+LumberAxe.form.treeSizeAbrevLogs.text=Tronco/s
+LumberAxe.form.trunkHeightAbrev.text=Bloque/s de Altura
 
+<<<<<<< HEAD
 LumberAxe.on_load_message=§a§lLumber Axe Addon§r §aha sido cargado correctamente. Creado por Adr-hyng.
 LumberAxe.on_caught_invalid_command=§cFormato de uso inválido. %1
 LumberAxe.on_database_empty=§4No se encontró ningún registro de configuración en la base de datos.§r
@@ -46,3 +46,42 @@ LumberAxe.log_exclude_manager.toggle=Insertar
 LumberAxe.log_exclude_manager.add_success_log=§aEl bloque llamado '%1' se ha añadido correctamente a §oTroncos cortables excluidos.
 LumberAxe.log_exclude_manager.remove_success_log=§cEl bloque llamado '%1' se ha eliminado correctamente de §oTroncos cortables excluidos.
 LumberAxe.log_exclude_manager.update_success_log=§eEl bloque llamado '%1' de §oTroncos cortables excluidos§r §ese ha actualizado correctamente a '%2' en §oTroncos cortables excluidos.
+=======
+## Log Messages <ADD LOCALIZATION>
+LumberAxe.on_load_message=§a§lLumber Axe Addon§r §ase ha cargado con éxito. Creado por Adr-hyng.
+LumberAxe.on_caught_invalid_command=§cFormato de uso incorrecto. %1
+LumberAxe.on_database_empty=§4No se encontraron registros de configuración en la base de datos.§r
+LumberAxe.on_database_reset=§aLa base de datos ha sido reiniciada.§r
+LumberAxe.show_database=ID de la base de datos: §e%1§r%2%3
+LumberAxe.on_caught_command_404=§cError al buscar el comando %1: %2
+LumberAxe.on_caught_main_command_not_found=§cComando inválido: §l%1§r%2§cVerifica si el comando realmente existe. Usa /scriptevent %3 ayuda
+LumberAxe.server.invalid_log_amount_limitation=No se puede talar todo el árbol debido a la limitación de configuración del servidor de %1. Solicita al operador del servidor que lo ajuste.
+
+## Server Options Details <ADD LOCALIZATION>
+LumberAxe.server.durability_damage_per_block=Pérdida de durabilidad por bloque
+LumberAxe.server.chop_limit=Límite de troncos
+LumberAxe.server.immersive_chopping=Habilitar Modo Inmersivo
+LumberAxe.server.immersive_delay=Tiempo de retraso del Modo Inmersivo
+
+## Configuration Options <ADD LOCALIZATION>
+LumberAxe.configuration.title=Ajustes de %1
+LumberAxe.configuration.general=Opciones Generales
+LumberAxe.configuration.log_include_manager=Administrador de Troncos Incluidos
+LumberAxe.configuration.log_exclude_manager=Administrador de Troncos Excluidos
+
+## Include Manager <ADD LOCALIZATION>
+LumberAxe.log_include_manager.drop_down=Troncos Incluidos Talar
+LumberAxe.log_include_manager.text_field=Bloque de Tronco a Incluir
+LumberAxe.log_include_manager.toggle=Añadir
+LumberAxe.log_include_manager.add_success_log=§aEl bloque llamado '%1' se ha añadido con éxito a §oBloques de Troncos Incluidos.
+LumberAxe.log_include_manager.remove_success_log=§cEl bloque llamado '%1' se ha eliminado con éxito de §oBloques de Troncos Incluidos.
+LumberAxe.log_include_manager.update_success_log=§eEl bloque llamado '%1' de §oBloques de Troncos Incluidos§r §ese ha actualizado con éxito a '%2' en §oBloques de Troncos Incluidos.
+
+## Exclude Manager <ADD LOCALIZATION>
+LumberAxe.log_exclude_manager.drop_down=Troncos Excluidos Talar
+LumberAxe.log_exclude_manager.text_field=Bloque de Tronco a Excluir
+LumberAxe.log_exclude_manager.toggle=Añadir
+LumberAxe.log_exclude_manager.add_success_log=§aEl bloque llamado '%1' se ha añadido con éxito a §oBloques de Troncos Excluidos.
+LumberAxe.log_exclude_manager.remove_success_log=§cEl bloque llamado '%1' se ha eliminado con éxito de §oBloques de Troncos Excluidos.
+LumberAxe.log_exclude_manager.update_success_log=§eEl bloque llamado '%1' de §oBloques de Troncos Excluidos§r §ese ha actualizado con éxito a '%2' en §oBloques de Troncos Excluidos.
+>>>>>>> itemUseOnUpdate

@@ -1,6 +1,6 @@
 import { ActionFormData, FormCancelationReason, ModalFormData } from "@minecraft/server-ui";
 import { ConfigurationCollections_DB } from "./configuration_handler";
-import { ADDON_NAME, db } from "constant";
+import { ADDON_NAME, originalDatabase, resetOriginalDatabase } from "constant";
 import { resetServerConfiguration, serverConfigurationCopy, setServerConfiguration } from "./server_configuration";
 import { SendMessageTo } from "utils/utilities";
 export class Configuration {
@@ -11,10 +11,10 @@ export class Configuration {
         this.SERVER_CONFIGURATION_DB = ConfigurationCollections_DB(this.player, "SERVER");
     }
     reset(configurationType) {
-        if (db.isValid()) {
+        if (originalDatabase.isValid()) {
             if (configurationType === "SERVER") {
                 resetServerConfiguration();
-                db.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
+                originalDatabase.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
             }
         }
         else
@@ -22,16 +22,19 @@ export class Configuration {
     }
     saveServer() {
         setServerConfiguration(serverConfigurationCopy);
-        if (db.isValid())
-            db.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
+        if (originalDatabase.isValid())
+            originalDatabase.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
+        else {
+            resetOriginalDatabase();
+        }
     }
     loadServer() {
-        if (db.isValid()) {
-            if (db.has(this.SERVER_CONFIGURATION_DB)) {
-                setServerConfiguration(db.get(this.SERVER_CONFIGURATION_DB));
+        if (originalDatabase?.isValid()) {
+            if (originalDatabase.has(this.SERVER_CONFIGURATION_DB)) {
+                setServerConfiguration(originalDatabase.get(this.SERVER_CONFIGURATION_DB));
             }
             else {
-                db.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
+                originalDatabase.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
             }
         }
     }
@@ -71,26 +74,26 @@ export class Configuration {
         const cachedConfigurationValues = [];
         Object.values(serverConfigurationCopy).forEach((builder, index) => {
             const isNotDropdown = (builder.values.length === 0);
-            if (typeof builder.defaultValue === "boolean") {
-                cachedConfigurationValues[index] = builder.defaultValue;
-                form.toggle({ rawtext: [{ translate: builder.name }] }, cachedConfigurationValues[index]);
+            if (typeof builder.defaultValue === "boolean" && isNotDropdown) {
+                cachedConfigurationValues.push({ result: builder.defaultValue, index });
+                form.toggle({ rawtext: [{ translate: builder.name }] }, builder.defaultValue);
             }
             else if (typeof builder.defaultValue === "string" && isNotDropdown) {
-                cachedConfigurationValues[index] = builder.defaultValue;
-                form.textField({ rawtext: [{ translate: builder.name }] }, cachedConfigurationValues[index], builder.defaultValue);
+                cachedConfigurationValues.push({ result: builder.defaultValue, index });
+                form.textField({ rawtext: [{ translate: builder.name }] }, builder.defaultValue, builder.defaultValue);
             }
         });
         form.show(this.player).then((result) => {
-            1;
             if (!result.formValues)
                 return;
-            const hadChanges = !cachedConfigurationValues.every((element, index) => element === result.formValues[index]);
+            const hadChanges = !cachedConfigurationValues.every(({ result: element }, i) => element === result.formValues[i]);
             if (result.canceled || result.cancelationReason === FormCancelationReason.UserClosed || result.cancelationReason === FormCancelationReason.UserBusy) {
                 return;
             }
             if (hadChanges) {
                 result.formValues.forEach((newValue, formIndex) => {
-                    const key = Object.keys(serverConfigurationCopy)[formIndex];
+                    const index = cachedConfigurationValues[formIndex].index;
+                    const key = Object.keys(serverConfigurationCopy)[index];
                     const builder = serverConfigurationCopy[key];
                     switch (typeof newValue) {
                         case "boolean":
@@ -131,7 +134,7 @@ export class Configuration {
             ] }, [...serverConfigurationCopy.includedLog.values], 0)
             .textField({ rawtext: [
                 { translate: "LumberAxe.log_include_manager.text_field" }
-            ] }, "squid", preResultFlags[1])
+            ] }, "myaddon:custom_log", preResultFlags[1])
             .toggle({ rawtext: [
                 { translate: "LumberAxe.log_include_manager.toggle" }
             ] }, preResultFlags[2]);
@@ -200,10 +203,10 @@ export class Configuration {
                 { translate: "LumberAxe.log_exclude_manager.drop_down" }
             ] }, [...serverConfigurationCopy.excludedLog.values], 0)
             .textField({ rawtext: [
-                { translate: "LumberAxe.log_exclude_manager.drop_down" }
-            ] }, "squid", preResultFlags[1])
+                { translate: "LumberAxe.log_exclude_manager.text_field" }
+            ] }, "myaddon:custom_log", preResultFlags[1])
             .toggle({ rawtext: [
-                { translate: "LumberAxe.log_exclude_manager.drop_down" }
+                { translate: "LumberAxe.log_exclude_manager.toggle" }
             ] }, preResultFlags[2]);
         form.show(this.player).then((response) => {
             if (!response.formValues)

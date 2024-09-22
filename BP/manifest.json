@@ -1,13 +1,13 @@
 {
     "format_version": 2,
     "header": {
-        "name": "Lumber Axe BP §8(1.0.11) [DEBUG]",
-        "description": "An addon that gives you a lumberjack axes, which can inspect, and chopdown trees. \n @Created By: @Adr-hyng",
+        "name": "Lumber Axe BP §8(2.0.0)",
+        "description": "An addon that gives you a lumberjack axes, which can preview the tree's status, and chopdown trees. \n @Created By: @Adr-hyng",
         "uuid": "4538bab6-a78b-4710-89e5-a2e103e97a6a",
         "version": [
-            1,
+            2,
             0,
-            11
+            0
         ],
         "min_engine_version": [
             1,
@@ -32,9 +32,9 @@
             "language": "javascript",
             "uuid": "9717780a-c69f-4679-bbe6-dbf6dfcdd7de",
             "version": [
-                1,
+                2,
                 0,
-                11
+                0
             ],
             "entry": "scripts/main.js"
         }
@@ -54,9 +54,9 @@
         {
             "uuid": "62b4cab4-fa42-405b-bff6-1f47b6958dd6",
             "version": [
-                1,
+                2,
                 0,
-                11
+                0
             ]
         }
     ],

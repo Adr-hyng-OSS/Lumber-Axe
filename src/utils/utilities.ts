@@ -1,4 +1,4 @@
-import { Player, RawMessage, system } from "@minecraft/server";
+import { Block, Player, RawMessage, system } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
 
 
@@ -60,6 +60,20 @@ function stackDistribution(number: number, groupSize: number = 64): number[] {
 
     return groups;
 }
+
+export function hashBlock(block: Block): string {
+  const inputString = `${block.dimension.id}_${block.x}-${block.y}-${block.z}`;
+
+  // Simple hash function (djb2)
+  let hash = 5381;
+  for (let i = 0; i < inputString.length; i++) {
+      hash = (hash * 33) ^ inputString.charCodeAt(i);
+  }
+
+  // Convert hash to an unsigned 32-bit integer, and then to hexadecimal
+  return (hash >>> 0).toString(16);
+}
+
 
 async function forceShow(player: Player, form: ActionFormData, timeout: number = Infinity): Promise<ActionFormResponse> {
     // Script example for ScriptAPI

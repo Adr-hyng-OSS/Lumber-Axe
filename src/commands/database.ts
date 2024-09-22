@@ -1,6 +1,6 @@
 import { Player, world } from "@minecraft/server";
 import { CommandHandler } from "commands/command_handler";
-import { db, ADDON_NAME } from "constant";
+import { originalDatabase, ADDON_NAME } from "constant";
 import { ICommandBase} from "./ICommandBase";
 import { SendMessageTo } from "utils/utilities";
 
@@ -38,7 +38,7 @@ const command: ICommandBase = {
                 }
             );
             if(isShow) {
-                if(db.size === 0) return SendMessageTo(
+                if(originalDatabase.size === 0) return SendMessageTo(
                     player, {
                         rawtext: [
                         {
@@ -49,7 +49,7 @@ const command: ICommandBase = {
                 );
                 let collections: string = "";
                 let i = 1;
-                for(const key of db.keys()) {
+                for(const key of originalDatabase.keys()) {
                     const t: string[] = (key as string).split("|");
                     const player: Player = world.getEntity(t[1]) as Player;
                     collections += `${i++}. ${player.nameTag}: ${JSON.stringify(t)}\n`;
@@ -72,8 +72,8 @@ const command: ICommandBase = {
                 });
                 player.configuration.reset("CLIENT");
                 player.configuration.reset("SERVER");
-                db.clear();
-                if(!db.isDisposed) db.dispose();
+                originalDatabase.clear();
+                if(!originalDatabase.isDisposed) originalDatabase.dispose();
             }
         }
     }

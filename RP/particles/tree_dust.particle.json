@@ -1,0 +1,54 @@
+{
+	"format_version": "1.10.0",
+	"particle_effect": {
+		"description": {
+			"identifier": "yn:tree_dust",
+			"basic_render_parameters": {
+				"material": "particles_alpha",
+				"texture": "textures/particles/dust"
+			}
+		},
+		"components": {
+			"minecraft:emitter_initialization": {
+				"creation_expression": "v.splash_range = 2;"
+			},
+			"minecraft:emitter_rate_instant": {
+				"num_particles": "7 * v.trunk_size"
+			},
+			"minecraft:emitter_lifetime_once": {
+				"active_time": 1
+			},
+			"minecraft:emitter_shape_point": {
+				"offset": ["variable.is_vertical = Math.Random(0.0, 1.0) > 0.7;variable.splash_power = Math.random(0.0, 1.0) * variable.splash_range;return 0.0;", 0.1, 0],
+				"direction": ["(variable.is_vertical > 0 ? 0.15 : 1.0) * Math.random(-1,1)", 0, "(variable.is_vertical > 0 ? 0.15 : 1.0) * Math.random(-1,1)"]
+			},
+			"minecraft:particle_lifetime_expression": {
+				"max_lifetime": 1
+			},
+			"minecraft:particle_initial_speed": "v.trunk_size",
+			"minecraft:particle_motion_dynamic": {
+				"linear_acceleration": ["(variable.particle_random_1 * 2 - 1) * variable.splash_power * (variable.is_vertical > 0 ? 0.2 : 0.5) * 1.0", 0, "(variable.particle_random_2 * 2 - 1) * variable.splash_power * (variable.is_vertical > 0 ? 0.2 : 0.5) * 1.0"],
+				"linear_drag_coefficient": 2
+			},
+			"minecraft:particle_appearance_billboard": {
+				"size": [0.25, 0.25],
+				"facing_camera_mode": "lookat_xyz",
+				"uv": {
+					"texture_width": 16,
+					"texture_height": 192,
+					"flipbook": {
+						"base_UV": [0, 0],
+						"size_UV": [16, 16],
+						"step_UV": [0, 16],
+						"frames_per_second": 12,
+						"max_frame": 12,
+						"stretch_to_lifetime": true
+					}
+				}
+			},
+			"minecraft:particle_appearance_tinting": {
+				"color": [0.70588, 0.44314, 0.20392, 1]
+			}
+		}
+	}
+}

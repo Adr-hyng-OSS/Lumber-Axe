@@ -1,0 +1,38 @@
+{
+	"format_version": "1.10.0",
+	
+	"render_controllers": {
+		"controller.render.block_outline.base": {
+			"geometry": "geometry.default",
+			"materials": [{"base": "material.base"}],
+			"textures": ["texture.default"],
+			
+			"part_visibility": [
+				{
+					"*": false,
+					"base": true
+				}
+			]
+		},
+		"controller.render.block_outline.outline": {
+			"geometry": "geometry.default",
+			"materials": [{"outline": "material.outline"}],
+			"textures": ["texture.default"],
+			
+			"part_visibility": [
+				{
+					"*": false,
+					"outline": true
+				}
+			],
+			
+			"ignore_lighting": true,
+			"overlay_color": {
+				"r": "t.red",
+				"g": "t.green",
+				"b": "t.blue",
+				"a": 1
+			}
+		}
+	}
+}

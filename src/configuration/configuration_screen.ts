@@ -1,7 +1,7 @@
 import { Player } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason, ModalFormData, ModalFormResponse } from "@minecraft/server-ui";
 import { ConfigurationCollections_DB, ConfigurationTypes} from "./configuration_handler";
-import {ADDON_NAME, db} from "constant";
+import {ADDON_NAME, originalDatabase, resetOriginalDatabase} from "constant";
 import { FormBuilder } from "utils/form_builder";
 import { resetServerConfiguration, serverConfigurationCopy, setServerConfiguration } from "./server_configuration";
 import { SendMessageTo } from "utils/utilities";
@@ -19,30 +19,30 @@ export class Configuration {
     this.SERVER_CONFIGURATION_DB = ConfigurationCollections_DB(this.player, "SERVER");
   }
   reset(configurationType: ConfigurationTypes) {
-    if(db.isValid()) {
+    if(originalDatabase.isValid()) {
       if(configurationType === "SERVER") {
         resetServerConfiguration();
-        db.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
+        originalDatabase.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
       }
     }
     else throw new Error("Database not found");
   }
-
   saveServer() {
     setServerConfiguration(serverConfigurationCopy);
-    if (db.isValid()) db.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
-  }
-
-  loadServer() {
-    if (db.isValid()) {
-      if (db.has(this.SERVER_CONFIGURATION_DB)) {
-        setServerConfiguration( db.get(this.SERVER_CONFIGURATION_DB) );
-      } else {
-        db.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
-      }
+    if (originalDatabase.isValid()) originalDatabase.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
+    else {
+      resetOriginalDatabase();
     }
   }
-
+  loadServer() {
+    if (originalDatabase?.isValid()) {
+      if (originalDatabase.has(this.SERVER_CONFIGURATION_DB)) {
+        setServerConfiguration( originalDatabase.get(this.SERVER_CONFIGURATION_DB) );
+      } else {
+        originalDatabase.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
+      }
+    } 
+  }
   showServerScreen() {
     const parsedAddonTitle = ADDON_NAME.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
     const form = new ActionFormData()
@@ -70,7 +70,6 @@ export class Configuration {
       return;
     });
   }
-
   showGeneralOptions() {
     const form: ModalFormData = new ModalFormData().title({rawtext: [
       {translate: "LumberAxe.configuration.general"}
@@ -78,30 +77,31 @@ export class Configuration {
     
     this.loadServer();
 
-    const cachedConfigurationValues: Array<number | boolean | string> = [];
+    const cachedConfigurationValues: Array<{result: number | boolean | string, index: number}> = [];
     
     // Only good for read-only Dropdowns
     Object.values(serverConfigurationCopy).forEach((builder, index) => {
       const isNotDropdown = (builder.values.length === 0);
-      if (typeof builder.defaultValue === "boolean") {
-        cachedConfigurationValues[index] = builder.defaultValue;
-        form.toggle({rawtext: [{translate: builder.name}]}, cachedConfigurationValues[index] as boolean);
+      if (typeof builder.defaultValue === "boolean" && isNotDropdown) {
+        cachedConfigurationValues.push({result: builder.defaultValue, index});
+        form.toggle({rawtext: [{translate: builder.name}]}, builder.defaultValue as boolean);
       } 
       else if (typeof builder.defaultValue === "string" && isNotDropdown) {
-        cachedConfigurationValues[index] = builder.defaultValue;
-        form.textField({rawtext: [{translate: builder.name}]}, cachedConfigurationValues[index], builder.defaultValue);
+        cachedConfigurationValues.push({result: builder.defaultValue, index});
+        form.textField({rawtext: [{translate: builder.name}]}, builder.defaultValue, builder.defaultValue);
       }
     });
 
-    form.show(this.player).then((result: ModalFormResponse) => {1
+    form.show(this.player).then((result: ModalFormResponse) => {
       if (!result.formValues) return;
-      const hadChanges: boolean = !cachedConfigurationValues.every((element, index) => element === result.formValues[index]);
+      const hadChanges: boolean = !cachedConfigurationValues.every(({result: element}, i) => element === result.formValues[i]);
       if (result.canceled || result.cancelationReason === FormCancelationReason.UserClosed || result.cancelationReason === FormCancelationReason.UserBusy) {
         return;
       }
       if (hadChanges) {
         result.formValues.forEach((newValue, formIndex) => {
-          const key = Object.keys(serverConfigurationCopy)[formIndex];
+          const index = cachedConfigurationValues[formIndex].index;
+          const key = Object.keys(serverConfigurationCopy)[index];
           const builder = serverConfigurationCopy[key] as FormBuilder<any>;
           switch (typeof newValue) {
             case "boolean":
@@ -123,7 +123,6 @@ export class Configuration {
       return this.showServerScreen();
     });
   }
-
   showIncludeManager() {
     this.loadServer();
     const preResultFlags: Array<number | boolean | string> = [];
@@ -140,7 +139,7 @@ export class Configuration {
     ]}, [...serverConfigurationCopy.includedLog.values], 0)
     .textField({rawtext: [
       {translate: "LumberAxe.log_include_manager.text_field"}
-    ]}, "squid", preResultFlags[1] as string)
+    ]}, "myaddon:custom_log", preResultFlags[1] as string)
     .toggle({rawtext: [
       {translate: "LumberAxe.log_include_manager.toggle"}
     ]}, preResultFlags[2] as boolean); 
@@ -201,10 +200,10 @@ export class Configuration {
       {translate: "LumberAxe.log_exclude_manager.drop_down"}
     ]}, [...serverConfigurationCopy.excludedLog.values], 0)
     .textField({rawtext: [
-      {translate: "LumberAxe.log_exclude_manager.drop_down"}
-    ]}, "squid", preResultFlags[1] as string)
+      {translate: "LumberAxe.log_exclude_manager.text_field"}
+    ]}, "myaddon:custom_log", preResultFlags[1] as string)
     .toggle({rawtext: [
-      {translate: "LumberAxe.log_exclude_manager.drop_down"}
+      {translate: "LumberAxe.log_exclude_manager.toggle"}
     ]}, preResultFlags[2] as boolean);
     form.show(this.player).then((response: ModalFormResponse) => {
       if(!response.formValues) return;

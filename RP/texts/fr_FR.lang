@@ -6,16 +6,11 @@ item.yn:iron_lumber_axe.name=Hache de bûcheron en fer
 item.yn:diamond_lumber_axe.name=Hache de bûcheron en diamant
 item.yn:netherite_lumber_axe.name=Hache de Netherite de bûcheron
 
-
 ## Form-UI
-LumberAxe.form.title.text=Informations sur l'arbre
-LumberAxe.form.treeSizeAbrev.text=l'arbre a
-LumberAxe.form.treeSizeAbrevLogs.text=bûches d'arbre
-LumberAxe.form.durabilityAbrev.text=DMG
-LumberAxe.form.maxDurabilityAbrev.text=MAX
-LumberAxe.form.canBeChopped.text=§aL'arbre peut être coupé
-LumberAxe.form.cannotBeChopped.text=§cL'arbre ne peut pas être coupé
+LumberAxe.form.canBeChopped.text=L'arbre peut être coupé
+LumberAxe.form.cannotBeChopped.text=L'arbre ne peut pas être coupé
 
+<<<<<<< HEAD
 LumberAxe.on_load_message=§a§lLumber Axe Addon§r §aa été chargé avec succès. Créé par Adr-hyng.
 LumberAxe.on_caught_invalid_command=§cFormat d'utilisation invalide. %1
 LumberAxe.on_database_empty=§4Aucun enregistrement de configuration trouvé dans la base de données.§r
@@ -46,3 +41,48 @@ LumberAxe.log_exclude_manager.toggle=Insérer
 LumberAxe.log_exclude_manager.add_success_log=§aLe bloc nommé '%1' a été ajouté avec succès à §oTroncs coupables exclus.
 LumberAxe.log_exclude_manager.remove_success_log=§cLe bloc nommé '%1' a été retiré avec succès de §oTroncs coupables exclus.
 LumberAxe.log_exclude_manager.update_success_log=§eLe bloc nommé '%1' de §oTroncs coupables exclus§r §ea été mis à jour avec succès en '%2' dans §oTroncs coupables exclus.
+=======
+## Form-UI <REDO LOCALIZATION>
+LumberAxe.form.title.text=Vue d'ensemble de l'état de l'arbre
+LumberAxe.form.treeSizeAbrev.text=A
+LumberAxe.form.treeSizeAbrevLogs.text=Bûche/s
+LumberAxe.form.trunkHeightAbrev.text=Bloc/s de Haut
+
+## Log Messages <ADD LOCALIZATION>
+LumberAxe.on_load_message=§a§lAddon Hache de Bûcheron§r §aété chargé avec succès. Créé par Adr-hyng.
+LumberAxe.on_caught_invalid_command=§cFormat d'utilisation incorrect. %1
+LumberAxe.on_database_empty=§4Aucun enregistrement de configuration trouvé dans la base de données.§r
+LumberAxe.on_database_reset=§aLa base de données a été réinitialisée.§r
+LumberAxe.show_database=ID de la base de données : §e%1§r%2%3
+LumberAxe.on_caught_command_404=§cErreur lors de l'exécution de la commande %1 : %2
+LumberAxe.on_caught_main_command_not_found=§cCommande incorrecte : §l%1§r%2§cVérifiez si la commande existe vraiment. Utilisez /scriptevent %3 help
+LumberAxe.server.invalid_log_amount_limitation=Impossible d'abattre tout l'arbre en raison de la limitation de configuration du serveur à %1. Demandez à l'opérateur du serveur d'augmenter/ajuster.
+
+## Server Options Details <ADD LOCALIZATION>
+LumberAxe.server.durability_damage_per_block=Perte de durabilité par bloc
+LumberAxe.server.chop_limit=Limitation des bûches de l'arbre
+LumberAxe.server.immersive_chopping=Activer le Mode Immersif
+LumberAxe.server.immersive_delay=Délai du Mode Immersif
+
+## Configuration Options <ADD LOCALIZATION>
+LumberAxe.configuration.title=Paramètres de %1
+LumberAxe.configuration.general=Options Générales
+LumberAxe.configuration.log_include_manager=Gestionnaire de Bûches Incluses
+LumberAxe.configuration.log_exclude_manager=Gestionnaire de Bûches Exclues
+
+## Include Manager <ADD LOCALIZATION>
+LumberAxe.log_include_manager.drop_down=Bûches Incluses pour la Coupe
+LumberAxe.log_include_manager.text_field=Bûche à Inclure
+LumberAxe.log_include_manager.toggle=Ajouter
+LumberAxe.log_include_manager.add_success_log=§aBloc nommé '%1' ajouté avec succès à §oBûches Incluses pour la Coupe.
+LumberAxe.log_include_manager.remove_success_log=§cBloc nommé '%1' supprimé avec succès de §oBûches Incluses pour la Coupe.
+LumberAxe.log_include_manager.update_success_log=§eBloc nommé '%1' de §oBûches Incluses pour la Coupe§r §ea été mis à jour avec succès à '%2' dans §oBûches Incluses pour la Coupe.
+
+## Exclude Manager <ADD LOCALIZATION>
+LumberAxe.log_exclude_manager.drop_down=Bûches Exclues pour la Coupe
+LumberAxe.log_exclude_manager.text_field=Bûche à Exclure
+LumberAxe.log_exclude_manager.toggle=Ajouter
+LumberAxe.log_exclude_manager.add_success_log=§aBloc nommé '%1' ajouté avec succès à §oBûches Exclues pour la Coupe.
+LumberAxe.log_exclude_manager.remove_success_log=§cBloc nommé '%1' supprimé avec succès de §oBûches Exclues pour la Coupe.
+LumberAxe.log_exclude_manager.update_success_log=§eBloc nommé '%1' de §oBûches Exclues pour la Coupe§r §ea été mis à jour avec succès à '%2' dans §oBûches Exclues pour la Coupe.
+>>>>>>> itemUseOnUpdate

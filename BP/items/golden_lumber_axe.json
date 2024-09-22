@@ -1,64 +1,68 @@
 {
-	"format_version": "1.21.10",
-	"minecraft:item": {
-		"description": {
-			"identifier": "yn:golden_lumber_axe",
-			"menu_category": {
+  "format_version": "1.21.10",
+  "minecraft:item": {
+    "description": {
+      "identifier": "yn:golden_lumber_axe",
+      "menu_category": {
         "category": "equipment",
         "group": "itemGroup.name.axe"
       }
-		},
-		"components": {
-			"minecraft:durability": {
-				"max_durability": 68,
-				"damage_chance": {
-					"min": 60,
-					"max": 100
-				}
-			},
-			"minecraft:icon": {
-				"textures": {
-					"default": "yn:golden_lumber_axe"
-				}
-			},
-			"minecraft:display_name": {
-				"value": "item.yn:golden_lumber_axe.name"
-			},
-			"minecraft:repairable": {
-				"repair_items": [
-					{
-						"items": [
-							"minecraft:gold_ingot"
-						],
-						"repair_amount": "query.max_durability / 4"
-					},
-					{
-						"items": [
-							"minecraft:gold_block"
-						],
-						"repair_amount": "query.max_durability"
-					},
-					{
-						"items": [
-							"yn:golden_lumber_axe"
-						],
-						"repair_amount": "context.other->query.remaining_durability + 0.05 * context.other->query.max_durability"
-					}
-				]
-			},
-			"minecraft:enchantable": {
-				"value": 15,
-				"slot": "axe"
-			},
-			"minecraft:damage": {
-				"value": 4
-			},
-			"minecraft:custom_components": [
+    },
+    "components": {
+      "minecraft:durability": {
+        "max_durability": 68,
+        "damage_chance": {
+          "min": 60,
+          "max": 100
+        }
+      },
+      "minecraft:icon": {
+        "textures": {
+          "default": "yn:golden_lumber_axe"
+        }
+      },
+      "minecraft:display_name": {
+        "value": "item.yn:golden_lumber_axe.name"
+      },
+      "minecraft:repairable": {
+        "repair_items": [
+          {
+            "items": [
+              "minecraft:gold_ingot"
+            ],
+            "repair_amount": "query.max_durability / 4"
+          },
+          {
+            "items": [
+              "minecraft:gold_block"
+            ],
+            "repair_amount": "query.max_durability"
+          },
+          {
+            "items": [
+              "yn:golden_lumber_axe"
+            ],
+            "repair_amount": "context.other->query.remaining_durability + 0.05 * context.other->query.max_durability"
+          }
+        ]
+      },
+      "minecraft:cooldown": {
+        "category": "lumberaxe_inspect_cooldown",
+        "duration": 3.0
+      },
+      "minecraft:enchantable": {
+        "value": 15,
+        "slot": "axe"
+      },
+      "minecraft:damage": {
+        "value": 4
+      },
+      "minecraft:custom_components": [
         "yn:tool_durability"
       ],
       "minecraft:tags": {
         "tags": [
-          "minecraft:transformable_items"
+          "minecraft:is_tool"
         ]
       },
       "minecraft:max_stack_size": 1,
@@ -67,621 +71,621 @@
         "use_efficiency": true,
         "destroy_speeds": [
           {
-              "block": "cherry_planks",
-              "speed": 13
+            "block": "cherry_planks",
+            "speed": 13
           },
           {
-              "block": "cherry_slab",
-              "speed": 13
+            "block": "cherry_slab",
+            "speed": 13
           },
           {
-              "block": "cherry_stairs",
-              "speed": 13
+            "block": "cherry_stairs",
+            "speed": 13
           },
           {
-              "block": "nether_wart_block",
-              "speed": 13
+            "block": "nether_wart_block",
+            "speed": 13
           },
           {
-              "block": {
-                  "tags": "q.any_tag('wood', 'log', 'pumpkin', 'plant', 'iron_axe_diggable')"
-              },
-              "speed": 13
+            "block": {
+              "tags": "q.any_tag('wood', 'log', 'pumpkin', 'plant', 'iron_axe_diggable', 'k_correct_tool:axe')"
+            },
+            "speed": 13
           },
           {
-              "block": "crimson_stem",
-              "speed": 13
+            "block": "crimson_stem",
+            "speed": 13
           },
           {
-              "block": "warped_stem",
-              "speed": 13
+            "block": "warped_stem",
+            "speed": 13
           },
           {
-              "block": "stripped_crimson_stem",
-              "speed": 13
+            "block": "stripped_crimson_stem",
+            "speed": 13
           },
           {
-              "block": "stripped_warped_stem",
-              "speed": 13
+            "block": "stripped_warped_stem",
+            "speed": 13
           },
           {
-              "block": "crimson_hyphae",
-              "speed": 13
+            "block": "crimson_hyphae",
+            "speed": 13
           },
           {
-              "block": "warped_hyphae",
-              "speed": 13
+            "block": "warped_hyphae",
+            "speed": 13
           },
           {
-              "block": "stripped_crimson_hyphae",
-              "speed": 13
+            "block": "stripped_crimson_hyphae",
+            "speed": 13
           },
           {
-              "block": "stripped_warped_hyphae",
-              "speed": 13
+            "block": "stripped_warped_hyphae",
+            "speed": 13
           },
           {
-              "block": "soul_torch",
-              "speed": 13
+            "block": "soul_torch",
+            "speed": 13
           },
           {
-              "block": "warped_standing_sign",
-              "speed": 13
+            "block": "warped_standing_sign",
+            "speed": 13
           },
           {
-              "block": "crimson_standing_sign",
-              "speed": 13
+            "block": "crimson_standing_sign",
+            "speed": 13
           },
           {
-              "block": "warped_wall_sign",
-              "speed": 13
+            "block": "warped_wall_sign",
+            "speed": 13
           },
           {
-              "block": "crimson_wall_sign",
-              "speed": 13
+            "block": "crimson_wall_sign",
+            "speed": 13
           },
           {
-              "block": "crimson_door",
-              "speed": 13
+            "block": "crimson_door",
+            "speed": 13
           },
           {
-              "block": "warped_door",
-              "speed": 13
+            "block": "warped_door",
+            "speed": 13
           },
           {
-              "block": "crimson_planks",
-              "speed": 13
+            "block": "crimson_planks",
+            "speed": 13
           },
           {
-              "block": "warped_planks",
-              "speed": 13
+            "block": "warped_planks",
+            "speed": 13
           },
           {
-              "block": "crimson_trapdoor",
-              "speed": 13
+            "block": "crimson_trapdoor",
+            "speed": 13
           },
           {
-              "block": "warped_trapdoor",
-              "speed": 13
+            "block": "warped_trapdoor",
+            "speed": 13
           },
           {
-              "block": "crimson_fence",
-              "speed": 13
+            "block": "crimson_fence",
+            "speed": 13
           },
           {
-              "block": "warped_fence",
-              "speed": 13
+            "block": "warped_fence",
+            "speed": 13
           },
           {
-              "block": "crimson_fence_gate",
-              "speed": 13
+            "block": "crimson_fence_gate",
+            "speed": 13
           },
           {
-              "block": "warped_fence_gate",
-              "speed": 13
+            "block": "warped_fence_gate",
+            "speed": 13
           },
           {
-              "block": "crimson_double_slab",
-              "speed": 13
+            "block": "crimson_double_slab",
+            "speed": 13
           },
           {
-              "block": "crimson_slab",
-              "speed": 13
+            "block": "crimson_slab",
+            "speed": 13
           },
           {
-              "block": "warped_double_slab",
-              "speed": 13
+            "block": "warped_double_slab",
+            "speed": 13
           },
           {
-              "block": "warped_slab",
-              "speed": 13
+            "block": "warped_slab",
+            "speed": 13
           },
           {
-              "block": "crimson_stairs",
-              "speed": 13
+            "block": "crimson_stairs",
+            "speed": 13
           },
           {
-              "block": "warped_stairs",
-              "speed": 13
+            "block": "warped_stairs",
+            "speed": 13
           },
           {
-              "block": "crimson_button",
-              "speed": 13
+            "block": "crimson_button",
+            "speed": 13
           },
           {
-              "block": "warped_button",
-              "speed": 13
+            "block": "warped_button",
+            "speed": 13
           },
           {
-              "block": "crimson_pressure_plate",
-              "speed": 13
+            "block": "crimson_pressure_plate",
+            "speed": 13
           },
           {
-              "block": "warped_pressure_plate",
-              "speed": 13
+            "block": "warped_pressure_plate",
+            "speed": 13
           },
           {
-              "block": "soul_campfire",
-              "speed": 13
+            "block": "soul_campfire",
+            "speed": 13
           },
           {
-              "block": "mangrove_log",
-              "speed": 13
+            "block": "mangrove_log",
+            "speed": 13
           },
           {
-              "block": "stripped_mangrove_log",
-              "speed": 13
+            "block": "stripped_mangrove_log",
+            "speed": 13
           },
           {
-              "block": "mangrove_planks",
-              "speed": 13
+            "block": "mangrove_planks",
+            "speed": 13
           },
           {
-              "block": "mangrove_button",
-              "speed": 13
+            "block": "mangrove_button",
+            "speed": 13
           },
           {
-              "block": "mangrove_stairs",
-              "speed": 13
+            "block": "mangrove_stairs",
+            "speed": 13
           },
           {
-              "block": "mangrove_slab",
-              "speed": 13
+            "block": "mangrove_slab",
+            "speed": 13
           },
           {
-              "block": "mangrove_pressure_plate",
-              "speed": 13
+            "block": "mangrove_pressure_plate",
+            "speed": 13
           },
           {
-              "block": "mangrove_fence",
-              "speed": 13
+            "block": "mangrove_fence",
+            "speed": 13
           },
           {
-              "block": "mangrove_fence_gate",
-              "speed": 13
+            "block": "mangrove_fence_gate",
+            "speed": 13
           },
           {
-              "block": "mangrove_door",
-              "speed": 13
+            "block": "mangrove_door",
+            "speed": 13
           },
           {
-              "block": "mangrove_standing_sign",
-              "speed": 13
+            "block": "mangrove_standing_sign",
+            "speed": 13
           },
           {
-              "block": "mangrove_wall_sign",
-              "speed": 13
+            "block": "mangrove_wall_sign",
+            "speed": 13
           },
           {
-              "block": "mangrove_trapdoor",
-              "speed": 13
+            "block": "mangrove_trapdoor",
+            "speed": 13
           },
           {
-              "block": "mangrove_wood",
-              "speed": 13
+            "block": "mangrove_wood",
+            "speed": 13
           },
           {
-              "block": "stripped_mangrove_wood",
-              "speed": 13
+            "block": "stripped_mangrove_wood",
+            "speed": 13
           },
           {
-              "block": "mangrove_double_slab",
-              "speed": 13
+            "block": "mangrove_double_slab",
+            "speed": 13
           },
           {
-              "block": "planks",
-              "speed": 13
+            "block": "planks",
+            "speed": 13
           },
           {
-              "block": "log",
-              "speed": 13
+            "block": "log",
+            "speed": 13
           },
           {
-              "block": "stripped_oak_log",
-              "speed": 13
+            "block": "stripped_oak_log",
+            "speed": 13
           },
           {
-              "block": "stripped_birch_log",
-              "speed": 13
+            "block": "stripped_birch_log",
+            "speed": 13
           },
           {
-              "block": "stripped_dark_oak_log",
-              "speed": 13
+            "block": "stripped_dark_oak_log",
+            "speed": 13
           },
           {
-              "block": "stripped_acacia_log",
-              "speed": 13
+            "block": "stripped_acacia_log",
+            "speed": 13
           },
           {
-              "block": "stripped_jungle_log",
-              "speed": 13
+            "block": "stripped_jungle_log",
+            "speed": 13
           },
           {
-              "block": "stripped_spruce_log",
-              "speed": 13
+            "block": "stripped_spruce_log",
+            "speed": 13
           },
           {
-              "block": "noteblock",
-              "speed": 13
+            "block": "noteblock",
+            "speed": 13
           },
           {
-              "block": "jukebox",
-              "speed": 13
+            "block": "jukebox",
+            "speed": 13
           },
           {
-              "block": "bed",
-              "speed": 13
+            "block": "bed",
+            "speed": 13
           },
           {
-              "block": "bookshelf",
-              "speed": 13
+            "block": "bookshelf",
+            "speed": 13
           },
           {
-              "block": "torch",
-              "speed": 13
+            "block": "torch",
+            "speed": 13
           },
           {
-              "block": "oak_stairs",
-              "speed": 13
+            "block": "oak_stairs",
+            "speed": 13
           },
           {
-              "block": "chest",
-              "speed": 13
+            "block": "chest",
+            "speed": 13
           },
           {
-              "block": "crafting_table",
-              "speed": 13
+            "block": "crafting_table",
+            "speed": 13
           },
           {
-              "block": "standing_sign",
-              "speed": 13
+            "block": "standing_sign",
+            "speed": 13
           },
           {
-              "block": "wooden_door",
-              "speed": 13
+            "block": "wooden_door",
+            "speed": 13
           },
           {
-              "block": "ladder",
-              "speed": 13
+            "block": "ladder",
+            "speed": 13
           },
           {
-              "block": "wall_sign",
-              "speed": 13
+            "block": "wall_sign",
+            "speed": 13
           },
           {
-              "block": "wooden_pressure_plate",
-              "speed": 13
+            "block": "wooden_pressure_plate",
+            "speed": 13
           },
           {
-              "block": "acacia_pressure_plate",
-              "speed": 13
+            "block": "acacia_pressure_plate",
+            "speed": 13
           },
           {
-              "block": "birch_pressure_plate",
-              "speed": 13
+            "block": "birch_pressure_plate",
+            "speed": 13
           },
           {
-              "block": "dark_oak_pressure_plate",
-              "speed": 13
+            "block": "dark_oak_pressure_plate",
+            "speed": 13
           },
           {
-              "block": "jungle_pressure_plate",
-              "speed": 13
+            "block": "jungle_pressure_plate",
+            "speed": 13
           },
           {
-              "block": "spruce_pressure_plate",
-              "speed": 13
+            "block": "spruce_pressure_plate",
+            "speed": 13
           },
           {
-              "block": "unlit_redstone_torch",
-              "speed": 13
+            "block": "unlit_redstone_torch",
+            "speed": 13
           },
           {
-              "block": "redstone_torch",
-              "speed": 13
+            "block": "redstone_torch",
+            "speed": 13
           },
           {
-              "block": "fence",
-              "speed": 13
+            "block": "fence",
+            "speed": 13
           },
           {
-              "block": "pumpkin",
-              "speed": 13
+            "block": "pumpkin",
+            "speed": 13
           },
           {
-              "block": "carved_pumpkin",
-              "speed": 13
+            "block": "carved_pumpkin",
+            "speed": 13
           },
           {
-              "block": "lit_pumpkin",
-              "speed": 13
+            "block": "lit_pumpkin",
+            "speed": 13
           },
           {
-              "block": "trapdoor",
-              "speed": 13
+            "block": "trapdoor",
+            "speed": 13
           },
           {
-              "block": "acacia_trapdoor",
-              "speed": 13
+            "block": "acacia_trapdoor",
+            "speed": 13
           },
           {
-              "block": "birch_trapdoor",
-              "speed": 13
+            "block": "birch_trapdoor",
+            "speed": 13
           },
           {
-              "block": "dark_oak_trapdoor",
-              "speed": 13
+            "block": "dark_oak_trapdoor",
+            "speed": 13
           },
           {
-              "block": "jungle_trapdoor",
-              "speed": 13
+            "block": "jungle_trapdoor",
+            "speed": 13
           },
           {
-              "block": "spruce_trapdoor",
-              "speed": 13
+            "block": "spruce_trapdoor",
+            "speed": 13
           },
           {
-              "block": "brown_mushroom_block",
-              "speed": 13
+            "block": "brown_mushroom_block",
+            "speed": 13
           },
           {
-              "block": "red_mushroom_block",
-              "speed": 13
+            "block": "red_mushroom_block",
+            "speed": 13
           },
           {
-              "block": "melon_block",
-              "speed": 13
+            "block": "melon_block",
+            "speed": 13
           },
           {
-              "block": "pumpkin_stem",
-              "speed": 13
+            "block": "pumpkin_stem",
+            "speed": 13
           },
           {
-              "block": "melon_stem",
-              "speed": 13
+            "block": "melon_stem",
+            "speed": 13
           },
           {
-              "block": "fence_gate",
-              "speed": 13
+            "block": "fence_gate",
+            "speed": 13
           },
           {
-              "block": "cocoa",
-              "speed": 13
+            "block": "cocoa",
+            "speed": 13
           },
           {
-              "block": "spruce_stairs",
-              "speed": 13
+            "block": "spruce_stairs",
+            "speed": 13
           },
           {
-              "block": "birch_stairs",
-              "speed": 13
+            "block": "birch_stairs",
+            "speed": 13
           },
           {
-              "block": "jungle_stairs",
-              "speed": 13
+            "block": "jungle_stairs",
+            "speed": 13
           },
           {
-              "block": "wooden_button",
-              "speed": 13
+            "block": "wooden_button",
+            "speed": 13
           },
           {
-              "block": "acacia_button",
-              "speed": 13
+            "block": "acacia_button",
+            "speed": 13
           },
           {
-              "block": "birch_button",
-              "speed": 13
+            "block": "birch_button",
+            "speed": 13
           },
           {
-              "block": "dark_oak_button",
-              "speed": 13
+            "block": "dark_oak_button",
+            "speed": 13
           },
           {
-              "block": "jungle_button",
-              "speed": 13
+            "block": "jungle_button",
+            "speed": 13
           },
           {
-              "block": "spruce_button",
-              "speed": 13
+            "block": "spruce_button",
+            "speed": 13
           },
           {
-              "block": "trapped_chest",
-              "speed": 13
+            "block": "trapped_chest",
+            "speed": 13
           },
           {
-              "block": "daylight_detector",
-              "speed": 13
+            "block": "daylight_detector",
+            "speed": 13
           },
           {
-              "block": "double_wooden_slab",
-              "speed": 13
+            "block": "double_wooden_slab",
+            "speed": 13
           },
           {
-              "block": "wooden_slab",
-              "speed": 13
+            "block": "wooden_slab",
+            "speed": 13
           },
           {
-              "block": "log2",
-              "speed": 13
+            "block": "log2",
+            "speed": 13
           },
           {
-              "block": "acacia_stairs",
-              "speed": 13
+            "block": "acacia_stairs",
+            "speed": 13
           },
           {
-              "block": "dark_oak_stairs",
-              "speed": 13
+            "block": "dark_oak_stairs",
+            "speed": 13
           },
           {
-              "block": "daylight_detector_inverted",
-              "speed": 13
+            "block": "daylight_detector_inverted",
+            "speed": 13
           },
           {
-              "block": "spruce_fence_gate",
-              "speed": 13
+            "block": "spruce_fence_gate",
+            "speed": 13
           },
           {
-              "block": "birch_fence_gate",
-              "speed": 13
+            "block": "birch_fence_gate",
+            "speed": 13
           },
           {
-              "block": "jungle_fence_gate",
-              "speed": 13
+            "block": "jungle_fence_gate",
+            "speed": 13
           },
           {
-              "block": "dark_oak_fence_gate",
-              "speed": 13
+            "block": "dark_oak_fence_gate",
+            "speed": 13
           },
           {
-              "block": "acacia_fence_gate",
-              "speed": 13
+            "block": "acacia_fence_gate",
+            "speed": 13
           },
           {
-              "block": "spruce_door",
-              "speed": 13
+            "block": "spruce_door",
+            "speed": 13
           },
           {
-              "block": "birch_door",
-              "speed": 13
+            "block": "birch_door",
+            "speed": 13
           },
           {
-              "block": "jungle_door",
-              "speed": 13
+            "block": "jungle_door",
+            "speed": 13
           },
           {
-              "block": "acacia_door",
-              "speed": 13
+            "block": "acacia_door",
+            "speed": 13
           },
           {
-              "block": "dark_oak_door",
-              "speed": 13
+            "block": "dark_oak_door",
+            "speed": 13
           },
           {
-              "block": "standing_banner",
-              "speed": 13
+            "block": "standing_banner",
+            "speed": 13
           },
           {
-              "block": "wall_banner",
-              "speed": 13
+            "block": "wall_banner",
+            "speed": 13
           },
           {
-              "block": "bamboo",
-              "speed": 13
+            "block": "bamboo",
+            "speed": 13
           },
           {
-              "block": "bamboo_sapling",
-              "speed": 13
+            "block": "bamboo_sapling",
+            "speed": 13
           },
           {
-              "block": "scaffolding",
-              "speed": 13
+            "block": "scaffolding",
+            "speed": 13
           },
           {
-              "block": "spruce_wall_sign",
-              "speed": 13
+            "block": "spruce_wall_sign",
+            "speed": 13
           },
           {
-              "block": "spruce_standing_sign",
-              "speed": 13
+            "block": "spruce_standing_sign",
+            "speed": 13
           },
           {
-              "block": "birch_wall_sign",
-              "speed": 13
+            "block": "birch_wall_sign",
+            "speed": 13
           },
           {
-              "block": "birch_standing_sign",
-              "speed": 13
+            "block": "birch_standing_sign",
+            "speed": 13
           },
           {
-              "block": "jungle_wall_sign",
-              "speed": 13
+            "block": "jungle_wall_sign",
+            "speed": 13
           },
           {
-              "block": "jungle_standing_sign",
-              "speed": 13
+            "block": "jungle_standing_sign",
+            "speed": 13
           },
           {
-              "block": "acacia_wall_sign",
-              "speed": 13
+            "block": "acacia_wall_sign",
+            "speed": 13
           },
           {
-              "block": "acacia_standing_sign",
-              "speed": 13
+            "block": "acacia_standing_sign",
+            "speed": 13
           },
           {
-              "block": "darkoak_wall_sign",
-              "speed": 13
+            "block": "darkoak_wall_sign",
+            "speed": 13
           },
           {
-              "block": "darkoak_standing_sign",
-              "speed": 13
+            "block": "darkoak_standing_sign",
+            "speed": 13
           },
           {
-              "block": "barrel",
-              "speed": 13
+            "block": "barrel",
+            "speed": 13
           },
           {
-              "block": "smithing_table",
-              "speed": 13
+            "block": "smithing_table",
+            "speed": 13
           },
           {
-              "block": "cartography_table",
-              "speed": 13
+            "block": "cartography_table",
+            "speed": 13
           },
           {
-              "block": "fletching_table",
-              "speed": 13
+            "block": "fletching_table",
+            "speed": 13
           },
           {
-              "block": "campfire",
-              "speed": 13
+            "block": "campfire",
+            "speed": 13
           },
           {
-              "block": "loom",
-              "speed": 13
+            "block": "loom",
+            "speed": 13
           },
           {
-              "block": "lectern",
-              "speed": 13
+            "block": "lectern",
+            "speed": 13
           },
           {
-              "block": "wood",
-              "speed": 13
+            "block": "wood",
+            "speed": 13
           },
           {
-              "block": "composter",
-              "speed": 13
+            "block": "composter",
+            "speed": 13
           },
           {
-              "block": "chorus_flower",
-              "speed": 13
+            "block": "chorus_flower",
+            "speed": 13
           },
           {
-              "block": "chorus_plant",
-              "speed": 13
+            "block": "chorus_plant",
+            "speed": 13
           }
         ]
       }
-		}
-	}
+    }
+  }
 }

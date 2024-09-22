@@ -8,14 +8,15 @@ item.yn:netherite_lumber_axe.name=machado de lenhador netherita
 
 
 ## Form-UI
-LumberAxe.form.title.text=Informação da árvore
-LumberAxe.form.treeSizeAbrev.text=TEM
-LumberAxe.form.treeSizeAbrevLogs.text=toras de árvore
-LumberAxe.form.durabilityAbrev.text=DMG
-LumberAxe.form.maxDurabilityAbrev.text=MAX
-LumberAxe.form.canBeChopped.text=§aÁrvore pode ser cortada
-LumberAxe.form.cannotBeChopped.text=§cÁrvore não pode ser cortada
+LumberAxe.form.canBeChopped.text=Árvore pode ser cortada
+LumberAxe.form.cannotBeChopped.text=Árvore não pode ser cortada
+## Form-UI <REDO LOCALIZATION>
+LumberAxe.form.title.text=Visão Geral do Status da Árvore
+LumberAxe.form.treeSizeAbrev.text=Tem
+LumberAxe.form.treeSizeAbrevLogs.text=Tora/s
+LumberAxe.form.trunkHeightAbrev.text=Bloco/s de Altura
 
+<<<<<<< HEAD
 LumberAxe.on_load_message=§a§lLumber Axe Addon§r §afoi carregado com sucesso. Criado por Adr-hyng.
 LumberAxe.on_caught_invalid_command=§cFormato de uso inválido. %1
 LumberAxe.on_database_empty=§4Nenhum registro de configuração encontrado no banco de dados.§r
@@ -46,3 +47,42 @@ LumberAxe.log_exclude_manager.toggle=Inserir
 LumberAxe.log_exclude_manager.add_success_log=§aO bloco chamado '%1' foi adicionado com sucesso a §oTroncos excluídos cortáveis.
 LumberAxe.log_exclude_manager.remove_success_log=§cO bloco chamado '%1' foi removido com sucesso de §oTroncos excluídos cortáveis.
 LumberAxe.log_exclude_manager.update_success_log=§eO bloco chamado '%1' de §oTroncos excluídos cortáveis§r §efoi atualizado com sucesso para '%2' em §oTroncos excluídos cortáveis.
+=======
+## Log Messages <ADD LOCALIZATION>
+LumberAxe.on_load_message=§a§lAddon Machado de Lenhador§r §afoi carregado com sucesso. Criado por Adr-hyng.
+LumberAxe.on_caught_invalid_command=§cFormato de Uso Inválido. %1
+LumberAxe.on_database_empty=§4Nenhum registro de configuração encontrado no banco de dados.§r
+LumberAxe.on_database_reset=§aO banco de dados foi redefinido.§r
+LumberAxe.show_database=ID do Banco de Dados: §e%1§r%2%3
+LumberAxe.on_caught_command_404=§cErro ao buscar o comando %1: %2
+LumberAxe.on_caught_main_command_not_found=§cComando Inválido: §l%1§r%2§cVerifique se o comando realmente existe. Use /scriptevent %3 help
+LumberAxe.server.invalid_log_amount_limitation=Não é possível cortar toda a árvore devido à limitação de configuração do servidor de %1. Solicite ao operador do servidor para aumentar/ajustar.
+
+## Server Options Details <ADD LOCALIZATION>
+LumberAxe.server.durability_damage_per_block=Perda de durabilidade por bloco
+LumberAxe.server.chop_limit=Limitação de Toras da Árvore
+LumberAxe.server.immersive_chopping=Ativar Modo Imersivo
+LumberAxe.server.immersive_delay=Tempo de Atraso do Modo Imersivo
+
+## Configuration Options <ADD LOCALIZATION>
+LumberAxe.configuration.title=Configurações de %1
+LumberAxe.configuration.general=Opções Gerais
+LumberAxe.configuration.log_include_manager=Gerenciador de Toras Incluídas
+LumberAxe.configuration.log_exclude_manager=Gerenciador de Toras Excluídas
+
+## Include Manager <ADD LOCALIZATION>
+LumberAxe.log_include_manager.drop_down=Toras Incluídas para Corte
+LumberAxe.log_include_manager.text_field=Tora a Incluir
+LumberAxe.log_include_manager.toggle=Adicionar
+LumberAxe.log_include_manager.add_success_log=§aBloco com o nome '%1' foi adicionado com sucesso a §oToras Incluídas para Corte.
+LumberAxe.log_include_manager.remove_success_log=§cBloco com o nome '%1' foi removido com sucesso de §oToras Incluídas para Corte.
+LumberAxe.log_include_manager.update_success_log=§eBloco com o nome '%1' de §oToras Incluídas para Corte§r §efoi atualizado com sucesso para '%2' em §oToras Incluídas para Corte.
+
+## Exclude Manager <ADD LOCALIZATION>
+LumberAxe.log_exclude_manager.drop_down=Toras Excluídas para Corte
+LumberAxe.log_exclude_manager.text_field=Tora a Excluir
+LumberAxe.log_exclude_manager.toggle=Adicionar
+LumberAxe.log_exclude_manager.add_success_log=§aBloco com o nome '%1' foi adicionado com sucesso a §oToras Excluídas para Corte.
+LumberAxe.log_exclude_manager.remove_success_log=§cBloco com o nome '%1' foi removido com sucesso de §oToras Excluídas para Corte.
+LumberAxe.log_exclude_manager.update_success_log=§eBloco com o nome '%1' de §oToras Excluídas para Corte§r §efoi atualizado com sucesso para '%2' em §oToras Excluídas para Corte.
+>>>>>>> itemUseOnUpdate

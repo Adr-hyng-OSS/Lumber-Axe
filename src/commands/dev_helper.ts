@@ -1,13 +1,14 @@
-import { EntityComponentTypes, EntityInventoryComponent, ItemStack } from "@minecraft/server";
+import { EntityComponentTypes, EntityInventoryComponent, ItemStack, MolangVariableMap } from "@minecraft/server";
 import { CommandHandler } from "commands/command_handler";
 import { ICommandBase} from "./ICommandBase";
 import { SendMessageTo} from "utils/utilities";
-import { axeEquipments } from "constant";
+import { axeEquipments, originalDatabase, resetOriginalDatabase, visitedLogs } from "constant";
 
 // Automate this, the values should be the description.
 enum REQUIRED_PARAMETER {
     GET = "get",
     TEST = "test",
+    RELOAD = "reload",
 }
 
 const command: ICommandBase = {
@@ -22,6 +23,7 @@ const command: ICommandBase = {
         Usage:
         > ${CommandHandler.prefix}${this.name} ${REQUIRED_PARAMETER.GET} = GETS an enchanted fishing rod for development.
         > ${CommandHandler.prefix}${this.name} ${REQUIRED_PARAMETER.TEST} = TEST a Working-in-progress features.
+        > ${CommandHandler.prefix}${this.name} ${REQUIRED_PARAMETER.RELOAD} = Reloads the addon.
         `).replaceAll("        ", "");
     },
     execute(player, args) {
@@ -38,7 +40,6 @@ const command: ICommandBase = {
                 ]
             }
         );
-        let fishingRod: ItemStack;
         switch(selectedReqParam) {
             case REQUIRED_PARAMETER.GET:
                 for(const axe of axeEquipments) {
@@ -46,6 +47,12 @@ const command: ICommandBase = {
                 }
                 break;
             case REQUIRED_PARAMETER.TEST:
+                console.warn(originalDatabase.size, visitedLogs.length);
+                break;
+            case REQUIRED_PARAMETER.RELOAD:
+                originalDatabase.clear();
+                resetOriginalDatabase();
+                console.warn(originalDatabase.isValid(), originalDatabase.size);
                 break;
             default:
                 break;

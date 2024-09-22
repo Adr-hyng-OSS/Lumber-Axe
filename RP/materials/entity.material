@@ -1,0 +1,45 @@
+{
+	"materials": {
+		"version": "1.0.0",
+
+		"block_outline.base:entity_alphatest": {
+			"+states": [
+				"EnableStencilTest",
+				"StencilWrite"
+			],
+			
+			"frontFace": {
+				"stencilFunc": "Always",
+				"stencilFailOp": "Replace",
+				"stencilDepthFailOp": "Replace",
+				"stencilPassOp": "Replace"
+			},
+			"backFace": {
+				"stencilFunc": "Always",
+				"stencilFailOp": "Replace",
+				"stencilDepthFailOp": "Replace",
+				"stencilPassOp": "Replace"
+			},
+
+			"stencilRef": 3
+		},
+
+		"block_outline.outline:entity_alphatest": {
+			"+states": [
+				"EnableStencilTest",
+				"InvertCulling"
+			],
+			"-states": ["DisableCulling"],
+			
+			"-defines": ["FANCY"],
+			
+			"depthFunc": "Always",
+			
+			"frontFace": {
+				"stencilFunc": "NotEqual"
+			},
+
+			"stencilRef": 3
+		}
+	}
+}

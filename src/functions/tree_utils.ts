@@ -1,166 +1,225 @@
-import { Block, Dimension, EntityEquippableComponent, EquipmentSlot, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, Player, System, Vector3, system } from "@minecraft/server";
-import { MinecraftBlockTypes, MinecraftEnchantmentTypes} from "../modules/vanilla-types/index";
+import { Block, Dimension, Entity, Vector3, VectorXZ, system, world } from "@minecraft/server";
 
-import { validLogBlocks, axeEquipments, stackDistribution, serverConfigurationCopy } from "../index";
+import { serverConfigurationCopy, VisitedBlockResult, TrunkBlockResult, originalDatabase, hashBlock } from "../index";
+import { Graph } from "utils/graph";
+import { Vec3 } from "utils/VectorUtils";
 
+export function isLogIncluded(rootBlockTypeId: string, blockTypeId: string): boolean {
+    const validLogBlocks: RegExp = /(_log|_wood|crimson_stem|warped_stem|(?:brown|red_)?mushroom_block)$/;
+    function extractLogFamily(blockTypeId: string): string {
+        // Remove the namespace by splitting on the colon (':') and taking the second part
+        const [, cleanedBlockTypeId] = blockTypeId.split(':');
 
-function treeCut(player: Player, dimension: Dimension, location: Vector3, blockTypeId: string): void {
-    const equipment = player.getComponent(EntityEquippableComponent.componentId) as EntityEquippableComponent;
-    const currentHeldAxe = equipment.getEquipment(EquipmentSlot.Mainhand);
-    if (!axeEquipments.includes(currentHeldAxe?.typeId)) return;
+        // Split the remaining string by underscores
+        const parts = cleanedBlockTypeId.split('_');
 
-    if (!player.isSurvival()) return;
-    if (player.isSurvival()) currentHeldAxe.lockMode = ItemLockMode.slot;
-
-    const itemDurability: ItemDurabilityComponent = currentHeldAxe.getComponent(ItemDurabilityComponent.componentId) as ItemDurabilityComponent;
-    const enchantments: ItemEnchantableComponent = (currentHeldAxe.getComponent(ItemEnchantableComponent.componentId) as ItemEnchantableComponent);
-    const level: number = enchantments.getEnchantment(MinecraftEnchantmentTypes.Unbreaking)?.level | 0;
-    const unbreakingMultiplier: number = (100 / (level + 1)) / 100;
-    const unbreakingDamage: number = parseInt(serverConfigurationCopy.durabilityDamagePerBlock.defaultValue + "") * unbreakingMultiplier;
-    
-    system.run(async () => {
-
-        const visited: Set<string> = await getTreeLogs(dimension, location, blockTypeId, (itemDurability.maxDurability - itemDurability.damage) / unbreakingDamage);
-        
-        const totalDamage: number = visited.size * unbreakingDamage;
-        const postDamagedDurability: number = itemDurability.damage + totalDamage;
-    
-        // Check if durabiliy is exact that can chop the tree but broke the axe, then broke it.
-        if (postDamagedDurability + 1 === itemDurability.maxDurability) {
-            equipment.setEquipment(EquipmentSlot.Mainhand, undefined);
-        // Check if the durability is not enough to chop the tree. Then don't apply the 3 damage.
-        } else if (postDamagedDurability > itemDurability.maxDurability) {
-            currentHeldAxe.lockMode = ItemLockMode.none;
-            return;
-        // Check if total durability will consume is still enough and not near the max durability
-        } else if (postDamagedDurability < itemDurability.maxDurability){
-            itemDurability.damage = itemDurability.damage +  totalDamage;
-            currentHeldAxe.lockMode = ItemLockMode.none;
-            equipment.setEquipment(EquipmentSlot.Mainhand, currentHeldAxe.clone());
-        }
-        
-        //! Use this when fillBlocks is in stable.
-        // for (const group of groupAdjacentBlocks(visited)) {
-        //     const firstElement = JSON.parse(group[0]);
-        //     const lastElement = JSON.parse(group[group.length - 1]);
-        //     if (firstElement === lastElement) {
-        //         dimension.getBlock(firstElement).setType(MinecraftBlockTypes.Air);
-        //         continue;
-        //     } else {
-        //         dimension.fillBlocks(firstElement, lastElement, MinecraftBlockTypes.Air);
-        //     }
-        // }
-        for(const visitedLogLocation of visited) {
-            system.run(() => dimension.setBlockType(JSON.parse(visitedLogLocation), MinecraftBlockTypes.Air));
-        }
-        
-        system.runTimeout( () => {
-            for (const group of stackDistribution(visited.size)) {
-                system.run(() => dimension.spawnItem(new ItemStack(blockTypeId, group), location));
-            }
-        }, 5);
-    });
-}
-
-function isLogIncluded(blockTypeId: string): boolean {
+        // Remove the last part (e.g., 'log', 'wood', 'stem')
+        return parts.slice(0, -1).join('_');
+    }
     if(serverConfigurationCopy.excludedLog.values.includes(blockTypeId) || blockTypeId.includes('stripped_')) return false;
-    if(serverConfigurationCopy.includedLog.values.includes(blockTypeId) || validLogBlocks.test(blockTypeId)) return true;
+    const extractedLogFamily = extractLogFamily(rootBlockTypeId);
+    const blockFamily = extractLogFamily(blockTypeId);
+    const isSameFamily = blockFamily === extractedLogFamily;
+    if((serverConfigurationCopy.includedLog.values.includes(blockTypeId) ||
+        validLogBlocks.test(blockTypeId)) && isSameFamily ) return true;
     return false;
 }
 
-function getTreeLogs(dimension: Dimension, location: Vector3, blockTypeId: string, maxNeeded: number): Promise<Set<string>> {
-    return new Promise<Set<string>>((resolve) => {
-        const traversingTreeInterval: number = system.runJob(function*(){
-            const visited: Set<string> = new Set<string>();
-            let queue: Block[] = getBlockNearInitialize(dimension, location);
+
+export async function getTreeLogs(
+    dimension: Dimension, 
+    location: Vector3, 
+    blockTypeId: string, 
+    maxNeeded: number, 
+    isInspectingTree: boolean = true
+): Promise<VisitedBlockResult> {
+    const firstBlock = dimension.getBlock(location);
+    const visitedTree = await new Promise<VisitedBlockResult>((resolve) => {
+        const graph = new Graph();
+        const visitedTypeIDs: Map<string, number> = new Map();
+        const queue: Block[] = [firstBlock];
+        const yOffsets: Map<number, boolean> = new Map();
+        const visited: Set<string> = new Set([JSON.stringify(firstBlock.location)]);
+        visitedTypeIDs.set(blockTypeId, 0);
+        const traversingTreeInterval: number = system.runJob(function* () {
+            graph.addNode(firstBlock);
+            originalDatabase.set(`visited_${hashBlock(firstBlock)}`, isInspectingTree);
+
+            // Should spawn outline is indicator for inspection or breaking tree.
+            // Inspection = True
+            // Breaking = False
+
             while (queue.length > 0) {
-                if(visited.size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || visited.size >= maxNeeded) {
-                    system.clearJob(traversingTreeInterval);
-                    resolve(visited);
+                const size = graph.getSize();
+
+                // Check termination conditions
+                if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || size >= maxNeeded) {
+                    break;
                 }
-                const _block: Block = queue.shift();
-                if (!_block?.isValid() || !isLogIncluded(_block?.typeId)) continue;
-                if (_block.typeId !== blockTypeId) continue;
-                const pos: string = JSON.stringify(_block.location);
-                if (visited.has(pos)) continue;
-                visited.add(pos);
-                for(const block of getBlockNear(dimension, _block.location)) {
-                    queue.push(block);
+
+                const block: Block = queue.shift();
+                const mainNode = graph.getNode(block);
+                if (!mainNode) continue;
+                yOffsets.set(block.y, false);
+                
+                // First, gather all valid neighbors
+                for (const neighborBlock of getBlockNear(blockTypeId, block)) {
+                    const serializedLocation = JSON.stringify(neighborBlock.location);
+                    let neighborNode = graph.getNode(neighborBlock) ?? graph.addNode(neighborBlock);
+                    originalDatabase.set(`visited_${hashBlock(neighborBlock)}`, isInspectingTree);
+
+                    // It should check if this neighbor of main node is already a neighbor, if yes, then continue.
+                    if(mainNode.neighbors.has(neighborNode)) continue;
+                    
+                    // Connect the current node to its neighbor
+                    mainNode.addNeighbor(neighborNode);
+                    neighborNode.addNeighbor(mainNode);
+
+                    // Check if the neighbor node has already been visited
+                    if (visited.has(serializedLocation)) continue;
+                    
+                    // Mark this neighbor as visited and add to the queue for further processing
+                    visited.add(serializedLocation);
+                    queue.push(neighborBlock);
+
+                    let currentAmount = visitedTypeIDs.get(neighborBlock.typeId) ?? 0;
+                    currentAmount += 1;
+                    visitedTypeIDs.set(neighborBlock.typeId, currentAmount);
                     yield;
                 }
                 yield;
             }
-            queue = [];
+            
             system.clearJob(traversingTreeInterval);
-            resolve(visited);
+            resolve({
+                source: graph, 
+                blockOutlines: [], 
+                yOffsets, 
+                typeIds: visitedTypeIDs,
+                trunk: {
+                    size: 0,
+                    center: {x: 0, z: 0}
+                }
+            });
         }());
+    });
+
+    const blockOutlines: Entity[] = [];
+    const trunk = await getTreeTrunkSize(firstBlock, blockTypeId);
+    return new Promise<VisitedBlockResult>((resolve) => {
+        const t = system.runJob((function*(){
+            // Create Block Entity based on the trunk. 
+            for(const yOffset of visitedTree.yOffsets.keys()) {
+                const outline = dimension.spawnEntity('yn:block_outline', {
+                    x: trunk.center.x, 
+                    y: yOffset, 
+                    z: trunk.center.z
+                });
+                outline.lastLocation = JSON.parse(JSON.stringify(outline.location));
+                blockOutlines.push(outline);
+                yield;
+            }
+            // After all is traversed, start timer.
+            for(const blockOutline of blockOutlines) {
+                if(blockOutline?.isValid()) {
+                    blockOutline.triggerEvent('not_persistent');
+                }
+                yield;
+            }
+            system.clearJob(t);
+            resolve({
+                typeIds: visitedTree.typeIds,
+                source: visitedTree.source,
+                blockOutlines: blockOutlines,
+                trunk: trunk,
+                yOffsets: visitedTree.yOffsets
+            });
+            return;
+        })());
     });
 }
 
-function* getBlockNear(dimension: Dimension, location: Vector3, radius: number = 1): Generator< Block, any, unknown> {
-    const centerX: number = location.x;
-    const centerY: number = location.y;
-    const centerZ: number = location.z;
+
+
+function* getBlockNear(initialBlockTypeID: string, initialBlock: Block, radius: number = 1): Generator<Block, any, unknown> {
+    const centerX: number = 0;
+    const centerY: number = 0;
+    const centerZ: number = 0;
     let _block: Block;
     for (let x = centerX - radius; x <= centerX + radius; x++) {
         for (let y = centerY - radius; y <= centerY + radius; y++) {
             for (let z = centerZ - radius; z <= centerZ + radius; z++) {
-                if(centerX === x && centerY === y && centerZ === z) continue;
-                _block = dimension.getBlock({ x, y, z });
-                if(_block.isAir) continue;
-                yield _block
+                if (centerX === x && centerY === y && centerZ === z) continue;
+                _block = initialBlock.offset({x, y, z});
+                if (!_block?.isValid() || !isLogIncluded(initialBlockTypeID, _block?.typeId)) continue;
+                yield _block;
             }
         }
     }
 }
 
-function getBlockNearInitialize(dimension: Dimension, location: Vector3, radius: number = 1): Block[] {
-    const centerX: number = location.x;
-    const centerY: number = location.y;
-    const centerZ: number = location.z;
-    const blocks: Block[] = [];
-    let _block: Block;
-    for (let x = centerX - radius; x <= centerX + radius; x++) {
-        for (let y = centerY - radius; y <= centerY + radius; y++) {
-            for (let z = centerZ - radius; z <= centerZ + radius; z++) {
-                if(centerX === x && centerY === y && centerZ === z) continue;
-                _block = dimension.getBlock({ x, y, z });
-                if(_block.isAir) continue;
-                blocks.push(_block);
+export function getTreeTrunkSize(blockInteracted: Block, blockTypeId: string): Promise<TrunkBlockResult> {
+    return new Promise<TrunkBlockResult>((fetchedTrunkSizeResolved) => {
+        let i = 0;
+        let centroidLog: VectorXZ = {
+            x: 0, 
+            z: 0
+        };
+
+
+        // (TODO) Possible to accurately get the trunk size, use a hashset to collect X and Z axis,
+        // (TODO) Possible to accurately get the trunk height
+        const visited = new Set<string>(); // To avoid revisiting blocks
+        const queue: Block[] = [blockInteracted]; // Queue for the floodfill process
+        const originalY = blockInteracted.y; // Store the original Y position
+
+        const t = system.runJob((function* () {
+            while (queue.length > 0) {
+                const currentBlock = queue.shift();
+                if ((!currentBlock || !currentBlock.isValid()) && !Vec3.equals(blockInteracted, currentBlock)) continue;
+                const blockKey = JSON.stringify({x: currentBlock.x, z: currentBlock.z} as VectorXZ);
+                if (visited.has(blockKey)) continue;
+                visited.add(blockKey);
+
+                // Accumulate the log coordinates to calculate the centroid
+                centroidLog.x += currentBlock.x;
+                centroidLog.z += currentBlock.z;
+                i++;
+
+                // Add the neighboring blocks within radius 1 (cardinal + diagonal) but limit Y within +2 and -2 range
+                for (let y = -1; y <= 1; y++) {
+                    const newY = currentBlock.y + y;
+                    if (newY < originalY - 2 || newY > originalY + 2) continue; // Skip if out of allowed y-range
+
+                    for (let x = -1; x <= 1; x++) {
+                        for (let z = -1; z <= 1; z++) {
+                            if (x === 0 && z === 0 && y === 0) continue; // Skip the current block itself
+                            const neighborBlock = currentBlock.offset({ x: x, y: y, z: z });
+                            const neighborLoc = JSON.stringify({x: neighborBlock.x, z: neighborBlock.z} as VectorXZ);
+                            if (!neighborBlock?.isValid() || visited.has(neighborLoc) || !isLogIncluded(blockTypeId, neighborBlock.typeId)) continue;
+                            queue.push(neighborBlock);
+                            yield;
+                        }
+                        yield;
+                    }
+                    yield;
+                }
+                yield;
             }
-        }
-    }
-    return blocks;
+
+            // If only one block found, the centroid is the original block's location
+            if (i <= 1) {
+                i = 1;
+                centroidLog = blockInteracted.center();
+            } else {
+                // Compute the average position of the logs
+                centroidLog.x = (centroidLog.x / i) + 0.5;
+                centroidLog.z = (centroidLog.z / i) + 0.5;
+            }
+
+            system.clearJob(t);
+            fetchedTrunkSizeResolved({ center: centroidLog, size: i });
+            return;
+        })());
+    });
 }
-
-// Gets all the visited blocks and groups them together.
-function groupAdjacentBlocks(visited: Set<string>): string[][] {
-    // Author: Adr-hyng <https://github.com/Adr-hyng>
-    // Project: https://github.com/Adr-hyng-OSS/Lumber-Axe
-    // Convert Set to Array and parse each string to JSON object
-    const array = Array.from(visited).map(item => JSON.parse(item));
-
-    // Sort the array based on "x", "z", and "y"
-    array.sort((a, b) => a.x - b.x || a.z - b.z || a.y - b.y);
-
-    const groups: string[][] = [];
-    let currentGroup: string[] = [];
-
-    for (let i = 0; i < array.length; i++) {
-        // If it's the first element or "x" and "z" didn't change and "y" difference is less or equal to 2, add it to the current group
-        if (i === 0 || (array[i].x === array[i - 1].x && array[i].z === array[i - 1].z && Math.abs(array[i].y - JSON.parse(currentGroup[currentGroup.length - 1]).y) <= 2)) {
-            currentGroup.push(JSON.stringify(array[i]));
-        } else {
-            // Otherwise, add the current group to the groups array and start a new group
-            groups.push(currentGroup);
-            currentGroup = [JSON.stringify(array[i])];
-        }
-    }
-    // Add the last group to the groups array
-    if (currentGroup.length > 0) {
-        groups.push(currentGroup);
-    }
-    return groups;
-}
-
-export {treeCut, isLogIncluded, getTreeLogs}

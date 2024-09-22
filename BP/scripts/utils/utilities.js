@@ -31,6 +31,14 @@ function stackDistribution(number, groupSize = 64) {
     }
     return groups;
 }
+export function hashBlock(block) {
+    const inputString = `${block.dimension.id}_${block.x}-${block.y}-${block.z}`;
+    let hash = 5381;
+    for (let i = 0; i < inputString.length; i++) {
+        hash = (hash * 33) ^ inputString.charCodeAt(i);
+    }
+    return (hash >>> 0).toString(16);
+}
 async function forceShow(player, form, timeout = Infinity) {
     const startTick = system.currentTick;
     while ((system.currentTick - startTick) < timeout) {
