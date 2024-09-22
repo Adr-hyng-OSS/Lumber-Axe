@@ -49,3 +49,5 @@ LumberAxe.log_exclude_manager.drop_down=Troncos Excluídos no Corte	###
 LumberAxe.log_exclude_manager.text_field=Bloco de Tronco a Excluir	###
 LumberAxe.log_exclude_manager.toggle=Adicionar	###
 LumberAxe.log_exclude_manager.add_success_log=§aBloco '%1' adicionado com sucesso a §oTroncos Excluídos no Corte.	###
+LumberAxe.log_exclude_manager.remove_success_log=§cBloco '%1' removido com sucesso de §oTroncos Excluídos no Corte.	###
+LumberAxe.log_exclude_manager.update_success_log=§eBloco '%1' atualizado com sucesso para '%2' em §oTroncos Excluídos no Corte§r.	###

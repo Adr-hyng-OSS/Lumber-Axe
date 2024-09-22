@@ -1,0 +1,53 @@
+## Items
+item.yn:wooden_lumber_axe.name=Kapak Kayu Penebang Pohon	###
+item.yn:stone_lumber_axe.name=Kapak Batu Penebang Pohon	###
+item.yn:golden_lumber_axe.name=Kapak Emas Penebang Pohon	###
+item.yn:iron_lumber_axe.name=Kapak Besi Penebang Pohon	###
+item.yn:diamond_lumber_axe.name=Kapak Berlian Penebang Pohon	###
+item.yn:netherite_lumber_axe.name=Kapak Netherite Penebang Pohon	###
+
+## Form-UI <REDO LOCALIZATION>
+LumberAxe.form.title.text=Tinjauan Status Pohon	###
+LumberAxe.form.treeSizeAbrev.text=Mengandung	###
+LumberAxe.form.treeSizeAbrevLogs.text=Batang	###
+LumberAxe.form.trunkHeightAbrev.text=Tinggi dalam Blok	###
+LumberAxe.form.canBeChopped.text=Dapat Ditebang	###
+LumberAxe.form.cannotBeChopped.text=Tidak Dapat Ditebang	###
+
+## Log Messages <ADD LOCALIZATION>
+LumberAxe.on_load_message=§a§lAdd-on Kapak Penebang Pohon§r §aBerhasil dimuat. Dibuat oleh Adr-hyng.	###
+LumberAxe.on_caught_invalid_command=§cFormat penggunaan tidak valid. %1	###
+LumberAxe.on_database_empty=§4Tidak ada catatan konfigurasi yang ditemukan di basis data. §r	###
+LumberAxe.on_database_reset=§aBasis data telah disetel ulang. §r	###
+LumberAxe.show_database=ID Basis Data: §e%1§r%2%3	###
+LumberAxe.on_caught_command_404=§cKesalahan saat mengambil perintah %1: %2	###
+LumberAxe.on_caught_main_command_not_found=§cPerintah tidak valid: §l%1§r%2§cPeriksa apakah perintah itu ada. Gunakan /scriptevent %3 help	###
+LumberAxe.server.invalid_log_amount_limitation=Tebangan seluruh pohon tidak dapat dilakukan karena pembatasan pengaturan server %1. Hubungi operator server untuk menyesuaikan.	###
+
+## Server Options Details <ADD LOCALIZATION>
+LumberAxe.server.durability_damage_per_block=Kerusakan daya tahan per blok	###
+LumberAxe.server.chop_limit=Batas jumlah batang pohon	###
+LumberAxe.server.immersive_chopping=Aktifkan mode imersif	###
+LumberAxe.server.immersive_delay=Waktu tunda mode imersif	###
+
+## Configuration Options <ADD LOCALIZATION>
+LumberAxe.configuration.title=Pengaturan %1	###
+LumberAxe.configuration.general=Opsi Umum	###
+LumberAxe.configuration.log_include_manager=Pengelola Batang yang Diizinkan	###
+LumberAxe.configuration.log_exclude_manager=Pengelola Batang yang Dikecualikan	###
+
+## Include Manager <ADD LOCALIZATION>
+LumberAxe.log_include_manager.drop_down=Batang yang Diizinkan Ditebang	###
+LumberAxe.log_include_manager.text_field=Blok Batang yang Diizinkan	###
+LumberAxe.log_include_manager.toggle=Tambahkan	###
+LumberAxe.log_include_manager.add_success_log=§aBlok '%1' berhasil ditambahkan ke §oBatang yang Diizinkan Ditebang.	###
+LumberAxe.log_include_manager.remove_success_log=§cBlok '%1' berhasil dihapus dari §oBatang yang Diizinkan Ditebang.	###
+LumberAxe.log_include_manager.update_success_log=§eBlok '%1' berhasil diperbarui ke '%2' di §oBatang yang Diizinkan Ditebang§r.	###
+
+## Exclude Manager <ADD LOCALIZATION>
+LumberAxe.log_exclude_manager.drop_down=Batang yang Dikecualikan Ditebang	###
+LumberAxe.log_exclude_manager.text_field=Blok Batang yang Dikecualikan	###
+LumberAxe.log_exclude_manager.toggle=Tambahkan	###
+LumberAxe.log_exclude_manager.add_success_log=§aBlok '%1' berhasil ditambahkan ke §oBatang yang Dikecualikan Ditebang.	###
+LumberAxe.log_exclude_manager.remove_success_log=§cBlok '%1' berhasil dihapus dari §oBatang yang Dikecualikan Ditebang.	###
+LumberAxe.log_exclude_manager.update_success_log=§eBlok '%1' berhasil diperbarui ke '%2' di §oBatang yang Dikecualikan Ditebang§r.	###
