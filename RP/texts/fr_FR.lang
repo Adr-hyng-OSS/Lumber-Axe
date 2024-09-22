@@ -10,38 +10,6 @@ item.yn:netherite_lumber_axe.name=Hache de Netherite de bûcheron
 LumberAxe.form.canBeChopped.text=L'arbre peut être coupé
 LumberAxe.form.cannotBeChopped.text=L'arbre ne peut pas être coupé
 
-<<<<<<< HEAD
-LumberAxe.on_load_message=§a§lLumber Axe Addon§r §aa été chargé avec succès. Créé par Adr-hyng.
-LumberAxe.on_caught_invalid_command=§cFormat d'utilisation invalide. %1
-LumberAxe.on_database_empty=§4Aucun enregistrement de configuration trouvé dans la base de données.§r
-LumberAxe.on_database_reset=§aLa base de données a été réinitialisée.§r
-LumberAxe.show_database=ID de la base de données: §e%1§r%2%3
-LumberAxe.on_caught_command_404=§cErreur lors de la récupération de la commande %1 : %2
-LumberAxe.on_caught_main_command_not_found=§cCommande invalide : §l%1§r%2§cVérifiez si la commande existe réellement. Utilisez /scriptevent %3 help
-
-LumberAxe.server.show_message_on_join=Afficher le message à la connexion
-LumberAxe.server.durability_damage_per_block=Perte de durabilité par bloc
-LumberAxe.server.chop_limit=Limite de blocs de tronc d'arbre
-
-LumberAxe.configuration.title=Paramètres de %1
-LumberAxe.configuration.general=Options générales
-LumberAxe.configuration.log_include_manager=Gestionnaire de troncs inclus
-LumberAxe.configuration.log_exclude_manager=Gestionnaire de troncs exclus
-
-LumberAxe.log_include_manager.drop_down=Troncs coupables inclus
-LumberAxe.log_include_manager.text_field=Bloc de tronc à inclure
-LumberAxe.log_include_manager.toggle=Insérer
-LumberAxe.log_include_manager.add_success_log=§aLe bloc nommé '%1' a été ajouté avec succès à §oTroncs coupables inclus.
-LumberAxe.log_include_manager.remove_success_log=§cLe bloc nommé '%1' a été retiré avec succès de §oTroncs coupables inclus.
-LumberAxe.log_include_manager.update_success_log=§eLe bloc nommé '%1' de §oTroncs coupables inclus§r §ea été mis à jour avec succès en '%2' dans §oTroncs coupables inclus.
-
-LumberAxe.log_exclude_manager.drop_down=Troncs coupables exclus
-LumberAxe.log_exclude_manager.text_field=Bloc de tronc à exclure
-LumberAxe.log_exclude_manager.toggle=Insérer
-LumberAxe.log_exclude_manager.add_success_log=§aLe bloc nommé '%1' a été ajouté avec succès à §oTroncs coupables exclus.
-LumberAxe.log_exclude_manager.remove_success_log=§cLe bloc nommé '%1' a été retiré avec succès de §oTroncs coupables exclus.
-LumberAxe.log_exclude_manager.update_success_log=§eLe bloc nommé '%1' de §oTroncs coupables exclus§r §ea été mis à jour avec succès en '%2' dans §oTroncs coupables exclus.
-=======
 ## Form-UI <REDO LOCALIZATION>
 LumberAxe.form.title.text=Vue d'ensemble de l'état de l'arbre
 LumberAxe.form.treeSizeAbrev.text=A
@@ -85,4 +53,3 @@ LumberAxe.log_exclude_manager.toggle=Ajouter
 LumberAxe.log_exclude_manager.add_success_log=§aBloc nommé '%1' ajouté avec succès à §oBûches Exclues pour la Coupe.
 LumberAxe.log_exclude_manager.remove_success_log=§cBloc nommé '%1' supprimé avec succès de §oBûches Exclues pour la Coupe.
 LumberAxe.log_exclude_manager.update_success_log=§eBloc nommé '%1' de §oBûches Exclues pour la Coupe§r §ea été mis à jour avec succès à '%2' dans §oBûches Exclues pour la Coupe.
->>>>>>> itemUseOnUpdate
