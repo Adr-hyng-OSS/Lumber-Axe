@@ -5,7 +5,7 @@ export const serverConfiguration = {
   /**
    * Lumber Axe durability damage per log destroyed.
    */
-  durabilityDamagePerBlock: new FormBuilder("LumberAxe.server.durability_damage_per_block").createTextField("0"),
+  durabilityDamagePerBlock: new FormBuilder("LumberAxe.server.durability_damage_per_block").createTextField("3"),
   /**
    * Delay for immersive mode.
    */
@@ -42,4 +42,4 @@ export let setServerConfiguration = (newServerConfig) => serverConfigurationCopy
 export let resetServerConfiguration = () => serverConfigurationCopy = cloneConfiguration(serverConfiguration);
 
 // version (do not change)
-export const VERSION = "1.0.11";
+export const VERSION = "2.0.0";

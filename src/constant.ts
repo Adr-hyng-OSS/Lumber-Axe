@@ -1,12 +1,15 @@
 import { InteractedTreeResult } from "index";
 import { JsonDatabase } from "./utils/Database/con-database";
 import { MyCustomItemTypes } from 'items/CustomItemTypes';
-import { MolangVariableMap, system } from "@minecraft/server";
+import { system } from "@minecraft/server";
 
 export const ADDON_NAMESPACE: string = "yn"
 export const ADDON_NAME: string = "Lumber_Axe";
 export const ADDON_IDENTIFIER: string = `${ADDON_NAMESPACE}:lumber`;
-export const db = new JsonDatabase(ADDON_NAME);
+export let originalDatabase = new JsonDatabase(ADDON_NAME);
+export const resetOriginalDatabase = (): void => {
+  originalDatabase = new JsonDatabase(ADDON_NAME);
+}
 
 export const playerInteractedTimeLogMap: Map<string, number> = new Map();
 export const axeEquipments: string[] = Object.values(MyCustomItemTypes);

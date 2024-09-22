@@ -1,7 +1,7 @@
 import { EntityComponentTypes, ItemStack } from "@minecraft/server";
 import { CommandHandler } from "commands/command_handler";
 import { SendMessageTo } from "utils/utilities";
-import { axeEquipments, db, visitedLogs } from "constant";
+import { axeEquipments, originalDatabase, resetOriginalDatabase, visitedLogs } from "constant";
 var REQUIRED_PARAMETER;
 (function (REQUIRED_PARAMETER) {
     REQUIRED_PARAMETER["GET"] = "get";
@@ -43,10 +43,12 @@ const command = {
                 }
                 break;
             case REQUIRED_PARAMETER.TEST:
-                console.warn(db.size, visitedLogs.length);
+                console.warn(originalDatabase.size, visitedLogs.length);
                 break;
             case REQUIRED_PARAMETER.RELOAD:
-                db.clear();
+                originalDatabase.clear();
+                resetOriginalDatabase();
+                console.warn(originalDatabase.isValid(), originalDatabase.size);
                 break;
             default:
                 break;

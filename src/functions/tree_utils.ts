@@ -1,6 +1,6 @@
 import { Block, Dimension, Entity, Vector3, VectorXZ, system, world } from "@minecraft/server";
 
-import { serverConfigurationCopy, VisitedBlockResult, TrunkBlockResult, db, hashBlock } from "../index";
+import { serverConfigurationCopy, VisitedBlockResult, TrunkBlockResult, originalDatabase, hashBlock } from "../index";
 import { Graph } from "utils/graph";
 import { Vec3 } from "utils/VectorUtils";
 
@@ -33,7 +33,6 @@ export async function getTreeLogs(
     maxNeeded: number, 
     isInspectingTree: boolean = true
 ): Promise<VisitedBlockResult> {
-    console.warn("RUNNED");
     const firstBlock = dimension.getBlock(location);
     const visitedTree = await new Promise<VisitedBlockResult>((resolve) => {
         const graph = new Graph();
@@ -44,7 +43,7 @@ export async function getTreeLogs(
         visitedTypeIDs.set(blockTypeId, 0);
         const traversingTreeInterval: number = system.runJob(function* () {
             graph.addNode(firstBlock);
-            db.set(`visited_${hashBlock(firstBlock)}`, isInspectingTree);
+            originalDatabase.set(`visited_${hashBlock(firstBlock)}`, isInspectingTree);
 
             // Should spawn outline is indicator for inspection or breaking tree.
             // Inspection = True
@@ -67,7 +66,7 @@ export async function getTreeLogs(
                 for (const neighborBlock of getBlockNear(blockTypeId, block)) {
                     const serializedLocation = JSON.stringify(neighborBlock.location);
                     let neighborNode = graph.getNode(neighborBlock) ?? graph.addNode(neighborBlock);
-                    db.set(`visited_${hashBlock(neighborBlock)}`, isInspectingTree);
+                    originalDatabase.set(`visited_${hashBlock(neighborBlock)}`, isInspectingTree);
 
                     // It should check if this neighbor of main node is already a neighbor, if yes, then continue.
                     if(mainNode.neighbors.has(neighborNode)) continue;
@@ -110,8 +109,6 @@ export async function getTreeLogs(
     return new Promise<VisitedBlockResult>((resolve) => {
         const t = system.runJob((function*(){
             // Create Block Entity based on the trunk. 
-            // (Create particle spawner entities when you are chopping it down for dust, and destroy particle, else just for inpsection particle)
-            // if(!isInspectingTree) {
             for(const yOffset of visitedTree.yOffsets.keys()) {
                 const outline = dimension.spawnEntity('yn:block_outline', {
                     x: trunk.center.x, 
@@ -129,7 +126,6 @@ export async function getTreeLogs(
                 }
                 yield;
             }
-            // }
             system.clearJob(t);
             resolve({
                 typeIds: visitedTree.typeIds,

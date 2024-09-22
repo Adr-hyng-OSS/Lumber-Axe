@@ -1,7 +1,7 @@
 import { Player } from "@minecraft/server";
 import { ActionFormData, ActionFormResponse, FormCancelationReason, ModalFormData, ModalFormResponse } from "@minecraft/server-ui";
 import { ConfigurationCollections_DB, ConfigurationTypes} from "./configuration_handler";
-import {ADDON_NAME, db} from "constant";
+import {ADDON_NAME, originalDatabase, resetOriginalDatabase} from "constant";
 import { FormBuilder } from "utils/form_builder";
 import { resetServerConfiguration, serverConfigurationCopy, setServerConfiguration } from "./server_configuration";
 import { SendMessageTo } from "utils/utilities";
@@ -19,26 +19,29 @@ export class Configuration {
     this.SERVER_CONFIGURATION_DB = ConfigurationCollections_DB(this.player, "SERVER");
   }
   reset(configurationType: ConfigurationTypes) {
-    if(db.isValid()) {
+    if(originalDatabase.isValid()) {
       if(configurationType === "SERVER") {
         resetServerConfiguration();
-        db.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
+        originalDatabase.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
       }
     }
     else throw new Error("Database not found");
   }
   saveServer() {
     setServerConfiguration(serverConfigurationCopy);
-    if (db.isValid()) db.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
+    if (originalDatabase.isValid()) originalDatabase.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
+    else {
+      resetOriginalDatabase();
+    }
   }
   loadServer() {
-    if (db.isValid()) {
-      if (db.has(this.SERVER_CONFIGURATION_DB)) {
-        setServerConfiguration( db.get(this.SERVER_CONFIGURATION_DB) );
+    if (originalDatabase?.isValid()) {
+      if (originalDatabase.has(this.SERVER_CONFIGURATION_DB)) {
+        setServerConfiguration( originalDatabase.get(this.SERVER_CONFIGURATION_DB) );
       } else {
-        db.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
+        originalDatabase.set(this.SERVER_CONFIGURATION_DB, serverConfigurationCopy);
       }
-    }
+    } 
   }
   showServerScreen() {
     const parsedAddonTitle = ADDON_NAME.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());

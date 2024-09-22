@@ -1,5 +1,5 @@
 import { system } from "@minecraft/server";
-import { serverConfigurationCopy, db, hashBlock } from "../index";
+import { serverConfigurationCopy, originalDatabase, hashBlock } from "../index";
 import { Graph } from "utils/graph";
 import { Vec3 } from "utils/VectorUtils";
 export function isLogIncluded(rootBlockTypeId, blockTypeId) {
@@ -20,7 +20,6 @@ export function isLogIncluded(rootBlockTypeId, blockTypeId) {
     return false;
 }
 export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, isInspectingTree = true) {
-    console.warn("RUNNED");
     const firstBlock = dimension.getBlock(location);
     const visitedTree = await new Promise((resolve) => {
         const graph = new Graph();
@@ -31,7 +30,7 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
         visitedTypeIDs.set(blockTypeId, 0);
         const traversingTreeInterval = system.runJob(function* () {
             graph.addNode(firstBlock);
-            db.set(`visited_${hashBlock(firstBlock)}`, isInspectingTree);
+            originalDatabase.set(`visited_${hashBlock(firstBlock)}`, isInspectingTree);
             while (queue.length > 0) {
                 const size = graph.getSize();
                 if (size >= parseInt(serverConfigurationCopy.chopLimit.defaultValue + "") || size >= maxNeeded) {
@@ -45,7 +44,7 @@ export async function getTreeLogs(dimension, location, blockTypeId, maxNeeded, i
                 for (const neighborBlock of getBlockNear(blockTypeId, block)) {
                     const serializedLocation = JSON.stringify(neighborBlock.location);
                     let neighborNode = graph.getNode(neighborBlock) ?? graph.addNode(neighborBlock);
-                    db.set(`visited_${hashBlock(neighborBlock)}`, isInspectingTree);
+                    originalDatabase.set(`visited_${hashBlock(neighborBlock)}`, isInspectingTree);
                     if (mainNode.neighbors.has(neighborNode))
                         continue;
                     mainNode.addNeighbor(neighborNode);

@@ -1,5 +1,5 @@
-import { world, system, ScriptEventSource, Player, EntityEquippableComponent, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, TicksPerSecond, ItemCooldownComponent } from '@minecraft/server';
-import { ADDON_IDENTIFIER, axeEquipments, db, forceShow, getTreeLogs, getTreeTrunkSize, hashBlock, isLogIncluded, playerInteractedTimeLogMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, visitedLogs } from "./index";
+import { world, system, ScriptEventSource, Player, EntityInventoryComponent, ItemDurabilityComponent, ItemEnchantableComponent, ItemLockMode, ItemStack, MolangVariableMap, TicksPerSecond, ItemCooldownComponent } from '@minecraft/server';
+import { ADDON_IDENTIFIER, axeEquipments, originalDatabase, forceShow, getTreeLogs, getTreeTrunkSize, hashBlock, isLogIncluded, playerInteractedTimeLogMap, resetOutlinedTrees, SendMessageTo, serverConfigurationCopy, stackDistribution, visitedLogs } from "./index";
 import { Logger } from 'utils/logger';
 import './items/axes';
 import { MinecraftEnchantmentTypes, MinecraftBlockTypes } from 'modules/vanilla-types/index';
@@ -11,11 +11,11 @@ world.afterEvents.playerSpawn.subscribe((e) => {
     if (!e.initialSpawn)
         return;
     e.player.configuration.loadServer();
-    if (!db.has(`playerFirstJoined-${e.player.id}`)) {
-        db.set(`playerFirstJoined-${e.player.id}`, false);
+    if (!originalDatabase.has(`playerFirstJoined-${e.player.id}`)) {
+        originalDatabase.set(`playerFirstJoined-${e.player.id}`, false);
     }
-    if (!db.get(`playerFirstJoined-${e.player.id}`)) {
-        db.set(`playerFirstJoined-${e.player.id}`, true);
+    if (!originalDatabase.get(`playerFirstJoined-${e.player.id}`)) {
+        originalDatabase.set(`playerFirstJoined-${e.player.id}`, true);
         SendMessageTo(e.player, {
             rawtext: [
                 {
@@ -27,7 +27,6 @@ world.afterEvents.playerSpawn.subscribe((e) => {
 });
 world.beforeEvents.playerBreakBlock.subscribe((arg) => {
     const player = arg.player;
-    const axe = player.getComponent(EntityEquippableComponent.componentId);
     const dimension = player.dimension;
     const blockInteracted = arg.block;
     const location = blockInteracted.location;
@@ -39,7 +38,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         return;
     if (!isLogIncluded(blockTypeId, blockTypeId))
         return;
-    if (db.has(`visited_${hashBlock(blockInteracted)}`) && !db.get(`visited_${hashBlock(blockInteracted)}`)) {
+    if (originalDatabase.has(`visited_${hashBlock(blockInteracted)}`) && !originalDatabase.get(`visited_${hashBlock(blockInteracted)}`)) {
         arg.cancel = true;
         return;
     }
@@ -145,7 +144,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
                         yield;
                         if (!node)
                             continue;
-                        db.delete(`visited_${hashBlock(node.block)}`);
+                        originalDatabase.delete(`visited_${hashBlock(node.block)}`);
                         yield;
                     }
                     resetOutlinedTrees(destroyedTree);
@@ -256,7 +255,7 @@ world.beforeEvents.playerBreakBlock.subscribe((arg) => {
         system.runJob((function* () {
             for (const node of destroyedTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
                 if (node) {
-                    db.delete(`visited_${hashBlock(node.block)}`);
+                    originalDatabase.delete(`visited_${hashBlock(node.block)}`);
                 }
                 yield;
             }
@@ -301,7 +300,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                     }
                 }
                 if (!possibleVisitedLogs.length) {
-                    if (db.has(`visited_${hashBlock(blockInteracted)}`)) {
+                    if (originalDatabase.has(`visited_${hashBlock(blockInteracted)}`)) {
                         inspectTreePromiseResolve({ result: null, index: -100 });
                         return system.clearJob(tMain);
                     }
@@ -318,7 +317,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                 for (const node of initialTreeInspection.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
                     if (!node.block?.isValid() || !isLogIncluded(blockInteracted.typeId, node.block.typeId)) {
                         initialTreeInspection.visitedLogs.source.removeNode(node.block);
-                        db.delete(`visited_${hashBlock(node.block)}`);
+                        originalDatabase.delete(`visited_${hashBlock(node.block)}`);
                     }
                     yield;
                 }
@@ -360,7 +359,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
                     system.waitTicks(BLOCK_OUTLINES_DESPAWN_CD).then(async (_) => {
                         system.runJob((function* () {
                             for (const node of newInspectedSubTree.visitedLogs.source.traverseIterative(blockInteracted, "BFS")) {
-                                db.delete(`visited_${hashBlock(node.block)}`);
+                                originalDatabase.delete(`visited_${hashBlock(node.block)}`);
                                 yield;
                             }
                             if (!visitedLogs[index])
@@ -491,7 +490,7 @@ world.beforeEvents.itemUseOn.subscribe(async (arg) => {
             system.runTimeout(() => {
                 system.runJob((function* () {
                     for (const node of treeCollectedResult.source.traverseIterative(blockInteracted, "BFS")) {
-                        db.delete(`visited_${hashBlock(node.block)}`);
+                        originalDatabase.delete(`visited_${hashBlock(node.block)}`);
                         yield;
                     }
                     if (!result?.isDone)

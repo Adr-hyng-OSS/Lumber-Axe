@@ -2,7 +2,7 @@
   "durabilityDamagePerBlock": {
     "description": "Lumber Axe durability damage per log destroyed.",
     "name": "LumberAxe.server.durability_damage_per_block",
-    "default": 0
+    "default": 3
   },
   "immersiveModeDelay": {
     "description": "Delay for immersive mode.",
